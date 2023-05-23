@@ -1,5 +1,4 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
 module pot
   use trace, only : trace_entry, trace_exit,dp
   use comms, only : rank, on_root_node, nprocs

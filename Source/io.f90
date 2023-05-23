@@ -223,8 +223,9 @@ contains
 
 
 
-
+    
     ! Fist things first, try to read paramteters
+    call io_list_params(.false.)
     if (read_params) call io_read_param(current_params)
     if (.not.cell_declared) call io_errors("Error in I/O: No lattice provided")
 
@@ -278,9 +279,17 @@ contains
     character(len=60) :: line        ! charcter string into which each line is read, overwritten in loop
     character(len=30) :: key         ! the keyword used
     character(len=30) :: param       ! the value of the param
+    character(len=30) :: match       ! spell check match
     logical           :: comment     ! boolean for comment line, will skip
+    logical           :: spelling = .false. 
     real(dp)          :: real_dump   ! a dump for handling scientific
+
+    integer :: lev_dist
+    integer ::width=69
+
     call trace_entry("io_read_param")
+
+
 
     !Open the parameter file
     if (file_exists) then
@@ -315,7 +324,29 @@ contains
           key=adjustl(trim(io_case(key)))
           param=adjustl(trim(io_case(param)))
 
-          !print*,trim(key),i
+
+          ! Check for spelling
+
+          call io_spell_check(key,lev_dist,match)
+
+          
+          if (lev_dist.gt.0)then
+
+             if (.not.spelling)then
+                write(stdout,*)"********************************************************************"
+                write(stdout,*)"*                         *** WARNING ***                          *"
+                write(stdout,*)"*   TYPOS DETECTED IN INFO FILE, CONTINUING WITH AUTO SUGGESTION   *"
+                write(stdout,*)"********************************************************************"
+                write(stdout,*)"*  UNKNOWN PARAMETER        AUTOCORRECT       LEVENSHTEIN DISTANCE *"
+                write(stdout,*)"********************************************************************"
+                spelling=.true.
+             end if
+             write(stdout,9)trim(adjustl(key)),trim(adjustl(match)),lev_dist
+
+             key = match
+          end if
+9         format(' *',T5,A,T30,A,T60,i3,T69,'*')
+
           ! %Begin: case_read
           select case(key)
 
@@ -431,10 +462,17 @@ contains
              ! %End: case_read
           case default
              call io_errors("Error in I/O: Error parsing keyword: "//key)
-
           end select
 
+
+
        end do
+       if (spelling)then
+          write(stdout,*)"********************************************************************"
+          write(stdout,*)
+       end if
+
+
     else
        call trace_exit("io_read_param")
        return
@@ -528,9 +566,11 @@ contains
 
     ! internal variable for rank processing
     character(len=40)  :: file_name
-
+    
     write(file_name,'(A,".",I0.4,".err")') trim(seed),rank
 
+       
+    
     open(2,file=trim(file_name),RECL=8192,status="UNKNOWN")
     write(*,*)"Error: called io_abort"
     write(2,*) message
@@ -616,7 +656,11 @@ contains
 
     nargs=command_argument_count()
 
-
+    
+    if (nargs.eq.0)then
+       seed='derek'
+       call io_errors("Error in command line parser: no seed provided.")
+    end if
 
 
     if (comms_arch.eq."MPI")then
@@ -779,6 +823,8 @@ contains
     logical          :: found
     integer          :: i,scan_res
 
+    
+    
     do i=1,max_keys
        scan_res=index(trim(keys_array(i)),trim(string))
        if (scan_res.eq.0) then
@@ -1069,7 +1115,7 @@ contains
     write(stdout,*) "|                      http://www.castep.org                       |"
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                   Author: Z. Hawkhead (c) 2021                   |"
+    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2022                   |"
     write(stdout,*) "+==================================================================+"
 
 
@@ -1607,6 +1653,86 @@ contains
 
     call trace_exit('io_finalise')
   end subroutine io_finalise
+
+
+
+  function io_levenshtein(a,b) result(D)
+    character(len=*)  :: a
+    character(len=*)  :: b
+    real(dp)          :: D
+
+    integer,dimension(:,:),allocatable :: LD
+
+    integer            :: len_a,len_b,i,j
+
+    !call trace_entry('io_levenshtein')
+
+    a=trim(adjustl(a))
+    b=trim(adjustl(b))
+    
+    len_a=len_trim(trim(adjustl(a)))
+    len_b=len_trim(trim(adjustl(b)))
+
+    allocate(LD(0:len_a,0:len_b))
+    LD(:,:)=0.0_dp
+    ! Fill up the first column and row
+    do i=0,len_a
+       LD(i,0) = i
+    end do
+    do j=0,len_b
+       LD(0,j) = j
+    end do
+
+
+    do i=1,len_a
+       do j=1,len_b
+          
+          if (a(i:i).eq.b(j:j)) then
+             LD(i,j)=min(LD(i-1,j)+1,LD(i,j-1)+1,LD(i-1,j-1))
+
+          else
+             LD(i,j)=min(LD(i-1,j)+1,LD(i,j-1)+1,LD(i-1,j-1)+1)
+
+          end if
+       end do
+    end do
+
+    D=LD(len_a,len_b)
+
+    !print*,D
+    !call trace_exit('io_levenshtein')
+  end function io_levenshtein
+
+
+  subroutine io_spell_check(test_str,min_ld,match)
+    character(*),intent(in) :: test_str
+    integer,intent(out)     :: min_ld
+    character(*), intent(out) :: match
+
+    real(dp),dimension(1:max_keys) :: dist
+    real(dp)  :: min_real
+    integer :: i,j,loc_arr(1),loc, num_mins
+    
+    call trace_entry('io_spell_check')
+
+    call trace_entry('io_levenshtein')
+    do i=1,max_keys
+       dist(i)=io_levenshtein(trim(adjustl(test_str)),trim(adjustl(keys_array(i))))
+    end do
+    call trace_exit('io_levenshtein')
+
+    
+    min_ld=minval(dist)
+    loc_arr=minloc(dist)
+    loc=loc_arr(1)
+
+    match=keys_array(loc)
+
+    call trace_exit('io_spell_check')
+  end  subroutine io_spell_check
+
+
+
 end module io
  
  

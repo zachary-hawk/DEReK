@@ -54,6 +54,27 @@ clean:
 endif 
 
 
+ifeq ($(COMMS_ARCH),serial)
+
+subsystem:
+	export $(COMMS_ARCH)
+	$(MAKE) -C $(SOURCE)
+	mkdir  -p Build/$(COMMS_ARCH)_$(F90)
+	install -m 557 $(SOURCE)/derek.serial $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
+	mv $(SOURCE)/*.o $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
+	mv $(SOURCE)/*.mod $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
+	rm -f $(SOURCE)/derek.serial	
+
+.phony: install
+
+clean:
+	rm -f $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)/*
+
+
+
+endif 
+
+
 clean_all:
 	rm -f -r $(BUILD_DIR)/*/ $(SOURCE)/*.o $(SOURCE)/*.mod
 

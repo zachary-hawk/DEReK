@@ -112,6 +112,7 @@ contains
              ! Set the temp vector to be the integer basis of vectors
              temp_vec(:)=(/real(ngx,dp),real(ngy,dp),real(ngz,dp)/)
              current_basis%grid_points(ig,:) = matmul(current_structure%inv_cell,temp_vec)
+
           end do
        end do
     end do
