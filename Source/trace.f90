@@ -187,8 +187,6 @@ contains
     !print*,"exit end"
   end subroutine trace_exit
 
-
-
   subroutine trace_finalise(debug,rank,check_stack,seed)
     !==============================================================================!
     !                         T R A C E _ F I N A L I S E                          !
@@ -202,7 +200,7 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  26/08/2019                                            !
     !==============================================================================!
-    implicit none
+    
     integer                          :: i,k,stat
     logical,intent(in)               :: debug
     real,dimension(:),allocatable    :: start_time_sum

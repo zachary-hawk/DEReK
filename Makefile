@@ -2,81 +2,69 @@
 #   TOP LEVEL MAKEFILE                  #
 #########################################
 
-SOURCE = ./Source
-BUILD_DIR = ./Build
-
+SOURCE_DIR = ./Source
+BUILD_DIR = ../Build
+BUILD_LOC = ./Build
 #########################################
 # User editable options
-
-# Communications architectiure: mpi,serial
-COMMS_ARCH:=mpi
 
 # Fortran compiler, allowed: ifort, gfortran
 F90:=gfortran
 
 # Speed of the build, allowed: fast, debug
-BUILD= fast
-
+BUILD= debug
 
 ########################################
-
+#       NO CHANGES BEYOND HERE         #
+########################################
 
 MPI_F90:=mpif90
-SERIAL_F90=$(F90)
+
+FFTW_FILE := $(BUILD_LOC)/fftw.dir
+OPENBLAS_FILE := $(BUILD_LOC)/openblas.dir
+
+
 export F90
-export COMMS_ARCH
 export MPI_F90
-export SERIAL_F90
 export BUILD
+export BUILD_DIR
+export SOURCE_DIR
 
-ifeq ($(COMMS_ARCH),mpi)
+
+
+.phony: all check_file
+
+all: fftw_file openblas_file subsystem
 
 
 
+fftw_file:
+	@if [ ! -f $(FFTW_FILE) ]; then \
+		echo "#####################################################"; \
+		echo "#  Please provide location of FFTW3 library files:  #"; \
+		echo "#####################################################"; \
+		read -p "" input_text; \
+		echo "$$input_text" > $(FFTW_FILE); \
+	fi
+
+openblas_file:
+	@if [ ! -f $(OPENBLAS_FILE) ]; then \
+		echo "########################################################"; \
+		echo "#  Please provide location of OPENBLAS library files:  #"; \
+		echo "########################################################"; \
+		read -p "" input_text; \
+		echo "$$input_text" > $(OPENBLAS_FILE); \
+	fi
 
 
 subsystem:
-	export $(COMMS_ARCH)
-	$(MAKE) -C $(SOURCE)
-	mkdir  -p Build/$(COMMS_ARCH)_$(F90)
-	install -m 557 $(SOURCE)/derek.mpi $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	mv $(SOURCE)/*.o $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	mv $(SOURCE)/*.mod $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	rm -f $(SOURCE)/derek.mpi	
+	$(MAKE) -C $(SOURCE_DIR)
 
-.phony: install
 
 clean:
-	rm -f $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)/*
-
-
-
-endif 
-
-
-ifeq ($(COMMS_ARCH),serial)
-
-subsystem:
-	export $(COMMS_ARCH)
-	$(MAKE) -C $(SOURCE)
-	mkdir  -p Build/$(COMMS_ARCH)_$(F90)
-	install -m 557 $(SOURCE)/derek.serial $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	mv $(SOURCE)/*.o $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	mv $(SOURCE)/*.mod $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)
-	rm -f $(SOURCE)/derek.serial	
-
-.phony: install
-
-clean:
-	rm -f $(BUILD_DIR)/$(COMMS_ARCH)_$(F90)/*
-
-
-
-endif 
-
-
-clean_all:
-	rm -f -r $(BUILD_DIR)/*/ $(SOURCE)/*.o $(SOURCE)/*.mod
+	rm -f $(BUILD_LOC)/*.o  $(BUILD_LOC)/*.mod  $(BUILD_LOC)/derek.mpi
+clean_all :
+	rm -f  $(BUILD_LOC)/*
 
 dist:
 	tar  --exclude="./.git" --exclude="./Test" --exclude="./*/*.mpi" --exclude="./*/*.serial" --exclude="./Source/*.o" --exclude="./Source/*.mod" -cvf DEREK.tar .

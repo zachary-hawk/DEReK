@@ -69,10 +69,10 @@ module io
      logical :: dryrun = .false.
      logical :: debugging = .false.
      integer :: n_electrons =            1
-     real(dp) :: energy_tol =    9.9999999999999995E-008_dp!*ev_to_hartree
+     real(dp) :: energy_tol =    1.0E-7_dp!*ev_to_hartree
      character(len=30) :: xc_functional = 'LDA'
-     real(dp) :: cut_off_energy =    200.00000000000000!*ev_to_hartree
-     real(dp) :: g_fine_scale =    2.0000000000000000
+     real(dp) :: cut_off_energy =    200.0_dp!*ev_to_hartree
+     real(dp) :: g_fine_scale =    2.0_dp
      logical :: write_wvfn = .true.
      character(len=30) :: task = 'singlepoint'
      logical :: soc = .false.
@@ -89,10 +89,10 @@ module io
      logical :: write_spec = .true.
      logical :: calc_memory = .true.
      integer :: iprint =            1
-     real(dp) :: finite_barrier_height =    10.000000000000000
+     real(dp) :: finite_barrier_height =    10.00_dp
      real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5,0.5,0.5/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
-     real(dp) :: periodic_pot_amp =    10.000000000000000     
+     real(dp) :: periodic_pot_amp =    10.00_dp
      ! %End: parameters
   end type parameters
 
@@ -111,7 +111,7 @@ module io
   character(len=30),parameter,public ::key_max_scf   = 'max_scf'
   character(len=30),parameter,public ::key_scf_method   = 'scf_method'
   character(len=30),parameter,public ::key_electronic_temp   = 'electronic_temp'
-  character(len=30),parameter,public ::key_conduction_bands   = 'condunction_bands'
+  character(len=30),parameter,public ::key_conduction_bands   = 'conduction_bands'
   character(len=30),parameter,public ::key_write_density   = 'write_density'
   character(len=30),parameter,public ::key_Write_potential   = 'write_potential'
   character(len=30),parameter,public ::key_write_cont   = 'write_cont'
@@ -157,7 +157,7 @@ module io
   type(structure) ,public,save :: current_structure
 
 
-  external DGETRF
+  !external DGETRF
 
 
   !-------------------------------------------------------!
@@ -223,7 +223,7 @@ contains
 
 
 
-    
+
     ! Fist things first, try to read paramteters
     call io_list_params(.false.)
     if (read_params) call io_read_param(current_params)
@@ -281,12 +281,13 @@ contains
     character(len=30) :: param       ! the value of the param
     character(len=30) :: match       ! spell check match
     logical           :: comment     ! boolean for comment line, will skip
-    logical           :: spelling = .false. 
+    logical           :: spelling = .false.
     real(dp)          :: real_dump   ! a dump for handling scientific
+   
 
     integer :: lev_dist
-    integer ::width=69
-
+    integer :: width=69
+    integer :: max_lev=3
     call trace_entry("io_read_param")
 
 
@@ -329,13 +330,13 @@ contains
 
           call io_spell_check(key,lev_dist,match)
 
-          
-          if (lev_dist.gt.0)then
+
+          if (lev_dist.gt.0 .and. lev_dist.lt.max_lev)then
 
              if (.not.spelling)then
                 write(stdout,*)"********************************************************************"
                 write(stdout,*)"*                         *** WARNING ***                          *"
-                write(stdout,*)"*   TYPOS DETECTED IN INFO FILE, CONTINUING WITH AUTO SUGGESTION   *"
+                write(stdout,*)"*   POSSIBLE TYPOS DETECTED IN INFO FILE, ATTEMPTING AUTOCORRECT   *"
                 write(stdout,*)"********************************************************************"
                 write(stdout,*)"*  UNKNOWN PARAMETER        AUTOCORRECT       LEVENSHTEIN DISTANCE *"
                 write(stdout,*)"********************************************************************"
@@ -343,7 +344,15 @@ contains
              end if
              write(stdout,9)trim(adjustl(key)),trim(adjustl(match)),lev_dist
 
+             
              key = match
+          elseif (lev_dist.ge.max_lev)then
+             write(stdout,*)"********************************************************************"
+             write(stdout,*)"*           **** UNABLE TO SAFELY MATCH PARAMETER ****             *"
+             write(stdout,*)"*           ---------------- ABORTING ----------------             *"           
+             write(stdout,*)"********************************************************************"
+             call io_errors("Error in io_read_params: Unknown parameter - "//key)
+             
           end if
 9         format(' *',T5,A,T30,A,T60,i3,T69,'*')
 
@@ -566,11 +575,11 @@ contains
 
     ! internal variable for rank processing
     character(len=40)  :: file_name
-    
+
     write(file_name,'(A,".",I0.4,".err")') trim(seed),rank
 
-       
-    
+
+
     open(2,file=trim(file_name),RECL=8192,status="UNKNOWN")
     write(*,*)"Error: called io_abort"
     write(2,*) message
@@ -656,9 +665,10 @@ contains
 
     nargs=command_argument_count()
 
-    
+
     if (nargs.eq.0)then
        seed='derek'
+       call io_help()
        call io_errors("Error in command line parser: no seed provided.")
     end if
 
@@ -702,7 +712,10 @@ contains
              read_params=.false.
              call io_list_params(.false.)
              help=.true.
-             if (arg_index.eq.nargs) call io_help
+             if (arg_index.eq.nargs)then
+                call io_help()
+                stop
+             end if
           case("-s","--search")
              write(*,*) trim(version)
              write(*,*) trim(info)
@@ -710,18 +723,21 @@ contains
              read_params=.false.
              call io_list_params(.false.)
              search=.true.
-             if (arg_index.eq.nargs) call io_help
-
-          case("-v")
-             write(*,*) trim(version)
-             write(*,*) trim(info)
-             write(*,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
-             write(*,*) "Communications architechture: ",comms_arch
-             if (comms_arch.eq."MPI")then
-                write(*,*) "MPI Version: ",mpi_c_version(1:min_char+1)
+             if (arg_index.eq.nargs)then 
+                call io_help()
+                stop
              end if
-             write(*,*) "Optimisation Strategy: ",opt
-             write(*,*)
+          case("-v")
+             call io_header()
+!!$             write(*,*) trim(version)
+!!$             write(*,*) trim(info)
+!!$             write(*,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
+!!$             write(*,*) "Communications architechture: ",comms_arch
+!!$             if (comms_arch.eq."MPI")then
+!!$                write(*,*) "MPI Version: ",mpi_c_version(1:min_char+1)
+!!$             end if
+!!$             write(*,*) "Optimisation Strategy: ",opt
+!!$             write(*,*)
              read_params=.false.
              stop
           case("-d","--dryrun")
@@ -732,6 +748,9 @@ contains
              read_params=.false.
              call io_list_params(.true.)
              stop
+          case("-e","--easter-egg")
+             call io_easter_egg()
+             stop            
           case default
              if (help)then
                 call io_help(name)
@@ -743,6 +762,10 @@ contains
                 stop
              else
                 seed=name
+                if (seed(1:1).eq.'-')then
+                   write(*,*)"Unknown argument: ",trim(seed)
+                   call io_help()
+                end if
                 read_params=.true.
              end if
 
@@ -771,6 +794,7 @@ contains
     character(*),optional   :: string
     integer                 :: i !counter
     logical                 :: found=.false.
+
     if (present(string))then
 
        do i=1,max_keys
@@ -795,13 +819,16 @@ contains
           write(*,*)
        end if
     else
-30     format(4x,A,T40,A)
-       write(*,30) "-v","Print version information."
-       write(*,30) "-h,--help   <keyword>","Get help and commandline options."
-       write(*,30) "-s,--search <keyword>", "Search list of available parameters"
-       write(*,30) "-l,--list","Get list of parameters avilable for the user."
-       write(*,30) "-d,--dryrun","Run calculation to check input files"
+
+       write(*,*)  "Usage:"
+       write(*,30) "derek.mpi","<seed>","Run a calculation from <seed>.info"
+       write(*,30) '    "    ',"-v","Print version information."
+       write(*,30) '    "    ', "-h,--help   <keyword>","Get help and commandline options."
+       write(*,30) '    "    ',"-s,--search <keyword>", "Search list of available parameters"
+       write(*,30) '    "    ',"-l,--list","Get list of parameters avilable for the user."
+       write(*,30) '    "    ', "-d,--dryrun <seed>","Run calculation to check input files"
     end if
+30  format(2x,A,4x,A,T40,":",3x,A)
     return
   end subroutine io_help
 
@@ -823,8 +850,8 @@ contains
     logical          :: found
     integer          :: i,scan_res
 
-    
-    
+
+
     do i=1,max_keys
        scan_res=index(trim(keys_array(i)),trim(string))
        if (scan_res.eq.0) then
@@ -900,6 +927,7 @@ contains
     keys_array(24)=trim(key_finite_barrier_width)
     keys_array(25)=trim(key_periodic_pot_grid)
     keys_array(26)=trim(key_periodic_pot_amp)
+
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -956,6 +984,7 @@ contains
     keys_default(25)=trim(adjustl(junk))
     write(junk,*)current_params%periodic_pot_amp
     keys_default(26)=trim(adjustl(junk))
+
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1669,7 +1698,7 @@ contains
 
     a=trim(adjustl(a))
     b=trim(adjustl(b))
-    
+
     len_a=len_trim(trim(adjustl(a)))
     len_b=len_trim(trim(adjustl(b)))
 
@@ -1686,7 +1715,7 @@ contains
 
     do i=1,len_a
        do j=1,len_b
-          
+
           if (a(i:i).eq.b(j:j)) then
              LD(i,j)=min(LD(i-1,j)+1,LD(i,j-1)+1,LD(i-1,j-1))
 
@@ -1712,7 +1741,7 @@ contains
     real(dp),dimension(1:max_keys) :: dist
     real(dp)  :: min_real
     integer :: i,j,loc_arr(1),loc, num_mins
-    
+
     call trace_entry('io_spell_check')
 
     call trace_entry('io_levenshtein')
@@ -1721,7 +1750,7 @@ contains
     end do
     call trace_exit('io_levenshtein')
 
-    
+
     min_ld=minval(dist)
     loc_arr=minloc(dist)
     loc=loc_arr(1)
@@ -1732,8 +1761,36 @@ contains
   end  subroutine io_spell_check
 
 
+  subroutine io_easter_egg()
+
+    write(*,*)"             ,"
+    write(*,*)'            /|      __'
+    write(*,*)'           / |   ,-~ /'
+    write(*,*)'          Y :|  //  /'
+    write(*,*)'          | jj /( .^'
+    write(*,*)'          >-"~"-v"'
+    write(*,*)'         /       Y'
+    write(*,*)'        jO  O    |'
+    write(*,*)'       ( ~T~     j'
+    write(*,*)"        >._-' _./"
+    write(*,*)'       /   "~"  |'
+    write(*,*)'      Y     _,  |'
+    write(*,*)'     /| ;-"~ _  l'
+    write(*,*)'    / l/ ,-"~    \'
+    write(*,*)'    \//\/      .- \ '
+    write(*,*)'     Y        /    Y'
+    write(*,*)'     l       I     !'
+    write(*,*)'     ]\      _\    /"\'
+    write(*,*)'    (" ~----( ~   Y.  )'
+    write(*,*)'~~~~~~~~~~~~~~~~~~~~~~~~~'
+
+  end subroutine io_easter_egg
+
+    
+
 
 end module io
+ 
  
  
  
