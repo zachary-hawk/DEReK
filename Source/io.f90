@@ -1,23 +1,19 @@
 module io
   !Impose strong typing
-  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,dp
+  use constants
+  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
        &,comms_library_version,comms_version
   use memory, only : memory_init,memory_allocate,memory_deallocate
-  use iso_fortran_env, only :real64,compiler_version
+  use iso_fortran_env, only : compiler_version
   implicit none
 
-  real(dp),          public,parameter      :: pi=3.1415926535
-  real(dp),          public,parameter      :: twopi=2.0_dp*pi
-  real(dp),          public,parameter      :: fourpi=4.0_dp*pi
-  real(dp),          public,parameter      :: small_number= 1e-15
   logical,           public                :: file_exists
   character(20),     public                :: seed
   integer,           public                :: stdout
 
 
   character(100),dimension(:),allocatable  :: present_array
-
   character(100),dimension(:),allocatable  :: keys_array
   character(100),dimension(:),allocatable  :: keys_description
   character(100),dimension(:),allocatable  :: keys_default
@@ -30,36 +26,6 @@ module io
 
   integer                                  :: max_params=1
   logical, private :: cell_declared=.false.
-
-  ! Conversion factors
-
-  ! Energies
-  real(dp), parameter,public :: ev_to_hartree = 0.036749308136649_dp
-  real(dp), parameter,public :: hartree_to_ev = 1.0_dp/ev_to_hartree
-
-
-  !Lengths
-  real(dp),parameter,public  :: angstrom_to_bohr = 1.8897259886_dp
-  real(dp),parameter,public  :: bohr_to_angstrom = 1.0_dp/angstrom_to_bohr
-
-  !Angles
-  real(dp),parameter,public  :: rad_to_deg=180.0_dp/pi
-  real(dp),parameter,public  :: deg_to_rad=pi/180.0_dp
-
-  !Physical constants
-  real(dp),parameter,public  :: hbar_si = 1.054571800E-34_dp
-  real(dp),parameter,public  :: mu_b_si = 927.4009994E-26_dp
-  real(dp),parameter,public  :: m_e_si  = 9.1093837015E-31_dp
-  real(dp),parameter,public  :: kb_si   = 1.38
-  real(dp),parameter,public  :: kB      = 8.617333262145E-5_dp*ev_to_hartree
-  real(dp),parameter,public  :: mu_0_si = fourpi*1.0E-7_dp
-
-
-
-  !Complex numbers
-  complex(dp),parameter,public :: cmplx_0 = (0.0_dp,0.0_dp)
-  complex(dp),parameter,public :: cmplx_1 = (1.0_dp,0.0_dp)
-  complex(dp),parameter,public :: cmplx_i = (0.0_dp,1.0_dp)
 
 
   type  parameters
@@ -93,6 +59,7 @@ module io
      real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5,0.5,0.5/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
      real(dp) :: periodic_pot_amp =    10.00_dp
+     integer :: random_seed =            0
      ! %End: parameters
   end type parameters
 
@@ -124,12 +91,13 @@ module io
   character(len=30),parameter,public ::key_finite_barrier_width   = 'finite_barrier_width'
   character(len=30),parameter,public ::key_periodic_pot_grid   = 'periodic_pot_grid'
   character(len=30),parameter,public ::key_periodic_pot_amp   = 'periodic_pot_amp'
+  character(len=30),parameter,public ::key_random_seed   = 'random_seed'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          26
+  integer,parameter::max_keys=          27
   ! %End: max_param
 
 
@@ -207,6 +175,8 @@ contains
           max_params=max_params+1
        end do
        close(1)
+    else
+       call io_errors("Error in I/O: file '"//trim(seed)//".info' does not exist.")
     end if
     max_params=max_params+1
     ! Allocate space for the params array
@@ -218,6 +188,7 @@ contains
     ! Open up the main file for the output
     open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
 
+       
     call io_flush(stdout)
     call io_header()
 
@@ -244,9 +215,6 @@ contains
     ! Work out the new values of some on the fly parameters
     current_params%nbands=current_params%n_electrons+current_params%conduction_bands
 
-
-    ! Write out the preliminary stuff to the .derek
-    call io_write_params()
 
 
     call trace_exit("io_initialise")
@@ -283,7 +251,7 @@ contains
     logical           :: comment     ! boolean for comment line, will skip
     logical           :: spelling = .false.
     real(dp)          :: real_dump   ! a dump for handling scientific
-   
+
 
     integer :: lev_dist
     integer :: width=69
@@ -344,15 +312,15 @@ contains
              end if
              write(stdout,9)trim(adjustl(key)),trim(adjustl(match)),lev_dist
 
-             
+
              key = match
           elseif (lev_dist.ge.max_lev)then
              write(stdout,*)"********************************************************************"
              write(stdout,*)"*           **** UNABLE TO SAFELY MATCH PARAMETER ****             *"
-             write(stdout,*)"*           ---------------- ABORTING ----------------             *"           
+             write(stdout,*)"*           ---------------- ABORTING ----------------             *"
              write(stdout,*)"********************************************************************"
              call io_errors("Error in io_read_params: Unknown parameter - "//key)
-             
+
           end if
 9         format(' *',T5,A,T30,A,T60,i3,T69,'*')
 
@@ -468,6 +436,10 @@ contains
              read(param,*,iostat=stat) dummy_params%periodic_pot_amp
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
+          case(key_random_seed)
+             read(param,*,iostat=stat) dummy_params%random_seed
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
              ! %End: case_read
           case default
              call io_errors("Error in I/O: Error parsing keyword: "//key)
@@ -499,7 +471,7 @@ contains
        end do
     end do
     close(1)
-
+    !call io_errors("Test")
     ! Handle the kpoint list
     call io_kpoint_grid()
 
@@ -696,7 +668,6 @@ contains
     compile_version=compiler_version()
     if (compiler.eq."Intel Compiler")then
        compile_version=compiler_version()
-
        compile_version=trim(compile_version(87:97))
     end if
 
@@ -723,7 +694,7 @@ contains
              read_params=.false.
              call io_list_params(.false.)
              search=.true.
-             if (arg_index.eq.nargs)then 
+             if (arg_index.eq.nargs)then
                 call io_help()
                 stop
              end if
@@ -750,7 +721,7 @@ contains
              stop
           case("-e","--easter-egg")
              call io_easter_egg()
-             stop            
+             stop
           case default
              if (help)then
                 call io_help(name)
@@ -928,6 +899,7 @@ contains
     keys_array(25)=trim(key_periodic_pot_grid)
     keys_array(26)=trim(key_periodic_pot_amp)
 
+    keys_array(27)=trim(key_random_seed)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -985,6 +957,8 @@ contains
     write(junk,*)current_params%periodic_pot_amp
     keys_default(26)=trim(adjustl(junk))
 
+    write(junk,*)current_params%random_seed
+    keys_default(27)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1016,6 +990,7 @@ contains
     keys_description(24)='Fractional width of barrier in each principal direction'
     keys_description(25)='Number of cycles of periodic potential in each crystal direction'
     keys_description(26)='Amplitude of the periodic potential in eV'
+    keys_description(27)='A random seed to initialise the random number generator'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1046,6 +1021,7 @@ contains
     keys_allowed(24)='Fractional triplet'
     keys_allowed(25)='any int > 0'
     keys_allowed(26)='any real >0'
+    keys_allowed(27)='any int'
     ! %End: assign_allowed
 
     ! do the loop for printing stuff
@@ -1154,6 +1130,7 @@ contains
        write(stdout,*) "MPI Version: ",mpi_c_version(1:min_char+1)
     end if
     write(stdout,*) "Optimisation Strategy: ",opt
+    write(stdout,*) const_version
     write(stdout,*)
     call trace_exit("io_header")
   end subroutine io_header
@@ -1468,113 +1445,115 @@ contains
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNIT CELL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if (current_params%iprint.ge.1) then ! cell info is a must
+       write(stdout,*)"+"//repeat("-",(width-15)/2)//"  UNIT CELL  "//repeat("-",(width-16)/2)//"+"
 
-    write(stdout,*)"+"//repeat("-",(width-15)/2)//"  UNIT CELL  "//repeat("-",(width-16)/2)//"+"
+       write(stdout,*)
+       write(stdout,*) "            Lattice (A)                   Inverse Lattice (1/A)         "
+       write(stdout,10) current_structure%cell(1,:)*bohr_to_angstrom,current_structure%inv_cell(1,:)/bohr_to_angstrom
+       write(stdout,10) current_structure%cell(2,:)*bohr_to_angstrom,current_structure%inv_cell(2,:)/bohr_to_angstrom
+       write(stdout,10) current_structure%cell(3,:)*bohr_to_angstrom,current_structure%inv_cell(3,:)/bohr_to_angstrom
+       write(stdout,*)
+       write(stdout,12) "Cell Volume =", current_structure%volume*bohr_to_angstrom**3
 
-    write(stdout,*)
-    write(stdout,*) "            Lattice (A)                   Inverse Lattice (1/A)         "
-    write(stdout,10) current_structure%cell(1,:)*bohr_to_angstrom,current_structure%inv_cell(1,:)/bohr_to_angstrom
-    write(stdout,10) current_structure%cell(2,:)*bohr_to_angstrom,current_structure%inv_cell(2,:)/bohr_to_angstrom
-    write(stdout,10) current_structure%cell(3,:)*bohr_to_angstrom,current_structure%inv_cell(3,:)/bohr_to_angstrom
-    write(stdout,*)
-    write(stdout,12) "Cell Volume =", current_structure%volume*bohr_to_angstrom**3
-
-    write(stdout,*)
-    write(stdout,*) "                      Lattice Parameters (A)"
-    write(stdout,*) "                      ----------------------"
-    write(stdout,11) 'a =',current_structure%lattice_a*bohr_to_angstrom,&
-         & 'b =',current_structure%lattice_b*bohr_to_angstrom,&
-         & 'c =', current_structure%lattice_c*bohr_to_angstrom
-    write(stdout,*)
-    write(stdout,*) "                          Cell Angles (o)"
-    write(stdout,*) "                          ---------------"
-    write(stdout,11) 'alpha =',current_structure%alpha,'beta =',current_structure%beta,'gamma =', current_structure%gamma
+       write(stdout,*)
+       write(stdout,*) "                      Lattice Parameters (A)"
+       write(stdout,*) "                      ----------------------"
+       write(stdout,11) 'a =',current_structure%lattice_a*bohr_to_angstrom,&
+            & 'b =',current_structure%lattice_b*bohr_to_angstrom,&
+            & 'c =', current_structure%lattice_c*bohr_to_angstrom
+       write(stdout,*)
+       write(stdout,*) "                          Cell Angles (o)"
+       write(stdout,*) "                          ---------------"
+       write(stdout,11) 'alpha =',current_structure%alpha,'beta =',current_structure%beta,'gamma =', current_structure%gamma
 
 
-    write(stdout,*)
-    write(stdout,*)
-
+       write(stdout,*)
+       write(stdout,*)
+    end if
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! BZ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    if (current_params%iprint.ge.2) then ! BZ is a little more verbose, so we will only do iprint 2
+       write(stdout,*)"+"//repeat("-",(width-15)/2)//" BZ SAMPLING "//repeat("-",(width-16)/2)//"+"
+       write(stdout,*)
 
-    write(stdout,*)"+"//repeat("-",(width-15)/2)//" BZ SAMPLING "//repeat("-",(width-16)/2)//"+"
-    write(stdout,*)
 
-
-    write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-    write(stdout,13)"SCF MP kpoint grid :",&
-         & current_params%kpt_mp_grid(1),current_params%kpt_mp_grid(2),current_params%kpt_mp_grid(3)
-    write(stdout,131)"    Number kpoints :",&
-         & current_params%kpt_mp_grid(1)*current_params%kpt_mp_grid(2)*current_params%kpt_mp_grid(3)
-    if (current_params%iprint.ge.2)then
        write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-       write(stdout,*) "        |     Number          Fractional co-ordinate      | <-- KPNT"
-       write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-       do i=1,current_structure%num_kpoints
-          write(stdout,14) i,current_structure%kpt_scf_list(i,1),&
-               & current_structure%kpt_scf_list(i,2),&
-               & current_structure%kpt_scf_list(i,3)
-       end do
+       write(stdout,13)"SCF MP kpoint grid :",&
+            & current_params%kpt_mp_grid(1),current_params%kpt_mp_grid(2),current_params%kpt_mp_grid(3)
+       write(stdout,131)"    Number kpoints :",&
+            & current_params%kpt_mp_grid(1)*current_params%kpt_mp_grid(2)*current_params%kpt_mp_grid(3)
+       if (current_params%iprint.ge.2)then
+          write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
+          write(stdout,*) "        |     Number          Fractional co-ordinate      | <-- KPNT"
+          write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
+          do i=1,current_structure%num_kpoints
+             write(stdout,14) i,current_structure%kpt_scf_list(i,1),&
+                  & current_structure%kpt_scf_list(i,2),&
+                  & current_structure%kpt_scf_list(i,3)
+          end do
 
+       end if
+       write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
+
+       write(stdout,*)
     end if
-    write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-
-    write(stdout,*)
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GENERAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    write(stdout,*)"+"//repeat("-",(width-15)/2)//"   GENERAL   "//repeat("-",(width-16)/2)//"+"
-    write(stdout,*)
+    if (current_params%iprint.ge.1) then 
+       write(stdout,*)"+"//repeat("-",(width-15)/2)//"   GENERAL   "//repeat("-",(width-16)/2)//"+"
+       write(stdout,*)
+
+       write(stdout,15)"Calculation type",adjustr(trim(current_params%task))
+       write(stdout,15)"XC Functional",adjustr(trim(current_params%xc_functional))
+       write(stdout,19)"Spin orbit coupling",current_params%soc
+       write(stdout,16)"Verbosity",current_params%iprint
+       write(stdout,16)"Random seed", current_params%random_seed
+       write(stdout,*)
 
 
+       write(stdout,*)"                        Electronic Parameters"
+       write(stdout,*)"                        ---------------------"
+       write(stdout,16)"Number of electrons",current_params%n_electrons
+       write(stdout,16)"Number of conduction bands",current_params%conduction_bands
+       write(stdout,17)"Electronic temperature (K)",current_params%electronic_temp
+       write(stdout,*)
+       write(stdout,*)"                         Potential Parameters"
+       write(stdout,*)"                         --------------------"
+       select case(trim(current_params%external_pot))
+       case('jelly')
+          write(stdout,15)"External potential",adjustr('Jellium')
+       case('finite_barrier')
+          write(stdout,15)"External potential",adjustr('Finite Barrier')
+          write(stdout,22)"Fractional barrier widths",current_params%finite_barrier_width
+          write(stdout,17)"Barrier height (eV)",current_params%finite_barrier_height*hartree_to_ev
+       case('periodic_pot')
+          write(stdout,15)"External potential",adjustr('Periodic Potential')
+          write(stdout,21)"Periodic grid",current_params%periodic_pot_grid
+          write(stdout,17)"Potential amplitude (eV)",current_params%periodic_pot_amp*hartree_to_ev
+       case default
+          write(stdout,15)"External potential",adjustr('Custom Potential')
+          write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot))
+       end select
 
-    write(stdout,15)"Calculation type",adjustr(trim(current_params%task))
-    write(stdout,15)"XC Functional",adjustr(trim(current_params%xc_functional))
-    write(stdout,19)"Spin orbit coupling",current_params%soc
-    write(stdout,16)"Verbosity",current_params%iprint
-    write(stdout,*)
-    write(stdout,*)"                        Electronic Parameters"
-    write(stdout,*)"                        ---------------------"
-    write(stdout,16)"Number of electrons",current_params%n_electrons
-    write(stdout,16)"Number of conduction bands",current_params%conduction_bands
-    write(stdout,17)"Electronic temperature (K)",current_params%electronic_temp
-    write(stdout,*)
-    write(stdout,*)"                         Potential Parameters"
-    write(stdout,*)"                         --------------------"
-    select case(trim(current_params%external_pot))
-    case('jelly')
-       write(stdout,15)"External potential",adjustr('Jellium')
-    case('finite_barrier')
-       write(stdout,15)"External potential",adjustr('Finite Barrier')
-       write(stdout,22)"Fractional barrier widths",current_params%finite_barrier_width
-       write(stdout,17)"Barrier height (eV)",current_params%finite_barrier_height*hartree_to_ev
-    case('periodic_pot')
-       write(stdout,15)"External potential",adjustr('Periodic Potential')
-       write(stdout,21)"Periodic grid",current_params%periodic_pot_grid
-       write(stdout,17)"Potential amplitude (eV)",current_params%periodic_pot_amp*hartree_to_ev
-    case default
-       write(stdout,15)"External potential",adjustr('Custom Potential')
-       write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot))
-    end select
+       write(stdout,*)
+       write(stdout,*)"                            SCF Parameters"
+       write(stdout,*)"                            --------------"
+       write(stdout,16)"Maximum SCF steps",current_params%max_scf
+       write(stdout,15)"SCF method",adjustr(trim(current_params%scf_method))
+       write(stdout,18)"SCF convergence tolerance (eV)",current_params%energy_tol*hartree_to_ev
+       write(stdout,*)
+       write(stdout,*)"                            I/O Parameters"
+       write(stdout,*)"                            --------------"
+       write(stdout,19)"Write wavefunction",current_params%write_wvfn
+       write(stdout,19)"Write continuation file",current_params%write_cont
+       write(stdout,19)"Write density",current_params%write_density
+       write(stdout,19)"Write potential",current_params%WRITE_POTENTIAL
+       write(stdout,19)"Write electronic spectrum",current_params%write_spec
+       write(stdout,19)"Calculate memory",current_params%calc_memory
 
-    write(stdout,*)
-    write(stdout,*)"                            SCF Parameters"
-    write(stdout,*)"                            --------------"
-    write(stdout,16)"Maximum SCF steps",current_params%max_scf
-    write(stdout,15)"SCF method",adjustr(trim(current_params%scf_method))
-    write(stdout,18)"SCF convergence tolerance (eV)",current_params%energy_tol*hartree_to_ev
-    write(stdout,*)
-    write(stdout,*)"                            I/O Parameters"
-    write(stdout,*)"                            --------------"
-    write(stdout,19)"Write wavefunction",current_params%write_wvfn
-    write(stdout,19)"Write continuation file",current_params%write_cont
-    write(stdout,19)"Write density",current_params%write_density
-    write(stdout,19)"Write potential",current_params%WRITE_POTENTIAL
-    write(stdout,19)"Write electronic spectrum",current_params%write_spec
-    write(stdout,19)"Calculate memory",current_params%calc_memory
-
-
+    end if
 
 
 
@@ -1614,7 +1593,7 @@ contains
     current_structure%max_kpoints_on_node =ceiling(real(current_structure%num_kpoints,dp)/real(dist_kpt,dp))
     call memory_deallocate(current_structure%kpts_on_node,'I')
     call memory_allocate(current_structure%kpts_on_node,1,current_structure%max_kpoints_on_node,'I')
-
+    
     call trace_exit('io_dist_kpt')
     return
   end subroutine io_dist_kpt
@@ -1734,6 +1713,18 @@ contains
 
 
   subroutine io_spell_check(test_str,min_ld,match)
+    !==============================================================================!
+    !                         I O _ S P E L L _ C H E C K                          !
+    !==============================================================================!
+    ! Subroutine for checking the spelling of an input                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           test_str,          intent :: in                                    !
+    !           min_ld,            intent :: out                                   !
+    !           match,             intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  07/06/2023                                            !
+    !==============================================================================!
     character(*),intent(in) :: test_str
     integer,intent(out)     :: min_ld
     character(*), intent(out) :: match
@@ -1786,10 +1777,11 @@ contains
 
   end subroutine io_easter_egg
 
-    
+
 
 
 end module io
+ 
  
  
  

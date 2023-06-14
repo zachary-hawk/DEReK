@@ -1,9 +1,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
 module memory
-  use trace, only : trace_entry, trace_exit,dp
+  use constants 
+  use trace, only : trace_entry, trace_exit
   use comms, only : rank,nprocs
 
   implicit none
@@ -1808,7 +1806,17 @@ contains
   end subroutine memory_report
 
   subroutine memory_trace()
-    
+    !==============================================================================!
+    !                           M E M O R Y _ T R A C E                            !
+    !==============================================================================!
+    ! Subroutine for writing out the .mem files if requested by the user           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  07/06/2023                                            !
+    !==============================================================================!
+
     integer :: mem_unit
 
     character(30) :: mem_name
@@ -1816,8 +1824,8 @@ contains
     integer :: stat
     logical :: opened
     mem_unit=345*rank+9103
-    
-    
+
+
     write(mem_name,'(a,".",i0.4,a)')trim(local_seed),rank,".mem"
     inquire(mem_unit,opened=opened)
     if (.not.opened)then
@@ -1829,10 +1837,10 @@ contains
     call cpu_time(cur_time)
 
     write(mem_unit,*) cur_time , io_memory,basis_memory,wave_memory,pot_memory,den_memory,gen_memory,tot_memory
-    
-    
-    
+
+
+
 
   end subroutine memory_trace
-  
+
 end module memory

@@ -1,8 +1,10 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module density
-  use trace, only: trace_entry,trace_exit,dp
-  use io,    only: stdout,cmplx_0,cmplx_i,cmplx_1,io_errors
+  use constants
+  use trace, only: trace_entry,trace_exit
+  use io,    only: stdout,io_errors
   use wave,  only: wavefunction, wavefunction_slice
   use comms, only: rank,on_root_node
   use memory,only: memory_allocate,memory_deallocate

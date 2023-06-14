@@ -2,10 +2,12 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module basis
+  use constants
   use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,dp
-  use io,    only : stdout, current_params,current_structure,pi,hartree_to_ev
+  use io,    only : stdout, current_params,current_structure
   use memory,only : memory_allocate,memory_deallocate
   use comms, only : comms_scheme,dist_gvec
+  use fft,   only : fft_init, fft_3d
   implicit none
 
 
@@ -38,9 +40,26 @@ module basis
 
   type(basis_dat),public,save :: current_basis
 
+
+  interface basis_real2recip
+     module procedure basis_real2recip_1d
+     module procedure basis_real2recip_3d
+     module procedure basis_real2recip_pot
+  end interface basis_real2recip
+
+  interface basis_recip2real
+     module procedure basis_recip2real_1d
+     module procedure basis_recip2real_3d
+     module procedure basis_recip2real_pot
+  end interface basis_recip2real
+
+
+
   ! PUBLIC ROUTINES 
   public  basis_init
-
+  public  basis_real2recip
+  public  basis_recip2real
+  public  basis_real2recip_pot
 
 
 contains
@@ -58,7 +77,7 @@ contains
     !==============================================================================!
 
     implicit none
-    
+
     real(dp)   :: k_cut   ! the kspace cutoff readius
     integer    :: ngz,ngy,ngx,ig=0
 
@@ -79,7 +98,7 @@ contains
 
 
     ! Make them fft compatible
-    
+
     call basis_prime_fact(current_basis%ngx)
     call basis_prime_fact(current_basis%ngy)
     call basis_prime_fact(current_basis%ngz)
@@ -92,9 +111,9 @@ contains
     current_basis%num_fine_grid_points=current_basis%fine_ngx*&
          & current_basis%fine_ngy *&
          & current_basis%fine_ngy
-    
 
-    
+
+
     !Allocate the grids
     call memory_allocate(current_basis%grid_points,1,current_basis%num_grid_points,1,3,"B")
     call memory_allocate(current_basis%fine_grid_points,1,current_basis%num_fine_grid_points,1,3,"B")
@@ -163,7 +182,7 @@ contains
              temp_vec(:)=(/real(ngx,dp)*1.0_dp/real(current_basis%fine_ngx,dp),&
                   & real(ngy,dp)*1.0_dp/real(current_basis%fine_ngy,dp),&
                   & real(ngz,dp)*1.0_dp/real(current_basis%fine_ngz,dp)/)
-             
+
              current_basis%real_fine_grid_points(ig,:) = matmul(current_structure%cell,temp_vec)
              current_basis%fine_frac_points(ig,:)=temp_vec
           end do
@@ -181,16 +200,17 @@ contains
 18  format(T2,a,T36,":",T58,ES12.2)   ! Science                                                                                                                                                         
 19  format(T2,a,T36,":",T58,L12)   ! Logical 
 
-    write(stdout,*)
-    write(stdout,*)"                          Basis Set Parameters"
-    write(stdout,*)"                          --------------------"
-    write(stdout,17)"Plane wave cut off (eV)",current_params%cut_off_energy*hartree_to_ev
-    write(stdout,17)"G vector fine scale",current_params%g_fine_scale
-    write(stdout,16)"Number of standard grid points",current_basis%num_grid_points
-    write(stdout,16)"Number of fine grid points",current_basis%num_fine_grid_points
-    write(stdout,21)"Standard FFT grid",current_basis%ngx,current_basis%ngy,current_basis%ngz
-    write(stdout,21)"Fine FFT grid",current_basis%fine_ngx,current_basis%fine_ngy,current_basis%fine_ngz
-
+    if (current_params%iprint.ge.2)then ! this is verbose
+       write(stdout,*)
+       write(stdout,*)"                          Basis Set Parameters"
+       write(stdout,*)"                          --------------------"
+       write(stdout,17)"Plane wave cut off (eV)",current_params%cut_off_energy*hartree_to_ev
+       write(stdout,17)"G vector fine scale",current_params%g_fine_scale
+       write(stdout,16)"Number of standard grid points",current_basis%num_grid_points
+       write(stdout,16)"Number of fine grid points",current_basis%num_fine_grid_points
+       write(stdout,21)"Standard FFT grid",current_basis%ngx,current_basis%ngy,current_basis%ngz
+       write(stdout,21)"Fine FFT grid",current_basis%fine_ngx,current_basis%fine_ngy,current_basis%fine_ngz
+    end if
 
 
 
@@ -205,7 +225,17 @@ contains
     call memory_deallocate(current_basis%local_fine_grid_points,'B')
     call memory_allocate(current_basis%local_grid_points,1,current_basis%max_node,'B')
     call memory_allocate(current_basis%local_fine_grid_points,1,current_basis%max_fine_node,'B')
-    
+
+
+
+    ! After initialising the basis data, we should initialise the ffts
+
+    call fft_init(current_basis%ngx,&
+         & current_basis%ngy,&
+         & current_basis%ngz,&
+         & current_basis%fine_ngx,&
+         & current_basis%fine_ngx,&
+         & current_basis%fine_ngx)
 
 
     call trace_exit('basis_init')
@@ -256,5 +286,110 @@ contains
     call trace_exit("basis_prime_fact")
     return
   end  subroutine basis_prime_fact
+
+
+  subroutine basis_real2recip_1d(array,grid_type)
+    complex(dp), dimension(:),intent(inout) :: array
+    character(4), intent(in)             :: grid_type
+    ! Backwards transform so dir = +1
+    integer  :: dir = 1
+
+    call trace_entry('basis_real2recip_1d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array,grid_type,dir)
+
+    call trace_exit('basis_real2recip_1d')
+  end subroutine basis_real2recip_1d
+
+
+  subroutine basis_recip2real_1d(array,grid_type)
+    complex(dp), dimension(:),intent(inout) :: array
+    character(4), intent(in)             :: grid_type
+    ! Backwards transform so dir = -1
+    integer  :: dir = -1
+
+    call trace_entry('basis_recip2real_1d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array,grid_type,dir)
+
+    call trace_exit('basis_recip2real_1d')
+  end subroutine basis_recip2real_1d
+
+
+  subroutine basis_real2recip_3d(array,grid_type)
+    complex(dp), dimension(:,:),intent(inout) :: array
+    character(4), intent(in)                 :: grid_type
+    ! Backwards transform so dir = +1
+    integer  :: dir = 1
+
+    call trace_entry('basis_real2recip_1d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array(:,1),grid_type,dir)
+    call fft_3d(array(:,2),grid_type,dir)
+    call fft_3d(array(:,3),grid_type,dir)
+
+    call trace_exit('basis_real2recip_1d')
+  end subroutine basis_real2recip_3d
+
+
+  subroutine basis_recip2real_3d(array,grid_type)
+    complex(dp), dimension(:,:),intent(inout) :: array
+    character(4), intent(in)                 :: grid_type
+    ! Backwards transform so dir = -1
+    integer  :: dir = -1
+
+    call trace_entry('basis_recip2real_3d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array(:,1),grid_type,dir)
+    call fft_3d(array(:,2),grid_type,dir)
+    call fft_3d(array(:,3),grid_type,dir)
+
+    call trace_exit('basis_recip2real_3d')
+  end subroutine basis_recip2real_3d
+
+
+  subroutine basis_real2recip_pot(array,grid_type)
+    complex(dp), dimension(:,:,:),intent(inout) :: array
+    character(4), intent(in)                 :: grid_type
+    ! Backwards transform so dir = +1
+    integer  :: dir = 1
+
+    call trace_entry('basis_real2recip_1d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array(:,1,1),grid_type,dir)
+    call fft_3d(array(:,1,2),grid_type,dir)
+    call fft_3d(array(:,2,1),grid_type,dir)
+    call fft_3d(array(:,2,2),grid_type,dir)
+
+    
+    call trace_exit('basis_real2recip_1d')
+  end subroutine basis_real2recip_pot
+
+
+  subroutine basis_recip2real_pot(array,grid_type)
+    complex(dp), dimension(:,:,:),intent(inout) :: array
+    character(4), intent(in)                 :: grid_type
+    ! Backwards transform so dir = -1
+    integer  :: dir = -1
+
+    call trace_entry('basis_recip2real_3d')
+
+    ! Here is the call to fft - should only be done from these routines 
+    call fft_3d(array(:,1,1),grid_type,dir)
+    call fft_3d(array(:,1,2),grid_type,dir)
+    call fft_3d(array(:,2,1),grid_type,dir)
+    call fft_3d(array(:,2,2),grid_type,dir)
+
+    call trace_exit('basis_recip2real_3d')
+  end subroutine basis_recip2real_pot
+
+
+
+
 
 end module basis

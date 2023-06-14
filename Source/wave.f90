@@ -2,10 +2,12 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module wave
-  use trace, only : trace_entry,trace_exit,dp
+  use constants
+  use trace, only : trace_entry,trace_exit
   use comms, only : rank,on_root_node,nprocs
-  use io,    only : current_params,current_structure,io_errors,cmplx_0
+  use io,    only : current_params,current_structure,io_errors
   use basis, only : current_basis
   use memory,only : memory_allocate,memory_deallocate
 
@@ -62,10 +64,15 @@ module wave
   end interface operator (*)
 
 
+  interface wave_initialise
+     module procedure wave_initialise_wfn
+  end interface wave_initialise
+
   public wave_allocate
   public wavefunction
   public wavefunction_slice
   public wave_copy
+  public wave_initialise
   public operator (+)
   public operator (-)
   public operator (*)
@@ -759,8 +766,35 @@ contains
     call trace_exit('wave_copy_slice_slice')
     return
 
-
   end subroutine wave_copy_slice_slice
 
+
+
+  subroutine wave_initialise_wfn(wfn)
+    type(wavefunction), intent(inout) :: wfn
+    real(dp)         :: r1, r2
+
+    integer          :: nk,nb,ng,k,g
+    call trace_entry('wave_initialise_wfn')
+
+    wfn%coeff(:,:,:,:) = 0.0_dp
+    do ng=1,current_basis%num_node
+       g=current_basis%local_grid_points(ng)
+       do nk = 1,current_structure%max_kpoints_on_node
+          k=current_structure%kpts_on_node(nk)
+          do nb=1, wfn%nbands
+             call random_number(r1)
+             call random_number(r2)
+             r1=r1-0.5_dp
+             r2=r2-0.5_dp
+             wfn%coeff(g,k,nb,:)=(/r1,r2/)
+          end do
+       end do
+    end do
+
+
+
+    call trace_exit('wave_initialise_wfn')
+  end subroutine wave_initialise_wfn
 
 end module wave

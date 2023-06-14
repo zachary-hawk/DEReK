@@ -1,22 +1,23 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by ForOAAtran Documenter, Z.Hawkhead                                                                                                                                              
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !=============================================================================!                                                                                                                         
 !                                  COMMS                                      !                                                                                                                         
 !=============================================================================!                                                                                                                         
-!              Module handining comminications: MPI                           !                                                                                                                         
+!              Module handeling comminications: MPI                           !                                                                                                                         
 !-----------------------------------------------------------------------------!                                                                                                                         
 !                        author: Z. Hawkhead                                  !                                                                                                                         
 !=============================================================================!                                                                                                                         
 module COMMS
   !use mpi                                                                                                                                                                                              
-  use iso_fortran_env , only : real64
+  use constants
   use trace
   implicit none
-  include 'mpif.h'
+  !include 'mpif.h'
   integer                              :: ierr
-  integer,parameter                    :: max_version_length=MPI_MAX_LIBRARY_VERSION_STRING
-  integer, dimension(MPI_STATUS_SIZE)  :: status1
+  integer, parameter                   :: max_version_length = 0
+  !integer,parameter                    :: max_version_length=MPI_MAX_LIBRARY_VERSION_STRING
+  !integer, dimension(MPI_STATUS_SIZE)  :: status1
   !integer,parameter,private :: dp=real64                                                                                                                                                               
   ! Some of the stuff i'll need, gloabal                                                                                                                                                                
   integer,public,save                  :: rank
@@ -25,7 +26,7 @@ module COMMS
   integer,public,save                  :: dist_kpt
   integer,public,save                  :: dist_gvec
 
-  character(3)                         :: comms_arch="MPI"
+  character(6)                         :: comms_arch="SERIAL"
 
 
   !-------------------------------------------------------!
@@ -80,61 +81,13 @@ contains
     logical   :: scheme_found=.false.
     call trace_entry('comms_scheme')
 
+    ! only the 1 process... 
+    nprocs=1
+    rank=0
+    dist_kpt=1
+    dist_gvec=1    
 
-    ! For the comms scheme we need it such that kpt*gvec ~ nodes
-
-    ! Set buff_nodes to nprocs, might need reducing if we can't find a scheme
-    buff_nodes=nprocs
-
-    ! Check if nprocs is divisible by nkpt
-
-    do iN=0,nprocs/10
-       buff_nodes=buff_nodes-iN       
-       if (modulo(buff_nodes,nkpts).eq.0)then
-          ! This is the easy option, if the number of cores is divisible by nkpts we have a nice situ
-          dist_kpt=nkpts
-          dist_gvec=buff_nodes/nkpts
-          scheme_found=.true.
-          exit
-          ! The situ if buff_nodes lt nkpts
-       elseif (modulo(nkpts,buff_nodes).eq.0)then
-          dist_kpt=buff_nodes
-          dist_gvec=1
-          scheme_found=.true.
-          exit       
-       end if
-    end do
-
-
-    if (.not.scheme_found)then
-       ! we failed to find a good scheme so now we do all G vector parallel
-       dist_kpt=1
-       dist_gvec=nprocs
-    end if
-
-
-    if (present(report))then
-       if (report)then
-          if (on_root_node)then
-             write(stdout,*)
-             write(stdout,*)"                           Comms Parameters"
-             write(stdout,*)"                           ----------------"
-             write(stdout,16)"Number of processes",nprocs
-             write(stdout,16)"Distributed by kpoint",dist_kpt
-             write(stdout,16)"Distributed by G vector",dist_gvec
-             write(stdout,*)"+"//repeat("-",66)//"+"
-             write(stdout,*)
-          end if
-       end if
-    end if
-15  format(T2,a,T36,":",T58,a12)   ! Character                                                                                                                                                          
-16  format(T2,a,T36,":",T58,i12)   ! Integer                                                                                                                                                            
-17  format(T2,a,T36,":",T58,f12.3)   ! Real                                                                                                                                                             
-18  format(T2,a,T36,":",T58,ES12.2)   ! Science                                                                                                                                                         
-19  format(T2,a,T36,":",T58,L12)   ! Logical  
-
-
-
+    write(stdout,*)"+"//repeat("-",66)//"+"
     call trace_exit('comms_scheme')
     return
   end subroutine comms_scheme
@@ -155,9 +108,9 @@ contains
     !==============================================================================!
     call trace_entry("COMMS_BARRIER")
 
-    call MPI_BARRIER(MPI_COMM_WORLD,1)
-    call trace_exit("COMMS_BARRIER")
 
+    call trace_exit("COMMS_BARRIER")
+    return
   end subroutine COMMS_BARRIER
 
 
@@ -175,7 +128,7 @@ contains
     !==============================================================================!
     integer :: error_code
     call trace_entry("COMMS_ABORT")
-    call MPI_ABORT(MPI_COMM_WORLD,error_code,ierr)
+
     call trace_exit("COMMS_ABORT")
 
   end subroutine COMMS_ABORT
@@ -198,7 +151,7 @@ contains
     !==============================================================================!
     integer, intent(inout):: maj_mpi,min_mpi
     call trace_entry("COMMS_VERSION")
-    call MPI_GET_VERSION(maj_MPI,min_MPI,ierr)
+
     call trace_exit("COMMS_VERSION")
 
   end subroutine COMMS_VERSION
@@ -216,12 +169,12 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  16/08/2019                                            !
     !==============================================================================!
-    character(len=max_version_length),intent(inout) :: MPI_version
+    character(len=50),intent(inout) :: MPI_version
     integer ::length
 
 
     CALL trace_entry("COMMS_LIBRARY_VERSION")
-    call MPI_GET_LIBRARY_VERSION(MPI_version,length,ierr)
+    MPI_version="Serial"
     call trace_exit("COMMS_LIBRARY_VERSION")
 
   end subroutine COMMS_LIBRARY_VERSION
@@ -239,10 +192,8 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  16/08/2019                                            !
     !==============================================================================!
-    character*(MPI_MAX_PROCESSOR_NAME) ::proc_name
-    integer :: proc_name_len
     call trace_entry("COMMS_PROC_NAME")
-    call MPI_GET_PROCESSOR_NAME(proc_name,proc_name_len,ierr)
+
     call trace_EXIT("COMMS_PROC_NAME")
 
   end subroutine COMMS_PROC_NAME
@@ -263,10 +214,10 @@ contains
     integer :: ierr
     call trace_entry("COMMS_INIT")
 
-    call MPI_INIT(ierr)
-
-    call COMMS_RANK(rank)
-    call COMMS_SIZE(nprocs)
+   
+    rank=0
+    nprocs=1
+    
     if (rank.eq.0)then
        on_root_node=.true.
     else
@@ -288,10 +239,9 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  16/08/2019                                            !
     !==============================================================================!
-    integer :: ierr
-
-    call MPI_FINALIZE(ierr)
-
+   
+    return
+    
 
   end subroutine COMMS_FINALISE
 
@@ -312,7 +262,7 @@ contains
     !==============================================================================!
     integer,intent(inout) :: rank
     call trace_entry("COMMS_RANK")
-    call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ierr)
+    
     call trace_exit("COMMS_RANK")
 
   end subroutine COMMS_RANK
@@ -331,7 +281,7 @@ contains
     !==============================================================================!
     integer,intent(inout) :: nprocs
     call trace_entry("COMMS_SIZE")
-    call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs,ierr)
+    
     call trace_exit("COMMS_SIZE")
   end subroutine COMMS_SIZE
 
@@ -352,7 +302,8 @@ contains
     !==============================================================================!
     real(dp):: time
     !    call trace_entry("COMMS_WTIME")
-    time = MPI_WTIME()
+    call cpu_time(time)
+    time=real(time,dp)
     !    call trace_exit("COMMS_WTIME")
 
   end function COMMS_WTIME
@@ -379,16 +330,7 @@ contains
     integer,intent(inout) :: send_buff
     character(*) :: op
     call trace_entry("comms_reduce_int")
-    select case(trim(op))
-    case('max')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_int,MPI_MAX,0,mpi_comm_world,status1,ierr)
-    case('min')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_int,MPI_MIN,0,mpi_comm_world,status1,ierr)
-    case('sum')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_int,MPI_SUM,0,mpi_comm_world,status1,ierr)
-    end select
-    ! put it back in
-    send_buff=recv_buff
+
 
     call trace_exit("comms_reduce_int")
 
@@ -414,16 +356,6 @@ contains
     real(dp),intent(inout) :: send_buff
     character(*) :: op
     call trace_entry("comms_reduce_real")
-    select case(trim(op))
-    case('max')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_double,MPI_MAX,0,mpi_comm_world,status1,ierr)
-    case('min')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_double,MPI_MIN,0,mpi_comm_world,status1,ierr)
-    case('sum')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_double,MPI_SUM,0,mpi_comm_world,status1,ierr)
-    end select
-    ! put it back in
-    send_buff=recv_buff
 
     call trace_exit("comms_reduce_real")
 
@@ -450,13 +382,6 @@ contains
     complex(dp),intent(inout) :: send_buff
     character(*) :: op
     call trace_entry("comms_reduce_complex")
-    select case(trim(op))
-    case('sum')
-       call mpi_reduce(send_buff,recv_buff,count,mpi_complex,MPI_SUM,0,mpi_comm_world,status1,ierr)
-    end select
-    ! put it back in
-    send_buff=recv_buff
-
     call trace_exit("comms_reduce_complex")
 
 

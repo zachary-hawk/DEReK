@@ -1,12 +1,14 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module state
+  use constants
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec
   use io,    only : current_structure,current_params,stdout,parameters,structure
   use basis, only : current_basis,basis_dat
-  use wave,  only : wavefunction,wave_allocate
+  use wave,  only : wavefunction,wave_allocate,wave_initialise
   use pot,   only : potential, pot_allocate,pot_external_pot
-  use trace, only : trace_entry,trace_exit,dp
+  use trace, only : trace_entry,trace_exit
   use memory,only : memory_allocate,memory_deallocate
   use density,only : density_allocate,elec_den
   type,public :: state_data
@@ -44,6 +46,8 @@ contains
 
     ! First off lets initialise the wavefunciton
     call wave_allocate(current_state%wfn,current_params%nbands)
+    call wave_initialise(current_state%wfn)
+
     ! potential
     call pot_allocate(current_state%tot_pot)
     call pot_allocate(current_state%ext_pot)

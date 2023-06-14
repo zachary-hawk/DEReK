@@ -1,8 +1,10 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module pot
-  use trace, only : trace_entry, trace_exit,dp
+  use constants
+  use trace, only : trace_entry, trace_exit
   use comms, only : rank, on_root_node, nprocs
-  use io,    only : stdout,io_errors,current_params,current_structure,twopi,seed
+  use io,    only : stdout,io_errors,current_params,current_structure,seed
   use memory,only : memory_allocate, memory_deallocate
   use basis, only : current_basis
   use wave,  only : wavefunction,wavefunction_slice
@@ -154,7 +156,6 @@ contains
        write(pot_file)ext_pot
 
     end if
-
 
     call trace_exit('pot_external_pot')
     return

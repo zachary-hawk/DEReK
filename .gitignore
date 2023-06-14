@@ -6,3 +6,4 @@ Source_backup
 .DS_Store
 Bin/add_params
 */*.mod
+Build/*
