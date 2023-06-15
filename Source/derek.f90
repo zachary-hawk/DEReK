@@ -9,7 +9,7 @@ program derek
   use memory,only: memory_report,memory_deallocate
   use basis, only: basis_init,current_basis, basis_recip2real, basis_real2recip
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
-  use state, only: state_data, current_state, state_init
+  use state, only: state_data, current_state, state_init,state_finalise
   use comms, only: rank,on_root_node
   use pot
   use utils
@@ -65,6 +65,12 @@ program derek
 
   !call basis_real2recip(current_state%ext_pot%nc_pot,'FINE')
 
+
+  
+  ! We can start tidying up now
+
+  call state_finalise()
+  
   if (on_root_node)call io_finalise()
   call trace_exit('derek')
   call trace_finalise(current_params%debugging,rank,seed=seed)

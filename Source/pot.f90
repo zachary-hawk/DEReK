@@ -14,6 +14,7 @@ module pot
      complex(dp),dimension(:,:,:),allocatable :: nc_pot ! pos,(11,12)
      !     (21,22)
      logical                                  :: allocated=.false.
+     logical                                  :: preset=.true.
    contains
      procedure pot_write
      procedure pot_read
@@ -85,7 +86,6 @@ contains
     integer :: pot_file
 
     integer :: loc_ig
-    logical :: preset=.true.
     real(dp)  :: bounds(1:3)
     call trace_entry('pot_external_pot')
 
@@ -142,20 +142,9 @@ contains
 
        open(newunit=pot_file,file=trim(current_params%external_pot),form="UNFORMATTED",status='old')
        read(pot_file)ext_pot
-       preset=.false.
+       ext_pot%preset=.false.
     end select
 
-
-    if (current_params%write_potential)then
-       ! Now we have calculated it we can write it if needed
-       if (preset)then
-          open(newunit=pot_file,file=trim(seed)//'.'//trim(current_params%external_pot)//'.pot',status="unknown",form='UNFORMATTED')
-       else
-          open(newunit=pot_file,file=trim(seed)//'.pot',status="unknown",form='UNFORMATTED')
-       end if
-       write(pot_file)ext_pot
-
-    end if
 
     call trace_exit('pot_external_pot')
     return

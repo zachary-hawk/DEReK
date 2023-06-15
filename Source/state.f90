@@ -4,7 +4,7 @@
 module state
   use constants
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec
-  use io,    only : current_structure,current_params,stdout,parameters,structure
+  use io,    only : current_structure,current_params,stdout,parameters,structure,seed
   use basis, only : current_basis,basis_dat
   use wave,  only : wavefunction,wave_allocate,wave_initialise
   use pot,   only : potential, pot_allocate,pot_external_pot
@@ -67,4 +67,30 @@ contains
     call trace_exit('state_init')
   end subroutine state_init
 
+
+
+  subroutine state_finalise()
+
+    integer       :: pot_file
+    character(40) :: file_name
+    call trace_entry("state_finalise")
+
+
+    ! Write out the externalu potential file
+    if (current_params%write_potential)then
+       ! Now we have calculated it we can write it if needed
+       if (current_state%ext_pot%preset)then
+          write(file_name,*) trim(seed)//'.'//trim(current_params%external_pot)//'.pot'
+          open(newunit=pot_file,file=file_name,status="unknown",form='UNFORMATTED')
+       else
+          write(file_name,*)trim(seed)//'.pot'
+          open(newunit=pot_file,file=file_name,status="unknown",form='UNFORMATTED')
+       end if
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing external potential file to "//trim(file_name)
+       write(pot_file)ext_pot
+
+    end if
+
+    call trace_exit("state_finalise")
+  end subroutine state_finalise
 end module state
