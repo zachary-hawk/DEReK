@@ -7,7 +7,7 @@ module wave
   use constants
   use trace, only : trace_entry,trace_exit
   use comms, only : rank,on_root_node,nprocs
-  use io,    only : current_params,current_structure,io_errors
+  use io,    only : current_params,current_structure,io_errors,seed
   use basis, only : current_basis
   use memory,only : memory_allocate,memory_deallocate
 
@@ -17,6 +17,9 @@ module wave
      integer                                      :: nbands
      integer                                      :: kpts
      logical                                      :: allocated=.false.
+   contains
+     procedure wave_write
+     generic :: write(unformatted) => wave_write
   end type wavefunction
 
   type wavefunction_slice
@@ -797,4 +800,22 @@ contains
     call trace_exit('wave_initialise_wfn')
   end subroutine wave_initialise_wfn
 
+  subroutine wave_write(wfn,unit,iostat,iomsg)
+
+    class(wavefunction), intent(in) :: wfn
+    integer         , intent(in)    :: unit
+    integer         , intent(out)   :: iostat
+    character(len=*), intent(inout) :: iomsg
+
+    integer :: stat,wfn_file
+
+    call trace_entry('wave_write')
+    !open(newunit=wfn_file,file=trim(seed)//'.wfn',status="unknown",form='UNFORMATTED')                                                                                                                                                                                      
+    write(unit,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
+    if (iostat.ne.0) call io_errors("Error in wfn_write: unable to write to "//trim(seed)//".wfn file")
+    write(unit,iostat=iostat,iomsg=iomsg)wfn%coeff,wfn%nbands,wfn%kpts,wfn%allocated
+    if (iostat.ne.0) call io_errors("Error in wfn_write: unable to write to "//trim(seed)//".wfn file")
+    
+    call trace_exit('wave_write')
+  end subroutine wave_write
 end module wave

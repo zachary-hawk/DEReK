@@ -9,7 +9,7 @@ program derek
   use memory,only: memory_report,memory_deallocate
   use basis, only: basis_init,current_basis, basis_recip2real, basis_real2recip
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
-  use state, only: state_data, current_state, state_init,state_finalise
+  use state, only: state_data, current_state, state_init,state_finalise,state_restart
   use comms, only: rank,on_root_node
   use pot
   use utils
@@ -32,6 +32,8 @@ program derek
   call trace_entry("derek")   
   call comms_init()           ! Start the MPI        
   call io_initialise()        ! Open up the files and read
+
+  if (current_params%restart) call state_restart()
   call utils_init_random()    ! Set the random seed
   call io_write_params()      ! Write out all the parameters
   call basis_init()           ! Set up basis data
@@ -65,6 +67,8 @@ program derek
 
   !call basis_real2recip(current_state%ext_pot%nc_pot,'FINE')
 
+
+  
 
   
   ! We can start tidying up now

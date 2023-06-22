@@ -14,6 +14,25 @@ OPENBLASDIR=$(shell cat $(BUILD_DIR)/openblas.dir)
 OBJ = $(patsubst %.f90,$(BUILD_DIR)/%.o,$(patsubst %.mpi.f90,$(BUILD_DIR)/%.o,$(SOURCE)))
 
 
+# Find the system
+VAR := $(shell . ./../Bin/arch_finder)
+OS := $(shell uname -s)
+
+ifeq ($(strip $(OS)),Darwin)
+CPU := $(shell . ./../Bin/CPU_DARWIN)
+endif
+
+ifeq ($(strip $(OS)),Linux)
+CPU := $(shell . ./../Bin/CPU_LINUX)
+endif
+
+ifeq ($(strip $(VAR)),)
+VAR="'Unknown'"
+endif
+
+
+
+
 # Set up the compiler options, for compiler type and build speed
 ifeq ($(BUILD),fast)
 OPT= '"FAST"'
@@ -53,7 +72,7 @@ FCFLAGS += -I$(BUILD_DIR) -J$(BUILD_DIR)
 
 
 
-$(BUILD_DIR)/io.o: FCFLAGS += -cpp
+$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU)
 $(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS)
 
 
@@ -61,17 +80,17 @@ $(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS)
 $(BUILD_DIR)/%.o: %.f90
 	@mkdir -p $(BUILD_DIR)
 	@echo "Compiling object file" $@ "from"  $< 
-	$(MPI_F90)  $(FCFLAGS)  -o $@ -c $<
+	@$(MPI_F90)  $(FCFLAGS)  -o $@ -c $<
 
 $(BUILD_DIR)/%.o: %.$(COMMS_ARCH).f90
 	@mkdir -p $(BUILD_DIR)
 	@echo "Compiling object file" $@ "from"  $< 
-	$(MPI_F90)  $(FCFLAGS)   -o $@ -c $<
+	@$(MPI_F90)  $(FCFLAGS)   -o $@ -c $<
 
 $(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
-	$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
+	@$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
 
 .PHONY: print_obj_files
 print_obj_files:

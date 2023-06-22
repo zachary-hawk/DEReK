@@ -38,6 +38,9 @@ def get_dependent_files():
     elif comms_arch=='serial':
         file_paths.pop(file_paths.index(current_dir+"/comms.mpi.f90"))
 
+    for i,file in enumerate(file_paths):
+        if "#" in file:
+            file_paths.pop(i)
         
     ordered_files=np.empty(len(file_paths),dtype=str)
 

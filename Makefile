@@ -24,6 +24,12 @@ CODATA_YEAR= 2018
 MPI_F90:=mpif90
 
 
+# Fix choices
+
+$(if $(filter-out serial mpi,$(COMMS_ARCH)), $(error COMMS_ARCH should be one of "mpi","serial" (not $(COMMS_ARCH))) )
+$(if $(filter-out debug fast,$(BUILD)), $(error BUILD should be one of "fast","debug" (not $(BUILD))) )
+$(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortran","ifort" (not $(F90))) )
+
 #####################################
 #      DIRECTORY LOCATIONS          #
 #####################################
@@ -31,7 +37,7 @@ MPI_F90:=mpif90
 SOURCE_DIR = ./Source
 
 # Create the path 
-BUILD_PATH=DEReK_$(F90)_$(BUILD)_$(CODATA_YEAR)_$(COMMS_ARCH)
+BUILD_PATH=DEReK_$(F90)_$(BUILD)_$(CODATA_YEAR)_$(shell hostname)_$(COMMS_ARCH)
 
 BUILD_DIR = ../Build/$(BUILD_PATH)
 BUILD_LOC = ./Build/$(BUILD_PATH)

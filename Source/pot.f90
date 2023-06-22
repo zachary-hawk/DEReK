@@ -4,7 +4,7 @@ module pot
   use constants
   use trace, only : trace_entry, trace_exit
   use comms, only : rank, on_root_node, nprocs
-  use io,    only : stdout,io_errors,current_params,current_structure,seed
+  use io,    only : stdout,io_errors,current_params,current_structure,seed,io_out_file_header
   use memory,only : memory_allocate, memory_deallocate
   use basis, only : current_basis
   use wave,  only : wavefunction,wavefunction_slice
@@ -37,6 +37,7 @@ module pot
 
   public :: pot_allocate
   public :: pot_external_pot
+  public :: pot_writef
   public :: operator (+)
   public :: operator (-)
   public :: operator (*)
@@ -131,7 +132,7 @@ contains
     case default
        ! This is the case where we read it in from a file
        ! If we are here, the param is not one of the defaults
-       if (index(trim(current_params%external_pot),'.pot').eq.0)then
+       if (index(trim(current_params%external_pot),'.potex').eq.0)then
           call io_errors("Error in pot_read: potential naming convension not correct")
        end if
 
@@ -184,6 +185,69 @@ contains
     call trace_exit('pot_write')
   end subroutine pot_write
 
+
+
+  subroutine pot_writef(pot,unit)
+    !==============================================================================!
+    !                              P O T _ W R I T E                               !
+    !==============================================================================!
+    ! Subroutine for writing a potential to a bin file                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           pot,               intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !           iostat,            intent :: out                                   !
+    !           iomsg,             intent :: inout                                 !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  11/01/2022                                            !
+    !==============================================================================!
+    type(potential), intent(in)    :: pot
+    integer         , intent(in)    :: unit
+
+    integer :: stat,pot_file
+    integer :: ix,iy,iz,n=0
+    
+    call trace_entry('pot_writef')
+
+    call io_out_file_header(unit,'P')
+
+    write(unit,*)" FFT FINE BASIS GRID  "
+    write(unit,10) 'nx:',current_basis%fine_ngx
+    write(unit,10) 'ny:',current_basis%fine_ngy
+    write(unit,10) 'nz:',current_basis%fine_ngz
+
+
+
+    
+!!$    write(unit,*,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
+!!$    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
+!!$    write(unit,*,iostat=iostat,iomsg=iomsg)pot%nc_pot
+!!$    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
+
+    
+    write(unit,*)
+    write(unit,20) 'ix','iy','iz', '(1,1)','(1,2)','(2,1)','(2,2)'
+    write(unit,*) repeat('-',115)
+    n=0
+    do ix=1,current_basis%fine_ngx
+       do iy=1,current_basis%fine_ngy
+          do iz=1,current_basis%fine_ngz
+             n=n+1
+             write(unit,21)ix,iy,iz,real(pot%nc_pot(n,1,1),dp), aimag(pot%nc_pot(n,1,1)),&
+                  & real(pot%nc_pot(n,1,2),dp), aimag(pot%nc_pot(n,1,2)),&
+                  & real(pot%nc_pot(n,2,1),dp), aimag(pot%nc_pot(n,2,1)),&
+                  & real(pot%nc_pot(n,2,2),dp), aimag(pot%nc_pot(n,2,2))
+          end do
+       end do
+    end do
+
+10  format(2x,a,1x,i6)
+20  format(1x,3(a4,2x), 5x, 4(9x, A5, 6x, 4x)) 
+21  format(1x,3(i4,2x), 5x, 4(f9.4,2x,f9.4,4x)) 
+
+    call trace_exit('pot_writef')
+  end subroutine pot_writef
+  
 
   subroutine pot_read(pot,unit,iostat,iomsg)
     !==============================================================================!

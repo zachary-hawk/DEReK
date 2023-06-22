@@ -39,7 +39,7 @@ module io
      character(len=30) :: xc_functional = 'LDA'
      real(dp) :: cut_off_energy =    200.0_dp!*ev_to_hartree
      real(dp) :: g_fine_scale =    2.0_dp
-     logical :: write_wvfn = .true.
+     logical :: write_wvfn = .false.
      character(len=30) :: task = 'singlepoint'
      logical :: soc = .false.
      integer :: max_scf =           40
@@ -49,17 +49,22 @@ module io
      integer :: nbands
      logical :: write_density = .false.
      logical :: Write_potential = .false.
-     logical :: write_cont = .true.
+     logical :: write_state = .true.
      character(len=30) :: external_pot = 'Jelly'
      integer,dimension(1:3) :: kpt_mp_grid = (/1,1,1/)
      logical :: write_spec = .true.
-     logical :: calc_memory = .true.
+     logical :: calc_memory = .false.
      integer :: iprint =            1
      real(dp) :: finite_barrier_height =    10.00_dp
      real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5,0.5,0.5/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
      real(dp) :: periodic_pot_amp =    10.00_dp
      integer :: random_seed =            0
+     logical :: write_formatted_potential = .false.
+     logical :: write_potex = .false.
+     logical :: write_formatted_density = .false.
+     logical :: restart = .false.
+     logical :: write_formatted_potex = .false.
      ! %End: parameters
   end type parameters
 
@@ -81,7 +86,7 @@ module io
   character(len=30),parameter,public ::key_conduction_bands   = 'conduction_bands'
   character(len=30),parameter,public ::key_write_density   = 'write_density'
   character(len=30),parameter,public ::key_Write_potential   = 'write_potential'
-  character(len=30),parameter,public ::key_write_cont   = 'write_cont'
+  character(len=30),parameter,public ::key_write_state   = 'write_state'
   character(len=30),parameter,public ::key_external_pot   = 'external_pot'
   character(len=30),parameter,public ::key_kpt_mp_grid   = 'kpt_mp_grid'
   character(len=30),parameter,public ::key_write_spec   = 'write_spec'
@@ -92,12 +97,16 @@ module io
   character(len=30),parameter,public ::key_periodic_pot_grid   = 'periodic_pot_grid'
   character(len=30),parameter,public ::key_periodic_pot_amp   = 'periodic_pot_amp'
   character(len=30),parameter,public ::key_random_seed   = 'random_seed'
+  character(len=30),parameter,public ::key_write_formatted_potential   = 'write_formatted_potential'
+  character(len=30),parameter,public ::key_write_potex   = 'write_potex'
+  character(len=30),parameter,public ::key_write_formatted_density   = 'write_formatted_density'
+  character(len=30),parameter,public ::key_write_formatted_potex   = 'write_formatted_potex'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          27
+  integer,parameter::max_keys=          31
   ! %End: max_param
 
 
@@ -188,15 +197,19 @@ contains
     ! Open up the main file for the output
     open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
 
-       
+
     call io_flush(stdout)
     call io_header()
 
 
 
 
+
+
     ! Fist things first, try to read paramteters
     call io_list_params(.false.)
+
+
     if (read_params) call io_read_param(current_params)
     if (.not.cell_declared) call io_errors("Error in I/O: No lattice provided")
 
@@ -248,7 +261,7 @@ contains
     character(len=30) :: key         ! the keyword used
     character(len=30) :: param       ! the value of the param
     character(len=30) :: match       ! spell check match
-    logical           :: comment     ! boolean for comment line, will skip
+    logical           :: comment     ! Boolean for comment line, will skip
     logical           :: spelling = .false.
     real(dp)          :: real_dump   ! a dump for handling scientific
 
@@ -393,8 +406,8 @@ contains
              read(param,*,iostat=stat) dummy_params%Write_potential
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
-          case(key_write_cont)
-             read(param,*,iostat=stat) dummy_params%write_cont
+          case(key_write_state)
+             read(param,*,iostat=stat) dummy_params%write_state
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
           case(key_external_pot)
@@ -438,6 +451,22 @@ contains
              present_array(i)=key
           case(key_random_seed)
              read(param,*,iostat=stat) dummy_params%random_seed
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+          case(key_write_formatted_potential)
+             read(param,*,iostat=stat) dummy_params%write_formatted_potential
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+          case(key_write_potex)
+             read(param,*,iostat=stat) dummy_params%write_potex
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+          case(key_write_formatted_density)
+             read(param,*,iostat=stat) dummy_params%write_formatted_density
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+          case(key_write_formatted_potex)
+             read(param,*,iostat=stat) dummy_params%write_formatted_potex
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
              ! %End: case_read
@@ -711,8 +740,10 @@ contains
 !!$             write(*,*)
              read_params=.false.
              stop
-          case("-d","--dryrun")
+          case("-d","--dryrun")            
              current_params%dryrun=.true.
+          case ('-r','--restart')
+             current_params%restart=.true.
           case("-l","--list")
              write(*,*) trim(version)
              write(*,*) trim(info)
@@ -798,8 +829,10 @@ contains
        write(*,30) '    "    ',"-s,--search <keyword>", "Search list of available parameters"
        write(*,30) '    "    ',"-l,--list","Get list of parameters avilable for the user."
        write(*,30) '    "    ', "-d,--dryrun <seed>","Run calculation to check input files"
+       write(*,30) '    "    ', "-r,--restart <seed>","Run calculation continuing from a previous <seed>.state file"
     end if
 30  format(2x,A,4x,A,T40,":",3x,A)
+    stop
     return
   end subroutine io_help
 
@@ -888,7 +921,7 @@ contains
     keys_array(14)=trim(key_conduction_bands)
     keys_array(15)=trim(key_write_density)
     keys_array(16)=trim(key_Write_potential)
-    keys_array(17)=trim(key_write_cont)
+    keys_array(17)=trim(key_write_state)
     keys_array(18)=trim(key_external_pot)
     keys_array(19)=trim(key_kpt_mp_grid)
     keys_array(20)=trim(key_write_spec)
@@ -900,6 +933,10 @@ contains
     keys_array(26)=trim(key_periodic_pot_amp)
 
     keys_array(27)=trim(key_random_seed)
+    keys_array(28)=trim(key_write_formatted_potential)
+    keys_array(29)=trim(key_write_potex)
+    keys_array(30)=trim(key_write_formatted_density)
+    keys_array(31)=trim(key_write_formatted_potex)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -936,7 +973,7 @@ contains
     keys_default(15)=trim(adjustl(junk))
     write(junk,*)current_params%Write_potential
     keys_default(16)=trim(adjustl(junk))
-    write(junk,*)current_params%write_cont
+    write(junk,*)current_params%write_state
     keys_default(17)=trim(adjustl(junk))
     write(junk,*)current_params%external_pot
     keys_default(18)=trim(adjustl(junk))
@@ -959,6 +996,14 @@ contains
 
     write(junk,*)current_params%random_seed
     keys_default(27)=trim(adjustl(junk))
+    write(junk,*)current_params%write_formatted_potential
+    keys_default(28)=trim(adjustl(junk))
+    write(junk,*)current_params%write_potex
+    keys_default(29)=trim(adjustl(junk))
+    write(junk,*)current_params%write_formatted_density
+    keys_default(30)=trim(adjustl(junk))
+    write(junk,*)current_params%write_formatted_potex
+    keys_default(31)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -980,7 +1025,7 @@ contains
     keys_description(14)='Number of conduction bands to be included'
     keys_description(15)='Write the final density to file'
     keys_description(16)='Write total potential to file'
-    keys_description(17)='Write continuation information to file'
+    keys_description(17)='Write state information to file for continuation'
     keys_description(18)='Provide an external potential, jelly, finite_barrier, periodic_pot or from file'
     keys_description(19)='Monkhurst pack grid for the SCF cycle'
     keys_description(20)='Write orbital information to spectral file'
@@ -991,6 +1036,10 @@ contains
     keys_description(25)='Number of cycles of periodic potential in each crystal direction'
     keys_description(26)='Amplitude of the periodic potential in eV'
     keys_description(27)='A random seed to initialise the random number generator'
+    keys_description(28)='Write total potential to file in a human readable format.'
+    keys_description(29)='Write the external potential to a file'
+    keys_description(30)='Write the density to a human readble file'
+    keys_description(31)='Write the external potential to a human readable file'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1022,6 +1071,10 @@ contains
     keys_allowed(25)='any int > 0'
     keys_allowed(26)='any real >0'
     keys_allowed(27)='any int'
+    keys_allowed(28)='Boolean'
+    keys_allowed(29)='Boolean'
+    keys_allowed(30)='Boolean'
+    keys_allowed(31)='Boolean'
     ! %End: assign_allowed
 
     ! do the loop for printing stuff
@@ -1039,28 +1092,16 @@ contains
     return
   end subroutine io_list_params
 
-
-  subroutine io_header()
-    !==============================================================================!
-    !                          I O _  H E A D E R                                  !
-    !==============================================================================!
-    ! Subroutine used to write the io_header of the main Mandelbrot output file    !
-    ! "out.mand".                                                                  !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           None                                                               !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  16/08/2019                                            !
-    !==============================================================================!
-    implicit none
+  subroutine io_sys_info(unit)
+    integer,intent(in) :: unit
     integer::file
     integer :: maj_mpi,min_mpi,min_char
     character(len=max_version_length) :: mpi_c_version
     character(len=3) :: MPI_version_num
     character(len=100):: compile_version,cpuinfo
+    character(100)    :: arch_string
 
-
-    call trace_entry("io_header")
+    call trace_entry("io_sys_info")
 
 
 
@@ -1083,7 +1124,13 @@ contains
     !#define compile_version __VERSION__
 #endif
 
+#ifdef arch
+#define arch_string arch
+#endif
 
+#ifdef cpu
+#define cpuinfo cpu
+#endif
 
 #define opt opt_strat
 
@@ -1096,6 +1143,21 @@ contains
        compile_version=trim(compile_version(87:97))
     end if
 
+    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
+    write(unit,*) "Compiled for system: ",trim(arch_string)
+    write(unit,*) "Compiled for CPU: ",trim(cpuinfo)
+    write(unit,*) "Communications architechture: ",comms_arch
+    if (comms_arch.eq."MPI")then
+       write(unit,*) "MPI Version: ",mpi_c_version(1:min_char+1)
+    end if
+    write(unit,*) "Optimisation Strategy: ",opt
+    write(unit,*) const_version
+    write(unit,*)
+    call trace_exit("io_sys_info")
+  end subroutine io_sys_info
+
+  subroutine io_header()
+    call trace_entry('io_header')
     write(stdout,*) "+==================================================================+"
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "|  oooooooooo.   oooooooooooo ooooooooo.             oooo    oooo  |"
@@ -1108,7 +1170,7 @@ contains
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
     write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|                         Version 1.0.0                            |"
+    write(stdout,'(T2,"|",T28,A, 1x, A,T69 ,"|")') 'Version', version
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
     write(stdout,*) "|     Salutations! Welcome to the Durham Electronic RElaxation     |"
@@ -1120,19 +1182,10 @@ contains
     write(stdout,*) "|                      http://www.castep.org                       |"
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2022                   |"
+    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2023                   |"
     write(stdout,*) "+==================================================================+"
-
-
-    write(stdout,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
-    write(stdout,*) "Communications architechture: ",comms_arch
-    if (comms_arch.eq."MPI")then
-       write(stdout,*) "MPI Version: ",mpi_c_version(1:min_char+1)
-    end if
-    write(stdout,*) "Optimisation Strategy: ",opt
-    write(stdout,*) const_version
-    write(stdout,*)
-    call trace_exit("io_header")
+    call io_sys_info(stdout)
+    call trace_exit('io_header')
   end subroutine io_header
 
 
@@ -1501,13 +1554,13 @@ contains
     end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GENERAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    if (current_params%iprint.ge.1) then 
+    if (current_params%iprint.ge.1) then
        write(stdout,*)"+"//repeat("-",(width-15)/2)//"   GENERAL   "//repeat("-",(width-16)/2)//"+"
        write(stdout,*)
 
        write(stdout,15)"Calculation type",adjustr(trim(current_params%task))
        write(stdout,15)"XC Functional",adjustr(trim(current_params%xc_functional))
-       write(stdout,19)"Spin orbit coupling",current_params%soc
+       write(stdout,19)"Spin orbit coupling",io_print_logical(current_params%soc)
        write(stdout,16)"Verbosity",current_params%iprint
        write(stdout,16)"Random seed", current_params%random_seed
        write(stdout,*)
@@ -1546,22 +1599,26 @@ contains
        write(stdout,*)
        write(stdout,*)"                            I/O Parameters"
        write(stdout,*)"                            --------------"
-       write(stdout,19)"Write wavefunction",current_params%write_wvfn
-       write(stdout,19)"Write continuation file",current_params%write_cont
-       write(stdout,19)"Write density",current_params%write_density
-       write(stdout,19)"Write potential",current_params%WRITE_POTENTIAL
-       write(stdout,19)"Write electronic spectrum",current_params%write_spec
-       write(stdout,19)"Calculate memory",current_params%calc_memory
+       write(stdout,19)"Write wavefunction",io_print_logical(current_params%write_wvfn)
+       write(stdout,19)"Write continuation file",io_print_logical(current_params%write_state)
+       write(stdout,19)"Write density",io_print_logical(current_params%write_density)
+       write(stdout,19)"Write formatted density",io_print_logical(current_params%write_formatted_density)
+       write(stdout,19)"Write potential",io_print_logical(current_params%write_potential)
+       write(stdout,19)"Write formatted potential",io_print_logical(current_params%write_formatted_potential)
+       write(stdout,19)"Write external potential",io_print_logical(current_params%write_potex)
+       write(stdout,19)"Write formated external  potential",io_print_logical(current_params%write_formatted_potex)
+       write(stdout,19)"Write electronic spectrum",io_print_logical(current_params%write_spec)
+       write(stdout,19)"Write state file",io_print_logical(current_params%write_state)
+       write(stdout,19)"Calculate memory",io_print_logical(current_params%calc_memory)
 
     end if
-
 
 
 15  format(T2,a,T36,":",T40,a30)   ! Character
 16  format(T2,a,T36,":",T58,i12)   ! Integer
 17  format(T2,a,T36,":",T58,f12.3)   ! Real
 18  format(T2,a,T36,":",T58,ES12.2)   ! Science
-19  format(T2,a,T36,":",T58,L12)   ! Logical
+19  format(T2,a,T36,":",T58,A12)   ! Logical
 21  format(T2,a,T36,":",T56,3(i4,1x))   ! Integer vec
 22  format(T2,a,T36,":",T53,3(f5.3,1x))   ! Real vec
 
@@ -1593,7 +1650,7 @@ contains
     current_structure%max_kpoints_on_node =ceiling(real(current_structure%num_kpoints,dp)/real(dist_kpt,dp))
     call memory_deallocate(current_structure%kpts_on_node,'I')
     call memory_allocate(current_structure%kpts_on_node,1,current_structure%max_kpoints_on_node,'I')
-    
+
     call trace_exit('io_dist_kpt')
     return
   end subroutine io_dist_kpt
@@ -1777,10 +1834,90 @@ contains
 
   end subroutine io_easter_egg
 
+  subroutine io_out_file_header(unit,type)
+
+    integer,intent(in)      :: unit
+    character(*),intent(in) :: type
+
+    character(50)           :: fmt
+    ! Stuff for getting run time
+    character(len=3),dimension(12)  :: months
+    integer                         :: d_t(8),width=50
+    character*10                    :: b(3)
+
+    character(len=:), allocatable :: string
+    call trace_entry('io_out_file_header')
+
+    ! 46 wide
+    select case(type)
+    case('P','p') ! potential file
+       fmt="|                 POTENTIAL FILE                 |"
+    case('D','d')
+       fmt="|                  DENSITY FILE                  |"
+    case default
+       call io_errors('Error in I/O: Unknown file type '//trim(type))
+    end select
+    write(unit,*)"+================================================+"
+    write(unit,*)"| ooooooo.  oooooooo oooooo.            ooo  ooo |"
+    write(unit,*)"| `88'  Y8b `88'  `8 `88   Y8   .0000.  `88 dP'  |"
+    write(unit,*)"|  88    88  88o8     88oo8P'  d8oooo8b  888[    |"
+    write(unit,*)"|  88   d88  88       88 `8b.  88    .o  88`8b.  |"
+    write(unit,*)"| o88bod8P  o88oood8 o88o `88o `YboodP' o88o o8o |"
+    write(unit,*)"|================================================|"
+    write(unit,'(T2,"|",T20,A, 1x, A,T51 ,"|")') 'Version', version
+    write(unit,*)"|------------------------------------------------|"
+    write(unit,*)fmt
+    write(unit,*)"+------------------------------------------------+"
+    write(unit,*)"|        Author: Dr Z. Hawkhead (c) 2023         |"
+    write(unit,*)"+================================================+"
+
+    call io_sys_info(unit)
+
+
+    call date_and_time(b(1), b(2), b(3), d_t)
+    months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+    write(unit,*)"+------------------ WRITE DATE ------------------+"
+    write(unit,1000) d_t(5),d_t(6),d_t(7),trim(months(d_t(2))),d_t(3),d_t(1)
+    write(unit,*)"+------------------------------------------------+"
+    write(unit,*)
+1000 format(1x,"|",14x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,13x,"|")
+
+
+    write(unit,*)" LATTICE (A)  "
+    write(unit,10) current_structure%cell(1,:)*bohr_to_angstrom, 'a =',current_structure%lattice_a*bohr_to_angstrom
+    write(unit,10) current_structure%cell(2,:)*bohr_to_angstrom, 'b =',current_structure%lattice_b*bohr_to_angstrom
+    write(unit,10) current_structure%cell(3,:)*bohr_to_angstrom, 'c =', current_structure%lattice_c*bohr_to_angstrom
+10  format(1x, 3(f10.7,1x), 3x, a,f10.7,1x)
+    write(unit,*)
+
+    call trace_exit('io_out_file_header')
+
+  end subroutine io_out_file_header
 
 
 
+
+
+  function io_print_logical(Bool_in) result(outstring)
+    logical, intent(in) :: Bool_in
+    character(3) :: outstring
+    call trace_entry("io_print_logical")
+    if (Bool_in) then
+       outstring='on'
+    else
+       outstring='off'
+    end if
+    outstring=adjustr(outstring)
+    call trace_exit("io_print_logical")
+  end function io_print_logical
 end module io
+ 
+ 
+ 
+ 
+ 
+ 
  
  
  
