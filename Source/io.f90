@@ -1,7 +1,7 @@
 module io
   !Impose strong typing
   use constants
-  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise
+  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,warning_counter
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
        &,comms_library_version,comms_version
   use memory, only : memory_init,memory_allocate,memory_deallocate
@@ -20,7 +20,7 @@ module io
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
 
-  character(100) :: version = "1.0.0"
+  character(100) :: version = "1.0.0"   ! Master version for all instances
   character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK"
   logical        :: read_params
 
@@ -502,6 +502,8 @@ contains
     close(1)
     !call io_errors("Test")
     ! Handle the kpoint list
+
+    
     call io_kpoint_grid()
 
     call trace_exit("io_read_param")
@@ -729,15 +731,6 @@ contains
              end if
           case("-v")
              call io_header()
-!!$             write(*,*) trim(version)
-!!$             write(*,*) trim(info)
-!!$             write(*,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
-!!$             write(*,*) "Communications architechture: ",comms_arch
-!!$             if (comms_arch.eq."MPI")then
-!!$                write(*,*) "MPI Version: ",mpi_c_version(1:min_char+1)
-!!$             end if
-!!$             write(*,*) "Optimisation Strategy: ",opt
-!!$             write(*,*)
              read_params=.false.
              stop
           case("-d","--dryrun")            
@@ -750,9 +743,7 @@ contains
              read_params=.false.
              call io_list_params(.true.)
              stop
-          case("-e","--easter-egg")
-             call io_easter_egg()
-             stop
+
           case default
              if (help)then
                 call io_help(name)
@@ -1025,7 +1016,7 @@ contains
     keys_description(14)='Number of conduction bands to be included'
     keys_description(15)='Write the final density to file'
     keys_description(16)='Write total potential to file'
-    keys_description(17)='Write state information to file for continuation'
+    keys_description(17)='Write state information to file.'
     keys_description(18)='Provide an external potential, jelly, finite_barrier, periodic_pot or from file'
     keys_description(19)='Monkhurst pack grid for the SCF cycle'
     keys_description(20)='Write orbital information to spectral file'
@@ -1181,6 +1172,10 @@ contains
     write(stdout,*) "|              properties the author recommends CASTEP:            |"
     write(stdout,*) "|                      http://www.castep.org                       |"
     write(stdout,*) "|                                                                  |"
+    write(stdout,*) "|    Acknowledgements go to my PhD supervisor Prof. S. J. Clark    |"
+    write(stdout,*) "|    for teaching me the inner working of a planewave DFT code.    |"
+    write(stdout,*) "|                                                                  |"
+    write(stdout,*) "|            Thesis: http://etheses.dur.ac.uk/14737/               |"
     write(stdout,*) "+------------------------------------------------------------------+"
     write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2023                   |"
     write(stdout,*) "+==================================================================+"
@@ -1606,7 +1601,7 @@ contains
        write(stdout,19)"Write potential",io_print_logical(current_params%write_potential)
        write(stdout,19)"Write formatted potential",io_print_logical(current_params%write_formatted_potential)
        write(stdout,19)"Write external potential",io_print_logical(current_params%write_potex)
-       write(stdout,19)"Write formated external  potential",io_print_logical(current_params%write_formatted_potex)
+       write(stdout,19)"Write formated external potential",io_print_logical(current_params%write_formatted_potex)
        write(stdout,19)"Write electronic spectrum",io_print_logical(current_params%write_spec)
        write(stdout,19)"Write state file",io_print_logical(current_params%write_state)
        write(stdout,19)"Calculate memory",io_print_logical(current_params%calc_memory)
@@ -1706,6 +1701,12 @@ contains
 
     character(len=:), allocatable :: string
     call trace_entry('io_finalise')
+
+    ! check the warning status
+    if (warning_counter.gt.0)then
+       write(stdout,'(a,i2,a)')"*** There were ",warning_counter,' warnings in this run, check carefully ***'
+    end if
+    
     call date_and_time(b(1), b(2), b(3), d_t)
     months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -1809,31 +1810,6 @@ contains
   end  subroutine io_spell_check
 
 
-  subroutine io_easter_egg()
-
-    write(*,*)"             ,"
-    write(*,*)'            /|      __'
-    write(*,*)'           / |   ,-~ /'
-    write(*,*)'          Y :|  //  /'
-    write(*,*)'          | jj /( .^'
-    write(*,*)'          >-"~"-v"'
-    write(*,*)'         /       Y'
-    write(*,*)'        jO  O    |'
-    write(*,*)'       ( ~T~     j'
-    write(*,*)"        >._-' _./"
-    write(*,*)'       /   "~"  |'
-    write(*,*)'      Y     _,  |'
-    write(*,*)'     /| ;-"~ _  l'
-    write(*,*)'    / l/ ,-"~    \'
-    write(*,*)'    \//\/      .- \ '
-    write(*,*)'     Y        /    Y'
-    write(*,*)'     l       I     !'
-    write(*,*)'     ]\      _\    /"\'
-    write(*,*)'    (" ~----( ~   Y.  )'
-    write(*,*)'~~~~~~~~~~~~~~~~~~~~~~~~~'
-
-  end subroutine io_easter_egg
-
   subroutine io_out_file_header(unit,type)
 
     integer,intent(in)      :: unit
@@ -1911,6 +1887,20 @@ contains
     outstring=adjustr(outstring)
     call trace_exit("io_print_logical")
   end function io_print_logical
+
+  subroutine io_warnings(message)
+    implicit none
+    character(*)       :: message
+    call trace_entry('io_warnings')
+
+   
+    write(stdout,'("**** Warning: ",a)') message
+    warning_counter = warning_counter+1
+    
+    call trace_exit('io_warnings')
+    return
+  end subroutine io_warnings
+    
 end module io
  
  

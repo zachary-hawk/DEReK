@@ -254,7 +254,8 @@ contains
     type(structure)  :: temp_structure
     integer  :: state_file, stat
     call trace_entry('state_restart')
-
+    
+    
     ! Open the file
     open(newunit=state_file,file=trim(seed)//'.state',status="old",form='UNFORMATTED',access='direct',RECL=8192)
     !if (stat.ne.0)call io_errors("Error in state_restart: No file "//trim(seed)//'.state')

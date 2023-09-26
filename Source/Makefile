@@ -1,4 +1,5 @@
 # Start by calculating the dependencies
+#$(shell echo "Building dependencies...") 
 $(shell ../Bin/dependencies.py $(COMMS_ARCH) > include_dependencies.mk)
 SOURCE=$(shell cat include_dependencies.mk)
 

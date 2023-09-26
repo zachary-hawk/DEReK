@@ -5,7 +5,7 @@ program derek
   use comms!, only: comms_init, comms_finalise,rank,comms_distribute
   use trace, only: trace_entry,trace_exit,trace_init,trace_finalise
   use io   , only: io_initialise, io_errors,current_params,seed,stdout,&
-       & io_dryrun,current_structure,io_dist_kpt,io_finalise, io_write_params
+       & io_dryrun,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings
   use memory,only: memory_report,memory_deallocate
   use basis, only: basis_init,current_basis, basis_recip2real, basis_real2recip
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
@@ -33,7 +33,10 @@ program derek
   call comms_init()           ! Start the MPI        
   call io_initialise()        ! Open up the files and read
 
-  if (current_params%restart) call state_restart()
+  if (current_params%restart) then
+     call io_warnings("Restart currently unavailable")
+     !call state_restart()
+  end if
   call utils_init_random()    ! Set the random seed
   call io_write_params()      ! Write out all the parameters
   call basis_init()           ! Set up basis data

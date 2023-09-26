@@ -65,6 +65,7 @@ module trace
   real(dp)     ,dimension(1:log_size)       :: mod_times
   integer                                   :: global_mods
 
+  integer                                   :: warning_counter=0
 contains
 
   subroutine trace_init()
