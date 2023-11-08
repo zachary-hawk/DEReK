@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module fft
   use, intrinsic :: iso_c_binding
   use constants
@@ -25,6 +26,21 @@ module fft
 contains
 
   subroutine fft_init(nx,ny,nz,nx_fine,ny_fine,nz_fine)
+!==============================================================================!
+!                               F F T _ I N I T                                !
+!==============================================================================!
+! Fast fourier transform initialisation                                        !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           nx,                intent :: in                                    !
+!           ny,                intent :: in                                    !
+!           nz,                intent :: in                                    !
+!           nx_fine,           intent :: in                                    !
+!           ny_fine,           intent :: in                                    !
+!           nz_fine,           intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     integer , intent(in) :: nx
     integer , intent(in) :: ny
     integer , intent(in) :: nz
@@ -74,6 +90,16 @@ contains
 
 
   subroutine fft_3d(in_grid, grid, dir)
+!==============================================================================!
+!                                 F F T _ 3 D                                  !
+!==============================================================================!
+! Subroutine for the fftw3 FFT 3d                                              !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           in_gri,            intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     complex(dp), dimension(:), intent(inout)    :: in_grid
     character(4),optional, intent(in)           :: grid
     integer, optional, intent(inout)            :: dir
@@ -87,7 +113,7 @@ contains
 
     if (.not.allocated(indata) .or. .not.allocated(outdata) &
          .or..not.allocated(indata_fine) .or..not.allocated(outdata_fine)) then
-       call io_errors('Error in FFT: FFTs not correctly initialised')
+       call io_errors('FFTs not correctly initialised')
     end if
     ! Zero them again just in case
     indata(:,:,:) = 0.0_dp
@@ -110,7 +136,7 @@ contains
        else if (dir.eq.-1)then
           call fftw_execute_dft(plan_std_fwd,indata,outdata)          
        else
-          call io_errors("Error in FFT: direction must be +1 or -1")
+          call io_errors("direction must be +1 or -1")
        end if
 
 
@@ -128,7 +154,7 @@ contains
        else if (dir.eq.-1)then
           call fftw_execute_dft(plan_fine_fwd,indata_fine,outdata_fine)          
        else
-          call io_errors("Error in FFT: direction must be +1 or -1")
+          call io_errors("direction must be +1 or -1")
        end if
 
 
@@ -139,7 +165,7 @@ contains
 
 
     case default
-       call io_errors("Error in FFT: unknown grid")
+       call io_errors("unknown grid")
     end select
 
 

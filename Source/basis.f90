@@ -244,6 +244,16 @@ contains
 
 
   subroutine basis_prime_fact(N)
+    !==============================================================================!
+    !                       B A S I S _ P R I M E _ F A C T                        !
+    !==============================================================================!
+    ! A subroutine for calculating the prime factors of a number                   !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           N,                 intent :: inout                                 !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     integer,intent(inout) :: N
 
     integer :: N_p,N_p_old,N_tot
@@ -289,6 +299,17 @@ contains
 
 
   subroutine basis_real2recip_1d(array,grid_type)
+    !==============================================================================!
+    !                    B A S I S _ R E A L 2 R E C I P _ 1 D                     !
+    !==============================================================================!
+    ! Subroutine using the fftw3 fast fourier transforms for a 1d array.           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           array,             intent :: inout                                 !
+    !           grid_type,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     complex(dp), dimension(:),intent(inout) :: array
     character(4), intent(in)             :: grid_type
     ! Backwards transform so dir = +1
@@ -304,6 +325,17 @@ contains
 
 
   subroutine basis_recip2real_1d(array,grid_type)
+    !==============================================================================!
+    !                    B A S I S _ R E C I P 2 R E A L _ 1 D                     !
+    !==============================================================================!
+    ! Subroutine using the fftw3 fast fourier transforms for a 1d array.           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           array,             intent :: inout                                 !
+    !           grid_type,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     complex(dp), dimension(:),intent(inout) :: array
     character(4), intent(in)             :: grid_type
     ! Backwards transform so dir = -1
@@ -319,6 +351,17 @@ contains
 
 
   subroutine basis_real2recip_3d(array,grid_type)
+    !==============================================================================!
+    !                    B A S I S _ R E A L 2 R E C I P _ 3 D                     !
+    !==============================================================================!
+    ! Subroutine using the fftw3 fast fourier transforms for a 3d array.           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           array,             intent :: inout                                 !
+    !           grid_type,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     complex(dp), dimension(:,:),intent(inout) :: array
     character(4), intent(in)                 :: grid_type
     ! Backwards transform so dir = +1
@@ -336,6 +379,17 @@ contains
 
 
   subroutine basis_recip2real_3d(array,grid_type)
+    !==============================================================================!
+    !                    B A S I S _ R E C I P 2 R E A L _ 3 D                     !
+    !==============================================================================!
+    ! Subroutine using the fftw3 fast fourier transforms for a 3d array            !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           array,             intent :: inout                                 !
+    !           grid_type,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     complex(dp), dimension(:,:),intent(inout) :: array
     character(4), intent(in)                 :: grid_type
     ! Backwards transform so dir = -1
@@ -353,6 +407,17 @@ contains
 
 
   subroutine basis_real2recip_pot(array,grid_type)
+    !==============================================================================!
+    !                   B A S I S _ R E A L 2 R E C I P _ P O T                    !
+    !==============================================================================!
+    ! Subroutine using the fftw3 fast fourier transforms for a potential           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           array,             intent :: inout                                 !
+    !           grid_type,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     complex(dp), dimension(:,:,:),intent(inout) :: array
     character(4), intent(in)                 :: grid_type
     ! Backwards transform so dir = +1
@@ -366,7 +431,7 @@ contains
     call fft_3d(array(:,2,1),grid_type,dir)
     call fft_3d(array(:,2,2),grid_type,dir)
 
-    
+
     call trace_exit('basis_real2recip_1d')
   end subroutine basis_real2recip_pot
 

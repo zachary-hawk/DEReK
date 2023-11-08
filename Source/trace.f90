@@ -813,4 +813,32 @@ contains
 
   end subroutine trace_modules
 
+
+
+  subroutine trace_current(current_sub)
+    !==============================================================================!
+    !                          T R A C E _ C U R R E N T                           !
+    !==============================================================================!
+    ! A low level routine for determining which is the current subroutine.         !
+    ! Mostly to be used for error handling.                                        !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           current_sub,       intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
+    ! This routine is only to be used when handling errors, it will be a nightmare otherwise
+    character(*), intent(out) :: current_sub
+    integer :: i , last 
+    ! Close the logs
+    call trace_close_logs()
+
+    do i=1, global_id
+       if (.not.in_log(i)%closed) last = i
+    end do
+
+    current_sub = in_log(last)%name
+
+
+  end subroutine trace_current
 end module trace

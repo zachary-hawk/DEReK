@@ -1,6 +1,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module density
   use constants
   use trace, only: trace_entry,trace_exit
@@ -68,7 +69,7 @@ contains
 
     call trace_entry("density_zero")
     if (.not.den%allocated)then
-       call io_errors("Error in density_zero: density not allocated")
+       call io_errors("density not allocated")
     end if
 
     den%charge(:) = cmplx_0    
@@ -111,6 +112,19 @@ contains
   end subroutine density_calculate
 
   subroutine density_write(den,unit,iostat,iomsg)
+!==============================================================================!
+!                          D E N S I T Y _ W R I T E                           !
+!==============================================================================!
+! Subroutine for writting the unformatted density to a file.                   !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           den,               intent :: in                                    !
+!           unit,              intent :: in                                    !
+!           iostat,            intent :: out                                   !
+!           iomsg,             intent :: inout                                 !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     class(elec_den) , intent(in)    :: den
     integer         , intent(in)    :: unit
     integer         , intent(out)   :: iostat
@@ -121,15 +135,26 @@ contains
     call trace_entry('density_write')
 
     write(unit,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
-    if (iostat.ne.0) call io_errors("Error in density_write: unable to write to "//trim(seed)//".den file")
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".den file")
     write(unit,iostat=iostat,iomsg=iomsg)den%charge,den%spin,den%allocated
-    if (iostat.ne.0) call io_errors("Error in density_write: unable to write to "//trim(seed)//".den file")
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".den file")
 
 
     call trace_exit('density_write')
   end subroutine density_write
 
   subroutine density_writef(den,unit) 
+!==============================================================================!
+!                         D E N S I T Y _ W R I T E F                          !
+!==============================================================================!
+! Subroutine for writing a formatted density to a file.                        !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           den,               intent :: in                                    !
+!           uni,               intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     type(elec_den), intent(in)    :: den
     integer         , intent(in)    :: unit
 

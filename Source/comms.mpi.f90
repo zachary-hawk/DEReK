@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead

@@ -30,7 +30,14 @@ def get_dependencies(file_path):
 def get_dependent_files():
     current_dir = os.getcwd()
     folder_path = current_dir
-    file_paths = [os.path.join(folder_path, file) for file in os.listdir(folder_path) if file.endswith('.f90')]
+    ls_files = os.listdir(folder_path)
+    ls_mask = np.ones(len(ls_files),dtype=bool)
+    for i,file in enumerate(ls_files):
+        if '#' in file:
+            ls_mask[i]=False
+    ls_files = np.array(ls_files)[ls_mask]
+    
+    file_paths = [os.path.join(folder_path, file) for file in ls_files if file.endswith('.f90')]
     mod_names=[]
 
     if comms_arch=='mpi':
@@ -38,9 +45,10 @@ def get_dependent_files():
     elif comms_arch=='serial':
         file_paths.pop(file_paths.index(current_dir+"/comms.mpi.f90"))
 
-    for i,file in enumerate(file_paths):
-        if "#" in file:
-            file_paths.pop(i)
+    #for i,file in enumerate(file_paths):
+    #    if "#" in file:
+    #        print(file)
+    #        file_paths.pop(i)
         
     ordered_files=np.empty(len(file_paths),dtype=str)
 

@@ -1,4 +1,5 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module utils
   use constants
   use trace, only : trace_entry, trace_exit
@@ -54,7 +55,7 @@ contains
 
     ! Check if the matrix is square
     if (size(input_matrix, 1) /= size(input_matrix, 2)) then
-       call io_errors("Error in utils_mat_inv_real: Matrix is not square")
+       call io_errors("Matrix is not square")
     end if
 
     ! Allocate temporary matrices
@@ -75,7 +76,7 @@ contains
        call dgetri(n, temp_matrix, n, ipiv, work, lwork, info)
        inverted_matrix = temp_matrix
     else
-       write(error,*)"Error in utils_mat_inv_real: OPENBLAS routine DGETRI returned non-zero exit code: ",info
+       write(error,*)"OPENBLAS routine DGETRI returned non-zero exit code: ",info
        call io_errors(trim(error))
     end if
 
@@ -117,7 +118,7 @@ contains
 
     ! Check if the matrix is square
     if (size(input_matrix, 1) /= size(input_matrix, 2)) then
-       call io_errors("Error in utils_mat_inv_complex: Matrix is not square")
+       call io_errors("Matrix is not square")
     end if
 
     ! Allocate temporary matrices
@@ -138,7 +139,7 @@ contains
        call dgetri(n, temp_matrix, n, ipiv, work, lwork, info)
        inverted_matrix = temp_matrix
     else
-       write(error,*)"Error in utils_mat_inv_complex: OPENBLAS routine DGETRI returned non-zero exit code: ",info
+       write(error,*)"OPENBLAS routine DGETRI returned non-zero exit code: ",info
        call io_errors(trim(error))
     end if
 
@@ -180,7 +181,7 @@ contains
 
     ! Check if the matrix is square
     if (size(input_matrix, 1) /= size(input_matrix, 2)) then
-       call io_errors("Error in utils_mat_inv_int: Matrix is not square")
+       call io_errors("Matrix is not square")
     end if
 
     ! Allocate temporary matrices
@@ -201,7 +202,7 @@ contains
        call dgetri(n, temp_matrix, n, ipiv, work, lwork, info)
        inverted_matrix = temp_matrix
     else
-       write(error,*)"Error in utils_mat_inv_int: OPENBLAS routine DGETRI returned non-zero exit code: ",info
+       write(error,*)"OPENBLAS routine DGETRI returned non-zero exit code: ",info
        call io_errors(trim(error))
     end if
 
@@ -215,6 +216,16 @@ contains
 
 
   subroutine utils_init_random() 
+!==============================================================================!
+!                      U T I L S _ I N I T _ R A N D O M                       !
+!==============================================================================!
+! Subtrouting for setting up the random numbers.                               !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           None                                                               !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     implicit none
     integer, allocatable :: seed(:)   
     integer ::  n, un, istat,the_seed
@@ -254,6 +265,16 @@ contains
   end subroutine utils_init_random
 
   subroutine utils_random_number(rand)
+!==============================================================================!
+!                    U T I L S _ R A N D O M _ N U M B E R                     !
+!==============================================================================!
+! Subroutine for generating a random number.                                   !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           rand,              intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     implicit none
     real(dp),intent(inout)  ::rand 
     call trace_entry("utils_random_number")                                                                                                                                                                                                                                  

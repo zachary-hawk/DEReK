@@ -1,5 +1,6 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 program derek
   use constants
   use comms!, only: comms_init, comms_finalise,rank,comms_distribute
@@ -34,7 +35,7 @@ program derek
   call io_initialise()        ! Open up the files and read
 
   if (current_params%restart) then
-     call io_warnings("Restart currently unavailable")
+     call io_warnings("Restart currently unavailable, continuing without.")
      !call state_restart()
   end if
   call utils_init_random()    ! Set the random seed

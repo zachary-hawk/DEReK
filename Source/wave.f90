@@ -3,6 +3,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module wave
   use constants
   use trace, only : trace_entry,trace_exit
@@ -66,6 +67,14 @@ module wave
      module procedure wave_scale_slice_complex
   end interface operator (*)
 
+  interface wave_dot
+     module procedure wave_dot_slice
+     module procedure wave_dot_wfn
+     module procedure wave_dot_slice_self
+     module procedure wave_dot_wfn_self
+  end interface wave_dot
+
+
 
   interface wave_initialise
      module procedure wave_initialise_wfn
@@ -76,6 +85,7 @@ module wave
   public wavefunction_slice
   public wave_copy
   public wave_initialise
+  public wave_dot
   public operator (+)
   public operator (-)
   public operator (*)
@@ -162,17 +172,17 @@ contains
 
     !check if allocated
     if (.not.slice1%allocated .or. .not.slice2%allocated)then
-       call io_errors('Error in wave_add_slice_slice: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice1%nbands.ne.slice2%nbands)then
-       call io_errors("Error in wave_add_slice_slice: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     !check that theyre for the same kpoint
     if (slice1%kpt.ne.slice2%kpt)then
-       call io_errors('Error in wave_add_slice_slice: incompatible kpoints')
+       call io_errors('incompatible kpoints')
     end if
 
     !allocate the result
@@ -212,12 +222,12 @@ contains
 
     !check if allocated
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_add_slice_wfn: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice%nbands.ne.wfn%nbands)then
-       call io_errors("Error in wave_add_slice_wfn: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     if (slice%kpt.gt.wfn%kpts)then
@@ -257,16 +267,16 @@ contains
 
     !check if allocated
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_add_wfn_slice: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice%nbands.ne.wfn%nbands)then
-       call io_errors("Error in wave_add_wfn_slice: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     if (slice%kpt.gt.wfn%kpts)then
-       call io_errors('Error in wave_add_wfn_wfn: slice kpt out of range')
+       call io_errors('slice kpt out of range')
     end if
     !allocate the result
     call wave_allocate(wfn_out,slice%nbands)
@@ -304,12 +314,12 @@ contains
 
     !check if allocated
     if (.not.wfn1%allocated .or. .not.wfn2%allocated)then
-       call io_errors('Error in wave_add_wfn_wfn: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (wfn1%nbands.ne.wfn2%nbands)then
-       call io_errors("Error in wave_add_wfn_wfn: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     !allocate the result
@@ -345,17 +355,17 @@ contains
 
     !check if allocated
     if (.not.slice1%allocated .or. .not.slice2%allocated)then
-       call io_errors('Error in wave_sub_slice_slice: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice1%nbands.ne.slice2%nbands)then
-       call io_errors("Error in wave_sub_slice_slice: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     !check that theyre for the same kpoint
     if (slice1%kpt.ne.slice2%kpt)then
-       call io_errors('Error in wave_sub_slice_slice: incompatible kpoints')
+       call io_errors('incompatible kpoints')
     end if
 
     !allocate the result
@@ -395,16 +405,16 @@ contains
 
     !check if allocated
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_sub_slice_wfn: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice%nbands.ne.wfn%nbands)then
-       call io_errors("Error in wave_sub_slice_wfn: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     if (slice%kpt.gt.wfn%kpts)then
-       call io_errors('Error in wave_sub_slice_wfn: slice kpt out of range')
+       call io_errors('slice kpt out of range')
     end if
     !allocate the result
     call wave_allocate(wfn_out,slice%nbands)
@@ -440,16 +450,16 @@ contains
 
     !check if allocated
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_sub_wfn_slice: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (slice%nbands.ne.wfn%nbands)then
-       call io_errors("Error in wave_sub_wfn_slice: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     if (slice%kpt.gt.wfn%kpts)then
-       call io_errors('Error in wave_sub_wfn_wfn: slice kpt out of range')
+       call io_errors('slice kpt out of range')
     end if
     !allocate the result
     call wave_allocate(wfn_out,slice%nbands)
@@ -487,12 +497,12 @@ contains
 
     !check if allocated
     if (.not.wfn1%allocated .or. .not.wfn2%allocated)then
-       call io_errors('Error in wave_sub_wfn_wfn: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
 
     if (wfn1%nbands.ne.wfn2%nbands)then
-       call io_errors("Error in wave_sub_wfn_wfn: incompatible bands")
+       call io_errors("incompatible bands")
     end if
 
     !allocate the result
@@ -529,7 +539,7 @@ contains
 
     !check if allocated
     if (.not.slice%allocated)then
-       call io_errors('Error in wave_scale_slice_real: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
     !Allocate slice
@@ -566,7 +576,7 @@ contains
 
     !check if allocated
     if (.not.slice%allocated)then
-       call io_errors('Error in wave_scale_slice_real: slices not allocated')
+       call io_errors('slices not allocated')
     end if
 
     !Allocate slice
@@ -603,7 +613,7 @@ contains
 
     !check if allocated
     if (.not.wfn%allocated)then
-       call io_errors('Error in wave_scale_wfn_real: wfn not allocated')
+       call io_errors('wfn not allocated')
     end if
 
     !Allocate sfn
@@ -640,7 +650,7 @@ contains
 
     !check if allocated
     if (.not.wfn%allocated)then
-       call io_errors('Error in wave_scale_wfn_complex: wfns not allocated')
+       call io_errors('wfns not allocated')
     end if
 
     !Allocate wfn
@@ -671,7 +681,7 @@ contains
 
     call trace_entry('wave_copy_wfn_wfn')
     if (.not.wfn1%allocated .or. .not.wfn2%allocated)then
-       call io_errors('Error in wave_copy_wfn_wfn: Wavefunction not allocated')
+       call io_errors('Wavefunction not allocated')
     end if
 
     wfn2%nbands=wfn1%nbands
@@ -700,7 +710,7 @@ contains
 
     call trace_entry('wave_copy_slice_wfn')
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_copy_slice_wfn: Wavefunction not allocated')
+       call io_errors('Wavefunction not allocated')
     end if
 
     wfn%nbands=slice%nbands
@@ -730,7 +740,7 @@ contains
     integer,intent(in) :: kpt
     call trace_entry('wave_copy_wfn_slice')
     if (.not.slice%allocated .or. .not.wfn%allocated)then
-       call io_errors('Error in wave_copy_wfn_slice: Wavefunction not allocated')
+       call io_errors('Wavefunction not allocated')
     end if
 
     slice%nbands=wfn%nbands
@@ -760,7 +770,7 @@ contains
 
     call trace_entry('wave_copy_slice_slice')
     if (.not.slice1%allocated .or. .not.slice2%allocated)then
-       call io_errors('Error in wave_copy_slice_slice: Wavefunction not allocated')
+       call io_errors('Wavefunction not allocated')
     end if
 
     slice2%nbands=slice1%nbands  
@@ -774,6 +784,16 @@ contains
 
 
   subroutine wave_initialise_wfn(wfn)
+!==============================================================================!
+!                    W A V E _ I N I T I A L I S E _ W F N                     !
+!==============================================================================!
+! A subroutine for initialising a wavefunction type.                           !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wfn,               intent :: inout                                 !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     type(wavefunction), intent(inout) :: wfn
     real(dp)         :: r1, r2
 
@@ -801,6 +821,19 @@ contains
   end subroutine wave_initialise_wfn
 
   subroutine wave_write(wfn,unit,iostat,iomsg)
+!==============================================================================!
+!                             W A V E _ W R I T E                              !
+!==============================================================================!
+! Subroutine for writing the unformatted wavefunction to a file.               !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wfn,               intent :: in                                    !
+!           unit,              intent :: in                                    !
+!           iostat,            intent :: out                                   !
+!           iomsg,             intent :: inout                                 !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
 
     class(wavefunction), intent(in) :: wfn
     integer         , intent(in)    :: unit
@@ -812,10 +845,121 @@ contains
     call trace_entry('wave_write')
     !open(newunit=wfn_file,file=trim(seed)//'.wfn',status="unknown",form='UNFORMATTED')                                                                                                                                                                                      
     write(unit,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
-    if (iostat.ne.0) call io_errors("Error in wfn_write: unable to write to "//trim(seed)//".wfn file")
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".wfn file")
     write(unit,iostat=iostat,iomsg=iomsg)wfn%coeff,wfn%nbands,wfn%kpts,wfn%allocated
-    if (iostat.ne.0) call io_errors("Error in wfn_write: unable to write to "//trim(seed)//".wfn file")
-    
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".wfn file")
+
     call trace_exit('wave_write')
   end subroutine wave_write
+
+
+  subroutine wave_dot_wfn(wfn1,wfn2,dot)
+!==============================================================================!
+!                           W A V E _ D O T _ W F N                            !
+!==============================================================================!
+! Subroutine for performing an inner product of a wavefunction on a second     !
+! wavefunction.                                                                !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wfn1,              intent :: in                                    !
+!           wfn2,              intent :: in                                    !
+!           dot,               intent :: out                                   !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
+    type(wavefunction) , intent(in) :: wfn1
+    type(wavefunction) , intent(in) :: wfn2
+    complex(dp),dimension(:,:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as kpt,band,spinor
+
+    ! Index counters
+    integer :: nb,nk,ns
+    call trace_entry('wave_dot_wfn')
+
+    ! Start with checking
+    if (wfn1%nbands .ne. wfn2%nbands) call io_errors('wfn1%nbands != wfn2%nbands')
+    if (wfn1%kpts .ne. wfn2%kpts) call io_errors('wfn1%kpt != wfn2%kpt')
+    
+    
+    
+    call trace_exit('wave_dot_wfn')
+  end subroutine wave_dot_wfn
+
+
+  subroutine wave_dot_wfn_self(wfn1,dot)
+!==============================================================================!
+!                      W A V E _ D O T _ W F N _ S E L F                       !
+!==============================================================================!
+! Subroutine for calculating the inner product of a wavefunction with itself   !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wfn1,              intent :: in                                    !
+!           dot,               intent :: out                                   !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
+    type(wavefunction) , intent(in) :: wfn1
+    complex(dp),dimension(:,:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as kpt,band,spinor
+
+    ! Index counters
+    integer :: nb,nk,ns
+    call trace_entry('wave_dot_wfn_self')
+
+
+    
+    call trace_exit('wave_dot_wfn_self')
+  end subroutine wave_dot_wfn_self
+
+  subroutine wave_dot_slice(slice1,slice2,dot)
+!==============================================================================!
+!                         W A V E _ D O T _ S L I C E                          !
+!==============================================================================!
+! Subroutine for calculating the inner product of a wavefunction slice type.   !
+!                                                                              !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           slice1,            intent :: in                                    !
+!           slice2,            intent :: in                                    !
+!           dot,               intent :: out                                   !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
+    type(wavefunction_slice) , intent(in) :: slice1
+    type(wavefunction_slice) , intent(in) :: slice2
+    complex(dp),dimension(:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as band,spinor
+
+    ! Index counters
+    integer :: nbns
+    call trace_entry('wave_dot_slice')
+    ! Start with checking
+    if (slice1%nbands .ne. slice2%nbands) call io_errors('slice1%nbands != slice2%nbands')
+
+
+    
+    call trace_exit('wave_dot_slice')
+  end subroutine wave_dot_slice
+
+  subroutine wave_dot_slice_self(slice1,dot)
+!==============================================================================!
+!                    W A V E _ D O T _ S L I C E _ S E L F                     !
+!==============================================================================!
+! Subroutine for calculating the inner product of a wavefunction slice with    !
+! itself                                                                       !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           slice1,            intent :: in                                    !
+!           dot,               intent :: out                                   !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
+    type(wavefunction_slice) , intent(in) :: slice1
+    complex(dp),dimension(:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as band,spinor
+    ! Index counters
+    integer :: nb,ns
+    call trace_entry('wave_dot_slice_self')
+
+
+    
+    call trace_exit('wave_dot_slice_self')   
+  end subroutine wave_dot_slice_self
+
 end module wave

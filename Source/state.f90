@@ -1,6 +1,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module state
   use constants
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec
@@ -71,12 +72,27 @@ contains
 
 
   subroutine state_finalise()
+!==============================================================================!
+!                         S T A T E _ F I N A L I S E                          !
+!==============================================================================!
+! 4Subroutine for cleaning up and writing out state information.               !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           None                                                               !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
 
     integer       :: pot_file,den_file,wfn_file,state_file
     character(40) :: file_name
 
     integer:: stat
     call trace_entry("state_finalise")
+
+    write(stdout,*)
+    write(stdout,*)"+------------------------------------------------------------------+"
+    write(stdout,*)"|                     F I L E  W R I T I N G                       |"
+    write(stdout,*)"+------------------------------------------------------------------+"
 
 
     ! Write out the externalu potential file
@@ -89,7 +105,7 @@ contains
           write(file_name,*)trim(seed)//'.potex'
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
        end if
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing external potential to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing external potential to "//trim(file_name)
        write(pot_file)current_state%ext_pot
        close(pot_file)
     end if
@@ -105,7 +121,7 @@ contains
           write(file_name,*)trim(seed)//'.fpotex'
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
        end if
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to "//trim(file_name)
        call pot_writef(current_state%ext_pot,pot_file)
        close(pot_file)
     end if
@@ -117,7 +133,7 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.pot'
        open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing total potential to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing total potential to "//trim(file_name)
        write(pot_file)current_state%tot_pot
        close(pot_file)
     end if
@@ -128,7 +144,7 @@ contains
        write(file_name,*)trim(seed)//'.fpot'
        open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
 
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to "//trim(file_name)
        call pot_writef(current_state%tot_pot,pot_file)
        close(pot_file)
     end if
@@ -139,7 +155,7 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.den'
        open(newunit=den_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing density to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing density to "//trim(file_name)
        write(den_file)current_state%den
        close(den_file)
     end if
@@ -150,7 +166,7 @@ contains
        write(file_name,*)trim(seed)//'.fden'
        open(newunit=den_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
 
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted density to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted density to "//trim(file_name)
        call density_writef(current_state%den,den_file)
        close(den_file)
     end if
@@ -159,26 +175,26 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.wvfn'
        open(newunit=wfn_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing wavefunction to file"//trim(file_name)
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing wavefunction to "//trim(file_name)
        write(wfn_file)current_state%wfn
        close(wfn_file)
     end if
 
-
-
+    write(stdout,*)"+------------------------------------------------------------------+"
+    write(stdout,*)
 !!$
 !!$    ! write the state
 !!$    if (current_params%write_state)then
 !!$       ! Now we have calculated it we can write it if needed
 !!$       write(file_name,*)trim(seed)//'.state'
 !!$       open(newunit=state_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED',access='direct',RECL=465465465)
-!!$       if (current_params%iprint.ge.3)write(stdout,*)"Writing final state to file"//trim(file_name)
+!!$       if (current_params%iprint.ge.3)write(stdout,*)"Writing final state to "//trim(file_name)
 !!$       call state_write(current_state,state_file,stat)
 !!$       close(state_file)
 !!$    end if
 !!$
 
-
+    
 
 
     call trace_exit("state_finalise")
@@ -186,6 +202,19 @@ contains
 
 
   subroutine state_write(model,unit,iostat)
+!==============================================================================!
+!                            S T A T E _ W R I T E                             !
+!==============================================================================!
+! Subroutine for writing out the state file, potentially used for restarts     !
+! and also forthcoming python postprocessing.                                  !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           model,             intent :: in                                    !
+!           unit,              intent :: in                                    !
+!           iostat,            intent :: out                                   !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
 
     class(state_data), intent(in)    :: model
     integer         , intent(in)    :: unit
@@ -250,6 +279,16 @@ contains
 
 
   subroutine state_restart()
+!==============================================================================!
+!                          S T A T E _ R E S T A R T                           !
+!==============================================================================!
+! Subroutine for initiating a restart job from a .state file.                  !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           None                                                               !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  08/11/2023                                            !
+!==============================================================================!
     type(parameters) :: temp_param
     type(structure)  :: temp_structure
     integer  :: state_file, stat

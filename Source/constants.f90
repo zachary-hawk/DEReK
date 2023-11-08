@@ -1,4 +1,5 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module constants
   use iso_fortran_env , only: real64
 
@@ -43,7 +44,7 @@ module constants
   
   !Fundamental Physical constants
 #ifdef CODATA2018
-  character(30),parameter,public :: const_version = "Constants Version: CODATA 2018"
+  character(30),parameter,public :: const_version = "CODATA 2018"
   
   real(dp),parameter,public  :: speed_light_si = 299792458.0_dp                       ! Speed of light
   real(dp),parameter,public  :: planck_si = 6.62607015e-34_dp                         ! Planck constant (h)
@@ -57,7 +58,7 @@ module constants
 #endif
 
 #ifdef CODATA2014
-  character(30),parameter,public :: const_version = "Constants Version: CODATA 2014"
+  character(30),parameter,public :: const_version = "CODATA 2014"
   
   real(dp),parameter,public  :: speed_light_si = 299792458.0_dp                       ! Speed of light
   real(dp),parameter,public  :: planck_si = 6.626070040e-34_dp                        ! Planck constant (h)
@@ -80,5 +81,7 @@ module constants
   real(dp),parameter,public  :: boltzmann_si = molar_gas_si/avogadro_si                                                     ! Boltzmann Constant (kB)
 
 
+
+  
 
 end  module constants

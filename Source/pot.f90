@@ -1,5 +1,6 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module pot
   use constants
   use trace, only : trace_entry, trace_exit
@@ -133,12 +134,12 @@ contains
        ! This is the case where we read it in from a file
        ! If we are here, the param is not one of the defaults
        if (index(trim(current_params%external_pot),'.potex').eq.0)then
-          call io_errors("Error in pot_read: potential naming convension not correct")
+          call io_errors("potential naming convension not correct")
        end if
 
        inquire(file=trim(current_params%external_pot),exist=exists)
        if (.not.exists)then
-          call io_errors("Error in pot_read: file "//trim(current_params%external_pot)//' does not exist')
+          call io_errors("file "//trim(current_params%external_pot)//' does not exist')
        end if
 
        open(newunit=pot_file,file=trim(current_params%external_pot),form="UNFORMATTED",status='old')
@@ -177,9 +178,9 @@ contains
     call trace_entry('pot_write')
     !open(newunit=pot_file,file=trim(seed)//'.pot',status="unknown",form='UNFORMATTED')
     write(unit,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
-    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".pot file")
     write(unit,iostat=iostat,iomsg=iomsg)pot%nc_pot,pot%allocated
-    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
+    if (iostat.ne.0) call io_errors("unable to write to "//trim(seed)//".pot file")
 
 
     call trace_exit('pot_write')
@@ -275,14 +276,14 @@ contains
     !write(pot_file,iostat=stat)current_basis%ngx,current_basis%ngy,current_basis%ngz
     !if (stat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
     read(unit,iostat=iostat,iomsg=iomsg)gx,gy,gz
-    if (iostat.ne.0) call io_errors("Error in pot_read: unable to read .pot file")
+    if (iostat.ne.0) call io_errors("unable to read .pot file")
 
     if (gx.ne.current_basis%ngx.or.gy.ne.current_basis%ngy.or.gz.ne.current_basis%ngz)then
-       call io_errors("Error in pot_read: fine grid mismatch")
+       call io_errors("fine grid mismatch")
     end if
 
     read(unit,iostat=iostat,iomsg=iomsg)pot%nc_pot,pot%allocated
-    if (iostat.ne.0) call io_errors("Error in pot_read: unable to read .pot file")
+    if (iostat.ne.0) call io_errors("unable to read .pot file")
 
 
     call trace_exit('pot_read')
@@ -313,14 +314,14 @@ contains
 
     ! Boring handling stuff
     if (.not.wfn%allocated)then
-       call io_errors("Error in pot_apply_wfn: wfn is not allocated")
+       call io_errors("wfn is not allocated")
     end if
 
 
     if (present(wfn_out))then
        ! Make sure its allocated
        if (.not.wfn_out%allocated)then
-          call io_errors("Error in pot_apply_wfn: wfn_out is not allocated")
+          call io_errors("wfn_out is not allocated")
        end if
 
 
@@ -354,8 +355,8 @@ contains
 
     call trace_entry("pot_add")
 
-    if (.not.pot1%allocated)call io_errors("Error in pot_add: pot1 not allocated")
-    if (.not.pot2%allocated)call io_errors("Error in pot_add: pot2 not allocated")
+    if (.not.pot1%allocated)call io_errors("pot1 not allocated")
+    if (.not.pot2%allocated)call io_errors("pot2 not allocated")
 
     if (.not.pot_out%allocated)then
        call pot_allocate(pot_out)
@@ -389,8 +390,8 @@ contains
 
     call trace_entry("pot_sub")
 
-    if (.not.pot1%allocated)call io_errors("Error in pot_sub: pot1 not allocated")
-    if (.not.pot2%allocated)call io_errors("Error in pot_sub: pot2 not allocated")
+    if (.not.pot1%allocated)call io_errors("pot1 not allocated")
+    if (.not.pot2%allocated)call io_errors("pot2 not allocated")
 
     if (.not.pot_out%allocated)then
        call pot_allocate(pot_out)
@@ -423,7 +424,7 @@ contains
     type(potential)            :: pot_out
 
     call trace_entry("pot_scale_real")
-    if (.not.pot%allocated)call io_errors("Error in pot_scale_real: pot not allocated")
+    if (.not.pot%allocated)call io_errors("pot not allocated")
     if (.not.pot_out%allocated)then
        call pot_allocate(pot_out)
     end if
@@ -453,7 +454,7 @@ contains
     type(potential)            :: pot_out
     call trace_entry("pot_scale_complex")
 
-    if (.not.pot%allocated)call io_errors("Error in pot_scale_complex: pot not allocated")
+    if (.not.pot%allocated)call io_errors("pot not allocated")
     if (.not.pot_out%allocated)then
        call pot_allocate(pot_out)
     end if
@@ -480,7 +481,7 @@ contains
     type(potential), intent(in) :: pot
     type(potential)             :: pot_out
     call trace_entry('pot_copy')
-    if (.not.pot%allocated)call io_errors("Error in pot_copy: pot not allocated")
+    if (.not.pot%allocated)call io_errors("pot not allocated")
     if (.not.pot_out%allocated)then
        call pot_allocate(pot_out)
     end if

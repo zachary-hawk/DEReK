@@ -185,7 +185,7 @@ contains
        end do
        close(1)
     else
-       call io_errors("Error in I/O: file '"//trim(seed)//".info' does not exist.")
+       call io_errors(" file '"//trim(seed)//".info' does not exist.")
     end if
     max_params=max_params+1
     ! Allocate space for the params array
@@ -211,7 +211,7 @@ contains
 
 
     if (read_params) call io_read_param(current_params)
-    if (.not.cell_declared) call io_errors("Error in I/O: No lattice provided")
+    if (.not.cell_declared) call io_errors(" No lattice provided")
 
 
 
@@ -278,7 +278,7 @@ contains
        open(unit=1,file=trim(seed)//".info",iostat=stat,status="OLD",access="stream",form="formatted")
 
 
-       if (stat.ne.0) call io_errors("Error in I/O: Open file '"//trim(seed)//".info'")
+       if (stat.ne.0) call io_errors(" Open file '"//trim(seed)//".info'")
        ! now we can do the reading
        k=0
        do i=1,max_params
@@ -313,7 +313,7 @@ contains
 
 
           if (lev_dist.gt.0 .and. lev_dist.lt.max_lev)then
-
+             call io_warnings()
              if (.not.spelling)then
                 write(stdout,*)"********************************************************************"
                 write(stdout,*)"*                         *** WARNING ***                          *"
@@ -332,7 +332,7 @@ contains
              write(stdout,*)"*           **** UNABLE TO SAFELY MATCH PARAMETER ****             *"
              write(stdout,*)"*           ---------------- ABORTING ----------------             *"
              write(stdout,*)"********************************************************************"
-             call io_errors("Error in io_read_params: Unknown parameter - "//key)
+             call io_errors("Unknown parameter - "//key)
 
           end if
 9         format(' *',T5,A,T30,A,T60,i3,T69,'*')
@@ -342,136 +342,136 @@ contains
 
           case(key_dryrun)
              read(param,*,iostat=stat) dummy_params%dryrun
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_debugging)
              read(param,*,iostat=stat) dummy_params%debugging
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_n_electrons)
              read(param,*,iostat=stat) dummy_params%n_electrons
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_energy_tol)
              read(param,*,iostat=stat) dummy_params%energy_tol
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              dummy_params%energy_tol=dummy_params%energy_tol
              present_array(i)=key
           case(key_xc_functional)
              read(param,*,iostat=stat) dummy_params%xc_functional
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_cut_off_energy)
              read(param,*,iostat=stat) dummy_params%cut_off_energy
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
              dummy_params%cut_off_energy=dummy_params%cut_off_energy
           case(key_g_fine_scale)
              read(param,*,iostat=stat) dummy_params%g_fine_scale
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_wvfn)
              read(param,*,iostat=stat) dummy_params%write_wvfn
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_task)
              read(param,*,iostat=stat) dummy_params%task
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_soc)
              read(param,*,iostat=stat) dummy_params%soc
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_max_scf)
              read(param,*,iostat=stat) dummy_params%max_scf
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_scf_method)
              read(param,*,iostat=stat) dummy_params%scf_method
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_electronic_temp)
              read(param,*,iostat=stat) dummy_params%electronic_temp
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_conduction_bands)
              read(param,*,iostat=stat) dummy_params%conduction_bands
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_density)
              read(param,*,iostat=stat) dummy_params%write_density
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_Write_potential)
              read(param,*,iostat=stat) dummy_params%Write_potential
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_state)
              read(param,*,iostat=stat) dummy_params%write_state
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_external_pot)
              read(param,*,iostat=stat) dummy_params%external_pot
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_kpt_mp_grid)
              read(param,*,iostat=stat) dummy_params%kpt_mp_grid(1),dummy_params%kpt_mp_grid(2),dummy_params%kpt_mp_grid(3)
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
 
           case(key_write_spec)
              read(param,*,iostat=stat) dummy_params%write_spec
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_calc_memory)
              read(param,*,iostat=stat) dummy_params%calc_memory
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_iprint)
              read(param,*,iostat=stat) dummy_params%iprint
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_finite_barrier_height)
              read(param,*,iostat=stat) dummy_params%finite_barrier_height
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_finite_barrier_width)
              read(param,*,iostat=stat) dummy_params%finite_barrier_width(1),&
                   & dummy_params%finite_barrier_width(2),&
                   & dummy_params%finite_barrier_width(3)
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_periodic_pot_grid)
              read(param,*,iostat=stat) dummy_params%periodic_pot_grid
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_periodic_pot_amp)
              read(param,*,iostat=stat) dummy_params%periodic_pot_amp
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_random_seed)
              read(param,*,iostat=stat) dummy_params%random_seed
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_formatted_potential)
              read(param,*,iostat=stat) dummy_params%write_formatted_potential
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_potex)
              read(param,*,iostat=stat) dummy_params%write_potex
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_formatted_density)
              read(param,*,iostat=stat) dummy_params%write_formatted_density
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_write_formatted_potex)
              read(param,*,iostat=stat) dummy_params%write_formatted_potex
-             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
              ! %End: case_read
           case default
-             call io_errors("Error in I/O: Error parsing keyword: "//key)
+             call io_errors(" Error parsing keyword: "//key)
           end select
 
 
@@ -495,7 +495,7 @@ contains
           if (i.eq.j)cycle
           !print*,present_array
           if (io_case(present_array(i)).eq.io_case(present_array(j)))then
-             call io_errors("Error in I/O: Duplicate parameter found: "//present_array(i))
+             call io_errors(" Duplicate parameter found: "//present_array(i))
           end if
        end do
     end do
@@ -503,7 +503,7 @@ contains
     !call io_errors("Test")
     ! Handle the kpoint list
 
-    
+
     call io_kpoint_grid()
 
     call trace_exit("io_read_param")
@@ -552,7 +552,7 @@ contains
           exit
 
        else if (j.eq.len_trim(line_unparsed))then
-          call io_errors("Error in I/O: Error parsing line:  "//trim(line_unparsed))
+          call io_errors(" Error parsing line:  "//trim(line_unparsed))
        end if
     end do
 
@@ -573,19 +573,20 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  19/01/2020                                            !
     !==============================================================================!
+    use trace, only : trace_current
+
     implicit none
     character(*)       :: message
-
+    character(100)     :: current_sub
     ! internal variable for rank processing
     character(len=40)  :: file_name
 
+    call trace_current(current_sub)
     write(file_name,'(A,".",I0.4,".err")') trim(seed),rank
-
-
 
     open(2,file=trim(file_name),RECL=8192,status="UNKNOWN")
     write(*,*)"Error: called io_abort"
-    write(2,*) message
+    write(2,*) "Error in ",trim(current_sub),": ",message
 
     call trace_stack(2,rank,seed=seed)
     stop
@@ -672,7 +673,7 @@ contains
     if (nargs.eq.0)then
        seed='derek'
        call io_help()
-       call io_errors("Error in command line parser: no seed provided.")
+       call io_errors("no seed provided.")
     end if
 
 
@@ -1083,7 +1084,20 @@ contains
     return
   end subroutine io_list_params
 
-  subroutine io_sys_info(unit)
+  subroutine io_sys_info(unit,comment)
+    !==============================================================================!
+    !                            I O _ S Y S _ I N F O                             !
+    !==============================================================================!
+    ! Subroutine for printing the system details, including compiler               !
+    ! information, system architechture and CPU. Also includes date and time of    !
+    ! compilation.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           unit,              intent :: in                                    !
+    !           comment,           intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     integer,intent(in) :: unit
     integer::file
     integer :: maj_mpi,min_mpi,min_char
@@ -1091,6 +1105,8 @@ contains
     character(len=3) :: MPI_version_num
     character(len=100):: compile_version,cpuinfo
     character(100)    :: arch_string
+
+    logical,optional,intent(in) :: comment
 
     call trace_entry("io_sys_info")
 
@@ -1133,21 +1149,59 @@ contains
 
        compile_version=trim(compile_version(87:97))
     end if
-
-    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
-    write(unit,*) "Compiled for system: ",trim(arch_string)
-    write(unit,*) "Compiled for CPU: ",trim(cpuinfo)
-    write(unit,*) "Communications architechture: ",comms_arch
-    if (comms_arch.eq."MPI")then
-       write(unit,*) "MPI Version: ",mpi_c_version(1:min_char+1)
+    if (present(comment))then
+       if (comment)then 
+          write(unit,*) "# Compiler           : ",compiler," ",Trim(compile_version)
+          write(unit,*) "# Compile Date       : ",__DATE__, ",",__TIME__
+          write(unit,*) "# Operating System   : ",trim(arch_string)
+          write(unit,*) "# System CPU         : ",trim(cpuinfo)
+          write(unit,*) "# Parallelisation    : ", comms_arch
+          if (comms_arch.eq."MPI")then
+             write(unit,*) "# MPI Version        : ",mpi_c_version(1:min_char+1)
+          end if
+          write(unit,*) "# Optimisation       : ",opt
+          write(unit,*) "# Physical Constants : ",const_version
+          write(unit,*) '# '
+       end if
+    else
+       write(unit,*) "Compiler           : ",compiler," ",Trim(compile_version)
+       write(unit,*) "Compile Date       : ",__DATE__, ",",__TIME__
+       write(unit,*) "Operating System   : ",trim(arch_string)
+       write(unit,*) "System CPU         : ",trim(cpuinfo)
+       write(unit,*) "Parallelisation    : ", comms_arch
+       if (comms_arch.eq."MPI")then
+          write(unit,*) "MPI Version        : ",mpi_c_version(1:min_char+1)
+       end if
+       write(unit,*) "Optimisation       : ",opt
+       write(unit,*) "Physical Constants : ",const_version
+       write(unit,*)
     end if
-    write(unit,*) "Optimisation Strategy: ",opt
-    write(unit,*) const_version
-    write(unit,*)
+
+
+!!$    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
+!!$    write(unit,*) "Compiled for system: ",trim(arch_string)
+!!$    write(unit,*) "Compiled for CPU: ",trim(cpuinfo)
+!!$    write(unit,*) "Communications architechture: ",comms_arch
+!!$    if (comms_arch.eq."MPI")then
+!!$       write(unit,*) "MPI Version: ",mpi_c_version(1:min_char+1)
+!!$    end if
+!!$    write(unit,*) "Optimisation Strategy: ",opt
+!!$    write(unit,*) const_version
+
     call trace_exit("io_sys_info")
   end subroutine io_sys_info
 
   subroutine io_header()
+    !==============================================================================!
+    !                              I O _ H E A D E R                               !
+    !==============================================================================!
+    ! Subroutine for writing out the DEREK header to whatever file is given        !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     call trace_entry('io_header')
     write(stdout,*) "+==================================================================+"
     write(stdout,*) "|                                                                  |"
@@ -1296,7 +1350,7 @@ contains
     call trace_entry("io_block_parse")
     read(line,*,iostat=in_stat) block_str,block_type1
 
-    if (in_stat.ne.0) call io_errors("Error in I/O: problem parsing block")
+    if (in_stat.ne.0) call io_errors(" problem parsing block")
 
 
     do
@@ -1305,8 +1359,8 @@ contains
        if (index(buff,"%end").ne.0)then
           ! check to see if the blocks match
           read(buff,*,iostat=in_stat) block_str,block_type2
-          if (in_stat.ne.0) call io_errors("Error in I/O: problem parsing end block")
-          if (trim(block_type1).ne.trim(block_type2))call io_errors("Error in I/O: block "//trim(block_type1)//" not closed" )
+          if (in_stat.ne.0) call io_errors(" problem parsing end block")
+          if (trim(block_type1).ne.trim(block_type2))call io_errors(" block "//trim(block_type1)//" not closed" )
           exit
        else if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.buff(1:1).eq."")then
           n_com=n_com+1
@@ -1314,20 +1368,20 @@ contains
        else
           n=n+1
        end if
-       if (stat.ne.0)call io_errors("Error in I/O: error parsing "//trim(seed)//".info")
+       if (stat.ne.0)call io_errors(" error parsing "//trim(seed)//".info")
     end do
 
     n_lines=n-n_com
 
     if (trim(block_type1).ne.trim(block_type2))then
-       call io_errors("Error in I/O: block type mismatch")
+       call io_errors(" block type mismatch")
     end if
 
 
     select case(io_case(block_type1))
     case("lattice")
        if (n_lines.ne.3)then
-          call io_errors("Error in I/O: error parsing LATTICE block")
+          call io_errors(" error parsing LATTICE block")
        end if
        ! take us back to the top
        do i=1,n+1
@@ -1346,7 +1400,7 @@ contains
 
 
     case default
-       call io_errors('Error in I/O: Unknown block type '//trim(block_type1))
+       call io_errors(' Unknown block type '//trim(block_type1))
     end select
 
     ! read the close line again
@@ -1432,7 +1486,7 @@ contains
     num_kpoints = current_params%kpt_mp_grid(1)*current_params%kpt_mp_grid(2)*current_params%kpt_mp_grid(3)
     current_structure%num_kpoints = num_kpoints
 
-    if (num_kpoints.le.0)call io_errors("Error in I/O: invalid number of kpoints")
+    if (num_kpoints.le.0)call io_errors(" invalid number of kpoints")
 
     ! Allocate the kpoint arrays
     call memory_allocate(current_structure%kpt_scf_list,1,num_kpoints,1,3,"I")
@@ -1461,7 +1515,7 @@ contains
     !==============================================================================!
     !                        I O _ W R I T E _ P A R A M S                         !
     !==============================================================================!
-    ! Subroutine that writes the input parameters to the stdout out.pop            !
+    ! Subroutine that writes the input parameters to the stdout seed.derek         !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
     !           None                                                               !
@@ -1514,7 +1568,6 @@ contains
        write(stdout,*) "                          Cell Angles (o)"
        write(stdout,*) "                          ---------------"
        write(stdout,11) 'alpha =',current_structure%alpha,'beta =',current_structure%beta,'gamma =', current_structure%gamma
-
 
        write(stdout,*)
        write(stdout,*)
@@ -1703,10 +1756,12 @@ contains
     call trace_entry('io_finalise')
 
     ! check the warning status
-    if (warning_counter.gt.0)then
-       write(stdout,'(a,i2,a)')"*** There were ",warning_counter,' warnings in this run, check carefully ***'
+    if (warning_counter.gt.1)then
+       write(stdout,'(a,i2,a)')" *** There were ",warning_counter,' warnings in this run, check carefully ***'
+    elseif(warning_counter.eq.1)then
+       write(stdout,'(a,i2,a)')" *** There was ",warning_counter,' warning in this run, check carefully ***'
     end if
-    
+
     call date_and_time(b(1), b(2), b(3), d_t)
     months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -1811,11 +1866,23 @@ contains
 
 
   subroutine io_out_file_header(unit,type)
+    !==============================================================================!
+    !                     I O _ O U T _ F I L E _ H E A D E R                      !
+    !==============================================================================!
+    ! Subroutine for writing a smaller version of the DEREK header such that it    !
+    ! can be used in output files.                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           unit,              intent :: in                                    !
+    !           type,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
 
     integer,intent(in)      :: unit
     character(*),intent(in) :: type
 
-    character(50)           :: fmt
+    character(52)           :: fmt
     ! Stuff for getting run time
     character(len=3),dimension(12)  :: months
     integer                         :: d_t(8),width=50
@@ -1827,37 +1894,37 @@ contains
     ! 46 wide
     select case(type)
     case('P','p') ! potential file
-       fmt="|                 POTENTIAL FILE                 |"
+       fmt="# |                 POTENTIAL FILE                 |"
     case('D','d')
-       fmt="|                  DENSITY FILE                  |"
+       fmt="# |                  DENSITY FILE                  |"
     case default
-       call io_errors('Error in I/O: Unknown file type '//trim(type))
+       call io_errors(' Unknown file type '//trim(type))
     end select
-    write(unit,*)"+================================================+"
-    write(unit,*)"| ooooooo.  oooooooo oooooo.            ooo  ooo |"
-    write(unit,*)"| `88'  Y8b `88'  `8 `88   Y8   .0000.  `88 dP'  |"
-    write(unit,*)"|  88    88  88o8     88oo8P'  d8oooo8b  888[    |"
-    write(unit,*)"|  88   d88  88       88 `8b.  88    .o  88`8b.  |"
-    write(unit,*)"| o88bod8P  o88oood8 o88o `88o `YboodP' o88o o8o |"
-    write(unit,*)"|================================================|"
-    write(unit,'(T2,"|",T20,A, 1x, A,T51 ,"|")') 'Version', version
-    write(unit,*)"|------------------------------------------------|"
+    write(unit,*)"# +================================================+"
+    write(unit,*)"# | ooooooo.  oooooooo oooooo.            ooo  ooo |"
+    write(unit,*)"# | `88'  Y8b `88'  `8 `88   Y8   .0000.  `88 dP'  |"
+    write(unit,*)"# |  88    88  88o8     88oo8P'  d8oooo8b  888[    |"
+    write(unit,*)"# |  88   d88  88       88 `8b.  88    .o  88`8b.  |"
+    write(unit,*)"# | o88bod8P  o88oood8 o88o `88o `YboodP' o88o o8o |"
+    write(unit,*)"# |================================================|"
+    write(unit,'(T2,"# |",T20,A, 1x, A,T53 ,"|")') 'Version', version
+    write(unit,*)"# |------------------------------------------------|"
     write(unit,*)fmt
-    write(unit,*)"+------------------------------------------------+"
-    write(unit,*)"|        Author: Dr Z. Hawkhead (c) 2023         |"
-    write(unit,*)"+================================================+"
+    write(unit,*)"# +------------------------------------------------+"
+    write(unit,*)"# |        Author: Dr Z. Hawkhead (c) 2023         |"
+    write(unit,*)"# +================================================+"
 
-    call io_sys_info(unit)
+    call io_sys_info(unit,.true.)
 
 
     call date_and_time(b(1), b(2), b(3), d_t)
     months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-    write(unit,*)"+------------------ WRITE DATE ------------------+"
+    write(unit,*)"# +------------------ WRITE DATE ------------------+"
     write(unit,1000) d_t(5),d_t(6),d_t(7),trim(months(d_t(2))),d_t(3),d_t(1)
-    write(unit,*)"+------------------------------------------------+"
+    write(unit,*)"# +------------------------------------------------+"
     write(unit,*)
-1000 format(1x,"|",14x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,13x,"|")
+1000 format(1x,"# |",14x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,13x,"|")
 
 
     write(unit,*)" LATTICE (A)  "
@@ -1890,17 +1957,18 @@ contains
 
   subroutine io_warnings(message)
     implicit none
-    character(*)       :: message
+    character(*),optional   :: message
     call trace_entry('io_warnings')
 
-   
-    write(stdout,'("**** Warning: ",a)') message
+    if (present(message))then 
+       write(stdout,'("**** Warning: ",a)') message
+    end if
     warning_counter = warning_counter+1
-    
+
     call trace_exit('io_warnings')
     return
   end subroutine io_warnings
-    
+
 end module io
  
  
