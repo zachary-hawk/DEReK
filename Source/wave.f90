@@ -1,9 +1,4 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
 module wave
   use constants
   use trace, only : trace_entry,trace_exit
@@ -784,16 +779,16 @@ contains
 
 
   subroutine wave_initialise_wfn(wfn)
-!==============================================================================!
-!                    W A V E _ I N I T I A L I S E _ W F N                     !
-!==============================================================================!
-! A subroutine for initialising a wavefunction type.                           !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           wfn,               intent :: inout                                 !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                    W A V E _ I N I T I A L I S E _ W F N                     !
+    !==============================================================================!
+    ! A subroutine for initialising a wavefunction type.                           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn,               intent :: inout                                 !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(wavefunction), intent(inout) :: wfn
     real(dp)         :: r1, r2
 
@@ -821,19 +816,19 @@ contains
   end subroutine wave_initialise_wfn
 
   subroutine wave_write(wfn,unit,iostat,iomsg)
-!==============================================================================!
-!                             W A V E _ W R I T E                              !
-!==============================================================================!
-! Subroutine for writing the unformatted wavefunction to a file.               !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           wfn,               intent :: in                                    !
-!           unit,              intent :: in                                    !
-!           iostat,            intent :: out                                   !
-!           iomsg,             intent :: inout                                 !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                             W A V E _ W R I T E                              !
+    !==============================================================================!
+    ! Subroutine for writing the unformatted wavefunction to a file.               !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn,               intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !           iostat,            intent :: out                                   !
+    !           iomsg,             intent :: inout                                 !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
 
     class(wavefunction), intent(in) :: wfn
     integer         , intent(in)    :: unit
@@ -854,22 +849,22 @@ contains
 
 
   subroutine wave_dot_wfn(wfn1,wfn2,dot)
-!==============================================================================!
-!                           W A V E _ D O T _ W F N                            !
-!==============================================================================!
-! Subroutine for performing an inner product of a wavefunction on a second     !
-! wavefunction.                                                                !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           wfn1,              intent :: in                                    !
-!           wfn2,              intent :: in                                    !
-!           dot,               intent :: out                                   !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                           W A V E _ D O T _ W F N                            !
+    !==============================================================================!
+    ! Subroutine for performing an inner product of a wavefunction on a second     !
+    ! wavefunction.                                                                !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn1,              intent :: in                                    !
+    !           wfn2,              intent :: in                                    !
+    !           dot,               intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(wavefunction) , intent(in) :: wfn1
     type(wavefunction) , intent(in) :: wfn2
-    complex(dp),dimension(:,:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as kpt,band,spinor
+    complex(dp),dimension(:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as kpt,band (spinors are dotted over
 
     ! Index counters
     integer :: nb,nk,ns
@@ -878,25 +873,25 @@ contains
     ! Start with checking
     if (wfn1%nbands .ne. wfn2%nbands) call io_errors('wfn1%nbands != wfn2%nbands')
     if (wfn1%kpts .ne. wfn2%kpts) call io_errors('wfn1%kpt != wfn2%kpt')
-    
-    
-    
+
+    ! Start with the loops, for a full wavefunction, we want to loop over kpt, band, do a complex dot over spinors, and then sum the gvectors
+
     call trace_exit('wave_dot_wfn')
   end subroutine wave_dot_wfn
 
 
   subroutine wave_dot_wfn_self(wfn1,dot)
-!==============================================================================!
-!                      W A V E _ D O T _ W F N _ S E L F                       !
-!==============================================================================!
-! Subroutine for calculating the inner product of a wavefunction with itself   !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           wfn1,              intent :: in                                    !
-!           dot,               intent :: out                                   !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                      W A V E _ D O T _ W F N _ S E L F                       !
+    !==============================================================================!
+    ! Subroutine for calculating the inner product of a wavefunction with itself   !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn1,              intent :: in                                    !
+    !           dot,               intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(wavefunction) , intent(in) :: wfn1
     complex(dp),dimension(:,:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as kpt,band,spinor
 
@@ -905,24 +900,24 @@ contains
     call trace_entry('wave_dot_wfn_self')
 
 
-    
+
     call trace_exit('wave_dot_wfn_self')
   end subroutine wave_dot_wfn_self
 
   subroutine wave_dot_slice(slice1,slice2,dot)
-!==============================================================================!
-!                         W A V E _ D O T _ S L I C E                          !
-!==============================================================================!
-! Subroutine for calculating the inner product of a wavefunction slice type.   !
-!                                                                              !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           slice1,            intent :: in                                    !
-!           slice2,            intent :: in                                    !
-!           dot,               intent :: out                                   !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                         W A V E _ D O T _ S L I C E                          !
+    !==============================================================================!
+    ! Subroutine for calculating the inner product of a wavefunction slice type.   !
+    !                                                                              !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           slice1,            intent :: in                                    !
+    !           slice2,            intent :: in                                    !
+    !           dot,               intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(wavefunction_slice) , intent(in) :: slice1
     type(wavefunction_slice) , intent(in) :: slice2
     complex(dp),dimension(:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as band,spinor
@@ -934,23 +929,23 @@ contains
     if (slice1%nbands .ne. slice2%nbands) call io_errors('slice1%nbands != slice2%nbands')
 
 
-    
+
     call trace_exit('wave_dot_slice')
   end subroutine wave_dot_slice
 
   subroutine wave_dot_slice_self(slice1,dot)
-!==============================================================================!
-!                    W A V E _ D O T _ S L I C E _ S E L F                     !
-!==============================================================================!
-! Subroutine for calculating the inner product of a wavefunction slice with    !
-! itself                                                                       !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           slice1,            intent :: in                                    !
-!           dot,               intent :: out                                   !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                    W A V E _ D O T _ S L I C E _ S E L F                     !
+    !==============================================================================!
+    ! Subroutine for calculating the inner product of a wavefunction slice with    !
+    ! itself                                                                       !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           slice1,            intent :: in                                    !
+    !           dot,               intent :: out                                   !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(wavefunction_slice) , intent(in) :: slice1
     complex(dp),dimension(:,:), intent(out) :: dot  ! Dot collapsed the gvec, so ends up as band,spinor
     ! Index counters
@@ -958,7 +953,7 @@ contains
     call trace_entry('wave_dot_slice_self')
 
 
-    
+
     call trace_exit('wave_dot_slice_self')   
   end subroutine wave_dot_slice_self
 

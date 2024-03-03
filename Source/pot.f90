@@ -133,6 +133,8 @@ contains
     case default
        ! This is the case where we read it in from a file
        ! If we are here, the param is not one of the defaults
+       
+       !! *** TO DO: WE HAVENT READ IN A FORMATTED POTENTIAL HERE WHICH WE WILL WANT TO DO  **** 
        if (index(trim(current_params%external_pot),'.potex').eq.0)then
           call io_errors("potential naming convension not correct")
        end if
@@ -145,6 +147,7 @@ contains
        open(newunit=pot_file,file=trim(current_params%external_pot),form="UNFORMATTED",status='old')
        read(pot_file)ext_pot
        ext_pot%preset=.false.
+
     end select
 
 

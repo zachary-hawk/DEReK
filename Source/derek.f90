@@ -13,6 +13,7 @@ program derek
   use state, only: state_data, current_state, state_init,state_finalise,state_restart
   use comms, only: rank,on_root_node
   use pot
+  use fft, only : fft_1d
   use utils
   implicit none
 
@@ -25,7 +26,8 @@ program derek
   ! Matrix and variables declaration
   real(kind=dp), allocatable,dimension(:,:) :: matrix, inverted_matrix,result
   integer :: i, j,n=3
-
+  complex(kind=dp) , allocatable,dimension(:) :: test_fft
+  real(kind=dp) , allocatable,dimension(:) :: test_fft_x
 
 
 
@@ -57,7 +59,7 @@ program derek
   ! allocate all of the things held in the state
   call state_init()
 
-  current_state%ext_pot=1.0_dp*current_state%ext_pot
+  !current_state%ext_pot=1.0_dp*current_state%ext_pot
 
 
   ! report the memory usage, probably won't need much more memory stuff after this 
@@ -71,10 +73,33 @@ program derek
 
   !call basis_real2recip(current_state%ext_pot%nc_pot,'FINE')
 
+  !print*,"RANK:",rank,"BASIS:",current_basis%local_grid_points
 
+
+  ! doing some big testing here
+  
+  call memory_allocate(test_fft,1,current_basis%ngx,'B')
+  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
+
+
+  ! define a function
+  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+
+  test_fft = sin(test_fft_x*pi*2)
+  
+  do i = 1, current_basis%ngx
+     write(120,*) test_fft_x(i),real(test_fft(i))
+  end do
+
+
+  i=1
+  call fft_1d(test_fft,'STD',i)
+  do i = 1, current_basis%ngx
+     write(121,*) test_fft_x(i),real(test_fft(i))
+  end do
   
 
-  
+
   ! We can start tidying up now
 
   call state_finalise()

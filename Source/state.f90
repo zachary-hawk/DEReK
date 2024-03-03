@@ -63,7 +63,7 @@ contains
 
     ! read the external potential
     call pot_external_pot(current_state%ext_pot)
-
+    
 
 
     call trace_exit('state_init')
@@ -84,9 +84,11 @@ contains
 !==============================================================================!
 
     integer       :: pot_file,den_file,wfn_file,state_file
-    character(40) :: file_name
+    character(40) :: file_name,loc_pot_type
 
     integer:: stat
+    integer:: line_len = 67
+    integer:: loc_line
     call trace_entry("state_finalise")
 
     write(stdout,*)
@@ -99,13 +101,23 @@ contains
     if (current_params%write_potex)then
        ! Now we have calculated it we can write it if needed
        if (current_state%ext_pot%preset)then
-          write(file_name,*)trim(seed)//'.'//trim(current_params%external_pot)//'.potex'
+          select case(current_params%external_pot)
+          case('finite_barrier')
+             loc_pot_type = 'FB'
+          case('periodic_potential')
+             loc_pot_type = 'PP'
+          case('jelly')
+             loc_pot_type = 'jelly'
+          end select
+          
+          write(file_name,*)trim(seed)//'.'//trim(loc_pot_type)//'.potex'
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
        else
           write(file_name,*)trim(seed)//'.potex'
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
        end if
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing external potential to "//trim(file_name)
+       loc_len = line_len - 29 - len(trim(file_name))
+       if (current_params%iprint.ge.3)write(stdout,*)"Writing external potential to "//repeat('.',loc_len)//trim(file_name)
        write(pot_file)current_state%ext_pot
        close(pot_file)
     end if
@@ -114,14 +126,25 @@ contains
     ! formatted external potential
     if (current_params%write_formatted_potex)then
        ! Now we have calculated it we can write it if needed
-       if (current_state%ext_pot%preset)then
-          write(file_name,*)trim(seed)//'.'//trim(current_params%external_pot)//'.fpotex'
+       if (current_state%ext_pot%preset)then         
+          select case(current_params%external_pot)
+          case('finite_barrier')
+             loc_pot_type = 'FB'
+          case('periodic_potential')
+             loc_pot_type = 'PP'
+          case('jelly')
+             loc_pot_type = 'jelly'
+          end select
+          
+          write(file_name,*)trim(seed)//'.'//trim(loc_pot_type)//'.fpotex'        
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED')
        else
           write(file_name,*)trim(seed)//'.fpotex'
           open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
        end if
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to "//trim(file_name)
+       loc_len = line_len - 39 - len(trim(file_name))
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing formatted external potential to "//repeat('.',loc_len)//trim(file_name)
        call pot_writef(current_state%ext_pot,pot_file)
        close(pot_file)
     end if
@@ -133,7 +156,9 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.pot'
        open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing total potential to "//trim(file_name)
+       loc_len = line_len - 26 - len(trim(file_name))
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing total potential to "//repeat('.',loc_len)//trim(file_name)
        write(pot_file)current_state%tot_pot
        close(pot_file)
     end if
@@ -143,8 +168,9 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.fpot'
        open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
-
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted external potential to "//trim(file_name)
+       loc_len = line_len - 39 - len(trim(file_name))
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing formatted external potential to "//repeat('.',loc_len)//trim(file_name)
        call pot_writef(current_state%tot_pot,pot_file)
        close(pot_file)
     end if
@@ -155,7 +181,10 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.den'
        open(newunit=den_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing density to "//trim(file_name)
+       loc_len = line_len - 18 - len(trim(file_name))
+       
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing density to "//repeat('.',loc_len)//trim(file_name)
        write(den_file)current_state%den
        close(den_file)
     end if
@@ -165,8 +194,9 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.fden'
        open(newunit=den_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
-
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing formatted density to "//trim(file_name)
+       loc_len = line_len - 28 - len(trim(file_name))
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing formatted density to "//repeat('.',loc_len)//trim(file_name)
        call density_writef(current_state%den,den_file)
        close(den_file)
     end if
@@ -175,7 +205,10 @@ contains
        ! Now we have calculated it we can write it if needed
        write(file_name,*)trim(seed)//'.wvfn'
        open(newunit=wfn_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       if (current_params%iprint.ge.3)write(stdout,*)"Writing wavefunction to "//trim(file_name)
+       loc_len = line_len - 23 - len(trim(file_name))
+       
+       if (current_params%iprint.ge.3)&
+            & write(stdout,*)"Writing wavefunction to "//repeat('.',loc_len)//trim(file_name)
        write(wfn_file)current_state%wfn
        close(wfn_file)
     end if
@@ -279,35 +312,35 @@ contains
 
 
   subroutine state_restart()
-!==============================================================================!
-!                          S T A T E _ R E S T A R T                           !
-!==============================================================================!
-! Subroutine for initiating a restart job from a .state file.                  !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           None                                                               !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  08/11/2023                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                          S T A T E _ R E S T A R T                           !
+    !==============================================================================!
+    ! Subroutine for initiating a restart job from a .state file.                  !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  08/11/2023                                            !
+    !==============================================================================!
     type(parameters) :: temp_param
     type(structure)  :: temp_structure
     integer  :: state_file, stat
     call trace_entry('state_restart')
-    
-    
+
+
     ! Open the file
     open(newunit=state_file,file=trim(seed)//'.state',status="old",form='UNFORMATTED',access='direct',RECL=8192)
     !if (stat.ne.0)call io_errors("Error in state_restart: No file "//trim(seed)//'.state')
     write(stdout,*)"Restarting from state file "//trim(seed)//'.state' 
 
-    
+
     ! Read in the params
     read(state_file,rec=1)temp_param
-    print*,temp_param
-    
+
+
     ! Now do the strucure
     read(state_file,rec=2)    temp_structure%num_kpoints
-    print*,temp_structure%num_kpoints
+
     read(state_file)    temp_structure%cell 
     read(state_file)    temp_structure%inv_cell
     call memory_allocate(temp_structure%kpt_scf_list,1,temp_structure%num_kpoints,1,3,"I")
@@ -320,7 +353,7 @@ contains
     read(state_file)    temp_structure%gamma
     read(state_file)    temp_structure%volume
 
-    
+
 
 
     call trace_exit('state_restart')

@@ -11,8 +11,6 @@ module basis
   implicit none
 
 
-
-
   type  basis_dat
      ! Standard grid
      integer                             :: ngx,ngy,ngz ! Standard grid dimensions

@@ -19,6 +19,7 @@ module io
   character(100),dimension(:),allocatable  :: keys_default
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
+  character(100),dimension(:),allocatable  :: keys_cat
 
   character(100) :: version = "1.0.0"   ! Master version for all instances
   character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK"
@@ -65,6 +66,7 @@ module io
      logical :: write_formatted_density = .false.
      logical :: restart = .false.
      logical :: write_formatted_potex = .false.
+     character(len=30) :: output_level = 'minimal'
      ! %End: parameters
   end type parameters
 
@@ -101,12 +103,13 @@ module io
   character(len=30),parameter,public ::key_write_potex   = 'write_potex'
   character(len=30),parameter,public ::key_write_formatted_density   = 'write_formatted_density'
   character(len=30),parameter,public ::key_write_formatted_potex   = 'write_formatted_potex'
+  character(len=30),parameter,public ::key_output_level   = 'output_level'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          31
+  integer,parameter::max_keys=          32
   ! %End: max_param
 
 
@@ -377,6 +380,12 @@ contains
           case(key_task)
              read(param,*,iostat=stat) dummy_params%task
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
+             select case(dummy_params%task)
+             case ('singlepoint','bandstructure','dos')               
+                continue
+             case default
+                call io_errors("Unknown task: "//param)
+             end select
              present_array(i)=key
           case(key_soc)
              read(param,*,iostat=stat) dummy_params%soc
@@ -418,7 +427,6 @@ contains
              read(param,*,iostat=stat) dummy_params%kpt_mp_grid(1),dummy_params%kpt_mp_grid(2),dummy_params%kpt_mp_grid(3)
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
-
           case(key_write_spec)
              read(param,*,iostat=stat) dummy_params%write_spec
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
@@ -469,6 +477,16 @@ contains
              read(param,*,iostat=stat) dummy_params%write_formatted_potex
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
+          case(key_output_level)
+             read(param,*,iostat=stat) dummy_params%output_level
+             if (stat.ne.0) call io_errors("Error parsing value: "//param)
+             present_array(i)=key
+             select case(dummy_params%output_level)
+             case ('none','minimal','all')
+                continue
+             case default
+                call io_errors("Invalid output: "//param)
+             end select
              ! %End: case_read
           case default
              call io_errors(" Error parsing keyword: "//key)
@@ -503,6 +521,51 @@ contains
     !call io_errors("Test")
     ! Handle the kpoint list
 
+
+    ! Set the file writing
+    do i = 1,max_params      
+       if (trim(adjustl(present_array(i))).eq.'output_level')then     
+          select case(dummy_params%output_level)
+          case('minimal')
+             dummy_params%write_wvfn               = .false.
+             dummy_params%write_spec               = .false.
+             dummy_params%write_state              = .true.
+             dummy_params%write_potex              = .true.
+             dummy_params%write_formatted_potex    = .false.
+             dummy_params%write_density            = .true.
+             dummy_params%write_formatted_density  = .false.
+             dummy_params%write_potential          = .false.
+             dummy_params%write_formatted_potential= .false.
+          case('none')
+             dummy_params%write_wvfn               = .false.
+             dummy_params%write_spec               = .false.
+             dummy_params%write_state              = .false.
+             dummy_params%write_potex              = .false.
+             dummy_params%write_formatted_potex    = .false.
+             dummy_params%write_density            = .false.
+             dummy_params%write_formatted_density  = .false.
+             dummy_params%write_potential          = .false.
+             dummy_params%write_formatted_potential= .false.
+          case('all')
+             dummy_params%write_wvfn               = .true.
+             dummy_params%write_spec               = .true.
+             dummy_params%write_state              = .true.
+             dummy_params%write_potex              = .true.
+             dummy_params%write_formatted_potex    = .true.
+             dummy_params%write_density            = .true.
+             dummy_params%write_formatted_density  = .true.
+             dummy_params%write_potential          = .true.
+             dummy_params%write_formatted_potential= .true.
+          end select
+          exit
+       end if
+    end do
+
+    ! If a spectral calculation, must write the spec file
+    if (dummy_params%task.eq.'bandstructure'.or.&
+         & dummy_params%task.eq.'dos')then
+       dummy_params%write_spec               = .true.
+    end if
 
     call io_kpoint_grid()
 
@@ -734,7 +797,7 @@ contains
              call io_header()
              read_params=.false.
              stop
-          case("-d","--dryrun")            
+          case("-d","--dryrun")
              current_params%dryrun=.true.
           case ('-r','--restart')
              current_params%restart=.true.
@@ -890,7 +953,7 @@ contains
     allocate(keys_default(1:max_keys))
     allocate(keys_description(1:max_keys))
     allocate(keys_allowed(1:max_keys))
-
+    allocate(keys_cat(1:max_keys))
 
 
 
@@ -929,6 +992,7 @@ contains
     keys_array(29)=trim(key_write_potex)
     keys_array(30)=trim(key_write_formatted_density)
     keys_array(31)=trim(key_write_formatted_potex)
+    keys_array(32)=trim(key_output_level)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -996,6 +1060,8 @@ contains
     keys_default(30)=trim(adjustl(junk))
     write(junk,*)current_params%write_formatted_potex
     keys_default(31)=trim(adjustl(junk))
+    write(junk,*)current_params%output_level
+    keys_default(32)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1032,6 +1098,7 @@ contains
     keys_description(29)='Write the external potential to a file'
     keys_description(30)='Write the density to a human readble file'
     keys_description(31)='Write the external potential to a human readable file'
+    keys_description(32)='Level to set amount of output files written.'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1067,8 +1134,47 @@ contains
     keys_allowed(29)='Boolean'
     keys_allowed(30)='Boolean'
     keys_allowed(31)='Boolean'
+    keys_allowed(32)='none, minimal, all'
     ! %End: assign_allowed
 
+
+
+
+    keys_cat(1) ='Misc'
+    keys_cat(2) ='Misc'
+    keys_cat(3) ='Fundamental'
+    keys_cat(4) ='Fundamental'
+    keys_cat(5) ='Fundamental'
+    keys_cat(6) ='Planewaves'
+    keys_cat(7) ='Planewaves'
+    keys_cat(8) ='IO'
+    keys_cat(9) ='Fundamental'
+    keys_cat(10)='Advanced'
+    keys_cat(11)='Fundamental'
+    keys_cat(12)='Minimisation'
+    keys_cat(13)='Minimisation'
+    keys_cat(14)='Wave'
+    keys_cat(15)='IO'
+    keys_cat(16)='IO'
+    keys_cat(17)='IO'
+    keys_cat(18)='Potential'
+    keys_cat(19)='Fundamental'
+    keys_cat(20)='IO'
+    keys_cat(21)='Misc'
+    keys_cat(22)='Mist'
+    keys_cat(23)='Potential'
+    keys_cat(24)='Potential'
+    keys_cat(25)='Potential'
+    keys_cat(26)='Potential'
+    keys_cat(27)='Misc'
+    keys_cat(28)='IO'
+    keys_cat(29)='IO'
+    keys_cat(30)='IO'
+    keys_cat(31)='IO'
+    keys_cat(32)='IO'
+
+
+    
     ! do the loop for printing stuff
 
     if (print_flag)then
@@ -1150,7 +1256,7 @@ contains
        compile_version=trim(compile_version(87:97))
     end if
     if (present(comment))then
-       if (comment)then 
+       if (comment)then
           write(unit,*) "# Compiler           : ",compiler," ",Trim(compile_version)
           write(unit,*) "# Compile Date       : ",__DATE__, ",",__TIME__
           write(unit,*) "# Operating System   : ",trim(arch_string)
@@ -1656,7 +1762,6 @@ contains
        write(stdout,19)"Write external potential",io_print_logical(current_params%write_potex)
        write(stdout,19)"Write formated external potential",io_print_logical(current_params%write_formatted_potex)
        write(stdout,19)"Write electronic spectrum",io_print_logical(current_params%write_spec)
-       write(stdout,19)"Write state file",io_print_logical(current_params%write_state)
        write(stdout,19)"Calculate memory",io_print_logical(current_params%calc_memory)
 
     end if
@@ -1960,7 +2065,7 @@ contains
     character(*),optional   :: message
     call trace_entry('io_warnings')
 
-    if (present(message))then 
+    if (present(message))then
        write(stdout,'("**** Warning: ",a)') message
     end if
     warning_counter = warning_counter+1
@@ -1970,6 +2075,7 @@ contains
   end subroutine io_warnings
 
 end module io
+ 
  
  
  
