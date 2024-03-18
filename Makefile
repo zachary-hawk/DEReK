@@ -31,6 +31,7 @@ $(if $(filter-out debug fast,$(BUILD)), $(error BUILD should be one of "fast","d
 $(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortran","ifort" (not $(F90))) )
 # Version info from io.f90
 version=$(shell Bin/version.sh)
+GIT_VERSION=$(shell Bin/git_log.sh)
 #####################################
 #      DIRECTORY LOCATIONS          #
 #####################################
@@ -59,6 +60,7 @@ export BUILD_DIR
 export SOURCE_DIR
 export CODATA_YEAR
 export COMMS_ARCH
+export GIT_VERSION
 
 .phony: all check_file
 

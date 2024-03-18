@@ -1,7 +1,4 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
 !=============================================================================!                                                                                                                         
 !                                  COMMS                                      !                                                                                                                         
 !=============================================================================!                                                                                                                         
@@ -39,22 +36,47 @@ module COMMS
   !  public comms_reduce
   !  public comms_bcast
 
-
   interface comms_reduce
      module procedure comms_reduce_real
      module procedure comms_reduce_int
      module procedure comms_reduce_complex
   end interface comms_reduce
 
+  interface comms_send
+     module procedure comms_send_int
+     module procedure comms_send_double
+     module procedure comms_send_int_array
+     module procedure comms_send_double_array
+     module procedure comms_send_real_array2d
+  end interface comms_send
 
-  public COMMS_WTIME
-  public COMMS_INIT
-  public COMMS_FINALISE
-  public COMMS_ABORT
+  interface comms_recv
+     module procedure comms_recv_int
+     module procedure comms_recv_double
+     module procedure comms_recv_int_array
+     module procedure comms_recv_double_array
+     module procedure comms_recv_real_array2d
+  end interface comms_recv
+
+  interface comms_bcast
+     module procedure COMMS_BCAST_INT
+     module procedure COMMS_BCAST_REAL
+     module procedure COMMS_BCAST_DOUBLE
+     module procedure COMMS_BCAST_INT_ARRAY
+     module procedure COMMS_BCAST_REAL_ARRAY
+     module procedure COMMS_BCAST_DOUBLE_ARRAY
+  end interface comms_bcast
+
+  public comms_wtime
+  public comms_init
+  public comms_finalise
+  public comms_abort
   public comms_barrier
-  public COMMS_VERSION
-  public COMMS_LIBRARY_VERSION
+  public comms_version
+  public comms_library_version
   public comms_reduce
+  public comms_bcast
+
 contains
 
   subroutine comms_scheme(nkpts,ngv,stdout,report)
@@ -88,7 +110,7 @@ contains
     dist_kpt=1
     dist_gvec=1    
 
-    write(stdout,*)"+"//repeat("-",66)//"+"
+    write(stdout,*)"+"//repeat("=",66)//"+"
     call trace_exit('comms_scheme')
     return
   end subroutine comms_scheme
@@ -477,6 +499,473 @@ contains
     call trace_exit("comms_distribute")
     return
   end subroutine comms_distribute
+  subroutine comms_send_int(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                         c o m m s _ s e n d _ i n t                          !
+    !==============================================================================!
+    ! subroutine wrapper for sending 1d data of type int.                          !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    integer :: send_buff
+    !    print*,send_buff
+    call trace_entry("comms_send_int")
+    call trace_exit("comms_send_int")
 
+  end subroutine comms_send_int
+
+  subroutine comms_send_real(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                        c o m m s _ s e n d _ r e a l                         !
+    !==============================================================================!
+    ! subroutine wrapper for sending 1d data of type real                          !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    real(dp):: send_buff
+    call trace_entry("comms_send_real")
+
+    call trace_exit("comms_send_real")
+
+  end subroutine comms_send_real
+
+  subroutine comms_send_double(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                      c o m m s _ s e n d _ d o u b l e                       !
+    !==============================================================================!
+    ! subroutine wrapper for sending 1d data of type double                        !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    real(dp):: send_buff
+    call trace_entry("comms_send_double")
+
+    call trace_exit("comms_send_double")
+
+  end subroutine comms_send_double
+
+
+
+  subroutine comms_send_int_array(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                   c o m m s _ s e n d _ i n t _ a r r a y                    !
+    !==============================================================================!
+    ! subroutine wrapper for sending array data of type int.                       !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    integer,dimension(1:count) :: send_buff
+    call trace_entry("comms_send_int_array")
+
+    call trace_exit("comms_send_int_array")
+
+  end subroutine comms_send_int_array
+
+  subroutine comms_send_real_array(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                  c o m m s _ s e n d _ r e a l _ a r r a y                   !
+    !==============================================================================!
+    ! subroutine wrapper for sending array data of type real.                      !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    real(dp),dimension(1:count) :: send_buff
+    call trace_entry("comms_send_real_array")
+
+    call trace_exit("comms_send_real_array")
+
+  end subroutine comms_send_real_array
+
+  subroutine comms_send_double_array(send_buff,count,dest_rank,tag)
+    !==============================================================================!
+    !                c o m m s _ s e n d _ d o u b l e _ a r r a y                 !
+    !==============================================================================!
+    ! subroutine wrapper for sending array data of type double.                    !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,dest_rank,tag
+    real(dp),dimension(1:count) :: send_buff
+    call trace_entry("comms_send_double_array")
+
+    call trace_exit("comms_send_double_array")
+
+  end subroutine comms_send_double_array
+
+
+  !2d array
+  subroutine comms_send_real_array2d(send_buff,count1,count2,dest_rank,tag)
+    !==============================================================================!
+    !                c o m m s _ s e n d _ r e a l _ a r r a y 2 d                 !
+    !==============================================================================!
+    ! subroutine wrapper for sending 2d array data of type real.                   !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           count1,            intent :: in                                    !
+    !           count2,            intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count1,count2,dest_rank,tag
+    real(dp),dimension(count1,count2) :: send_buff
+    call trace_entry("comms_send_real_array2d")
+    call trace_exit("comms_send_real_array2d")
+
+  end subroutine comms_send_real_array2d
+
+  subroutine comms_send_recv_real_array2d(send_buff,recv_buff,count1,count2,dest_rank,tag,send_rank)
+    !==============================================================================!
+    !           c o m m s _ s e n d _ r e c v _ r e a l _ a r r a y 2 d            !
+    !==============================================================================!
+    ! subroutine wrapper for recieving 2d arrays of real data.                     !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           send_buff,         intent :: in                                    !
+    !           recv_buff,         intent :: in                                    !
+    !           count1,            intent :: in                                    !
+    !           count2,            intent :: in                                    !
+    !           dest_rank,         intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !           send_rank,         intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count1,count2,dest_rank,tag,send_rank
+    real(dp),dimension(count1,count2) :: send_buff,recv_buff
+    call trace_entry("comms_send_recv_real_array2d")
+
+    call trace_exit("comms_send_recv_real_array2d")
+
+
+  end subroutine comms_send_recv_real_array2d
+
+
+
+  !recv routines
+
+  subroutine comms_recv_int(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                         c o m m s _ r e c v _ i n t                          !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type int.                           !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,source,tag
+    integer, intent(inout) :: recv_buff
+    !   print*, "message in routine"
+    call trace_entry("comms_recv_int")
+
+    !    print*, "after",recv_buff
+    call trace_exit("comms_recv_int")
+
+  end subroutine comms_recv_int
+
+  subroutine comms_recv_real(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                        c o m m s _ r e c v _ r e a l                         !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type real.                          !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,source,tag
+    real(dp), intent(inout) :: recv_buff
+    call trace_entry("comms_recv_real")
+    !   print*, "recv sent to routine"
+
+    !  print*, "recv success from rank",source 
+    call trace_exit("comms_recv_real")
+
+  end subroutine comms_recv_real
+
+  subroutine comms_recv_double(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                      c o m m s _ r e c v _ d o u b l e                       !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type double.                        !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,source,tag
+    real(dp),intent(inout) :: recv_buff
+    call trace_entry("comms_recv_double")
+
+    call trace_exit("comms_recv_double")
+
+  end subroutine comms_recv_double
+
+
+
+
+  subroutine comms_recv_int_array(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                   c o m m s _ r e c v _ i n t _ a r r a y                    !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type int.                           !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer:: count,source,tag
+    integer,dimension(1:count),intent(inout) :: recv_buff
+
+
+  end subroutine comms_recv_int_array
+
+  subroutine comms_recv_real_array(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                  c o m m s _ r e c v _ r e a l _ a r r a y                   !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type real                           !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count,source,tag
+    real(dp),dimension(1:count),intent(inout) :: recv_buff
+    call trace_entry("comms_recv_real_array")
+
+    call trace_exit("comms_recv_real_array")
+
+  end subroutine comms_recv_real_array
+
+  subroutine comms_recv_double_array(recv_buff,count,source,tag)
+    !==============================================================================!
+    !                c o m m s _ r e c v _ d o u b l e _ a r r a y                 !
+    !==============================================================================!
+    ! subroutine wrapper for recieving data of type double.                        !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count,             intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count,source,tag
+    real(dp),dimension(1:count),intent(inout) :: recv_buff
+    call trace_entry("comms_recv_double_array")
+
+    call trace_exit("comms_recv_double_array")
+
+  end subroutine comms_recv_double_array
+
+  !2d array
+  subroutine comms_recv_real_array2d(recv_buff,count1,count2,source,tag)
+    !==============================================================================!
+    !                c o m m s _ r e c v _ r e a l _ a r r a y 2 d                 !
+    !==============================================================================!
+    ! subroutine wrapper for reciving 2d arrays of real data.                      !
+    !------------------------------------------------------------------------------!
+    ! arguments:                                                                   !
+    !           recv_buff,         intent :: inout                                 !
+    !           count1,            intent :: in                                    !
+    !           count2,            intent :: in                                    !
+    !           source,            intent :: in                                    !
+    !           tag,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! author:   z. hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count1,count2,source,tag
+    real(dp),dimension(count1,count2),intent(inout) :: recv_buff
+    call trace_entry("comms_recv_real_array2d")
+
+    call trace_exit("comms_recv_real_array2d")
+
+  end subroutine comms_recv_real_array2d
+
+
+  !BCAST routines
+  subroutine COMMS_BCAST_INT(start_buff,count)
+    !==============================================================================!
+    !                        C O M M S _ B C A S T _ I N T                         !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting integer data from the root to all        !
+    ! children processes.                                                          !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    integer :: start_buff
+    call trace_entry("COMMS_BCAST_INT")
+
+    call trace_exit("COMMS_BCAST_INT")
+  end subroutine COMMS_BCAST_INT
+
+  subroutine COMMS_BCAST_REAL(start_buff,count)
+    !==============================================================================!
+    !                       C O M M S _ B C A S T _ R E A L                        !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting real data from the root to all           !
+    ! children processes.                                                          !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    real :: start_buff
+    call trace_entry("COMMS_BCAST_REAL")
+
+    call trace_exit("COMMS_BCAST_REAL")
+  end subroutine COMMS_BCAST_REAL
+
+  subroutine COMMS_BCAST_DOUBLE(start_buff,count)
+    !==============================================================================!
+    !                     C O M M S _ B C A S T _ D O U B L E                      !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting double precision data from the root to   !
+    ! all children processes.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    double precision :: start_buff
+    call trace_entry("COMMS_BCAST_DOUBLE")
+
+    call trace_exit("COMMS_BCAST_DOUBLE")
+  end subroutine COMMS_BCAST_DOUBLE
+  !ARRAY
+  subroutine COMMS_BCAST_INT_ARRAY(start_buff,count)
+    !==============================================================================!
+    !                  C O M M S _ B C A S T _ I N T _ A R R A Y                   !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting array of integer data from the root to   !
+    ! all children processes.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    integer,dimension(count) :: start_buff
+    call trace_entry("COMMS_BCAST_INT_ARRAY")
+
+    call trace_exit("COMMS_BCAST_INT_ARRAY")
+  end subroutine COMMS_BCAST_INT_ARRAY
+
+  subroutine COMMS_BCAST_REAL_ARRAY(start_buff,count)
+    !==============================================================================!
+    !                 C O M M S _ B C A S T _ R E A L _ A R R A Y                  !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting array of real data from thr root to      !
+    ! all children processes.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    real,dimension(count) :: start_buff
+
+  end subroutine COMMS_BCAST_REAL_ARRAY
+
+  subroutine COMMS_BCAST_DOUBLE_ARRAY(start_buff,count)
+    !==============================================================================!
+    !               C O M M S _ B C A S T _ D O U B L E _ A R R A Y                !
+    !==============================================================================!
+    ! Subroutine wrapper for broadcasting array of double precision data from      !
+    ! the root to all children processes.                                          !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !           count,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  16/08/2019                                            !
+    !==============================================================================!
+    integer :: count
+    double precision,dimension(count) :: start_buff
+    call trace_entry("COMMS_BCAST_DOUBLE_ARRAY")
+
+    call trace_exit("COMMS_BCAST_DOUBLE_ARRAY")
+  end subroutine COMMS_BCAST_DOUBLE_ARRAY
 
 end module COMMS

@@ -6,7 +6,7 @@ program derek
   use comms!, only: comms_init, comms_finalise,rank,comms_distribute
   use trace, only: trace_entry,trace_exit,trace_init,trace_finalise
   use io   , only: io_initialise, io_errors,current_params,seed,stdout,&
-       & io_dryrun,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings
+       & io_dryrun,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings,io_print_kpt
   use memory,only: memory_report,memory_deallocate
   use basis, only: basis_init,current_basis, basis_recip2real, basis_real2recip
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
@@ -55,7 +55,7 @@ program derek
        & current_basis%num_node,&
        & current_basis%num_fine_node)
 
-
+  call io_print_kpt()
   ! allocate all of the things held in the state
   call state_init()
 
@@ -63,7 +63,7 @@ program derek
 
 
   ! report the memory usage, probably won't need much more memory stuff after this 
-  call memory_report(stdout,current_params%calc_memory)
+  call memory_report(stdout,current_params%iprint,current_params%calc_memory)
 
   ! Now check if its a dry run before going on
   if (current_params%dryrun)then
@@ -76,28 +76,29 @@ program derek
   !print*,"RANK:",rank,"BASIS:",current_basis%local_grid_points
 
 
-  ! doing some big testing here
   
-  call memory_allocate(test_fft,1,current_basis%ngx,'B')
-  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
-
-
-  ! define a function
-  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
-
-  test_fft = exp(-(test_fft_x-0.5_dp)**2/(0.03_dp)**2)!sin(test_fft_x*pi*2) + sin(4*test_fft_x*pi*2)
-  test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
-  test_fft(43:63) = 1.0_dp
-  do i = 1, current_basis%ngx
-     write(120,*) test_fft_x(i),real(test_fft(i))
-  end do
-
-
-  i=1
-  call fft_1d(test_fft,'STD',i)
-  do i = 1, current_basis%ngx
-     write(121,*) test_fft_x(i),real(test_fft(i))
-  end do
+  ! doing some big testing here
+!!$
+!!$  call memory_allocate(test_fft,1,current_basis%ngx,'B')
+!!$  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
+!!$
+!!$
+!!$  ! define a function
+!!$  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+!!$
+!!$  test_fft = exp(-(test_fft_x-0.5_dp)**2/(0.03_dp)**2)!sin(test_fft_x*pi*2) + sin(4*test_fft_x*pi*2)
+!!$  test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
+!!$  test_fft(43:63) = 1.0_dp
+!!$  do i = 1, current_basis%ngx
+!!$     write(120,*) test_fft_x(i),real(test_fft(i))
+!!$  end do
+!!$
+!!$
+!!$  i=1
+!!$  call fft_1d(test_fft,'STD',i)
+!!$  do i = 1, current_basis%ngx
+!!$     write(121,*) test_fft_x(i),real(test_fft(i))
+!!$  end do
   
 
 
@@ -120,6 +121,6 @@ program derek
      write(stdout,*)"+"//repeat("-",66)//"+"
   end if
   call comms_finalise()
-  print*,'test'
+  print*,rank,'test'
 
 end program derek

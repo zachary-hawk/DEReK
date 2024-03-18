@@ -67,15 +67,23 @@ DATFLAGS = -DCODATA2014
 endif
 
 # .mod files
-FCFLAGS += -I$(BUILD_DIR) -J$(BUILD_DIR)
+FCFLAGS += -I$(BUILD_DIR) -J$(BUILD_DIR) 
+
+OBJ+=$(BUILD_DIR)/fftw3_version.o
 
 
+# Set up the C compile steps for the fftw version numbers
+CC=gcc
+CCFLAGS= -w 
 
-
-
-$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU)
+$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
 $(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS)
 
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(BUILD_DIR)
+	@echo "Compiling fftw3 version"
+	@$(CC) $(CCFLAGS) -o $@ -c $< 
 
 
 $(BUILD_DIR)/%.o: %.f90
@@ -92,6 +100,9 @@ $(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
 	@$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
+
+
+
 
 .PHONY: print_obj_files
 print_obj_files:

@@ -1652,7 +1652,7 @@ contains
 
 
 
-  subroutine memory_report(stdout,check_mem)
+  subroutine memory_report(stdout,iprint,check_mem)
     !==============================================================================!
     !                          M E M O R Y _ R E P O R T                           !
     !==============================================================================!
@@ -1667,6 +1667,7 @@ contains
     use comms, only : on_root_node,comms_reduce,rank
     integer, intent(in) :: stdout
     logical, intent(in) :: check_mem
+    integer, intent(in) :: iprint
 
     real(dp) :: byte_to_giga=1.0_dp/(1024.0_dp)**3
     real(dp) :: byte_to_mega=1.0_dp/(1024.0_dp)**2
@@ -1691,75 +1692,76 @@ contains
 
     if (on_root_node)then 
        write(stdout,*)
-       write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-       write(stdout,*)"    +                     MEMORY ESTIMATES                    +"
-       write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+       write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
+       write(stdout,*)"        |                MEMORY ESTIMATES               | <-- MEM"
+       write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
 
-       if (io_memory.le.1.0e3_dp)then
-          write(stdout,1)"IO requirements",io_memory,'B'
-       elseif(io_memory.le.1.0e6_dp.and.io_memory.gt.1.0e3_dp)then
-          write(stdout,1)"IO requirements",io_memory*byte_to_kilo,'KB'
-       elseif(io_memory.le.1.0e9_dp.and.io_memory.gt.1.0e6_dp)then
-          write(stdout,1)"IO requirements",io_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"IO requirements",io_memory*byte_to_giga,'GB'
+       if (iprint.ge.2)then 
+          if (io_memory.le.1.0e3_dp)then
+             write(stdout,1)"IO requirements",io_memory,'B'
+          elseif(io_memory.le.1.0e6_dp.and.io_memory.gt.1.0e3_dp)then
+             write(stdout,1)"IO requirements",io_memory*byte_to_kilo,'KB'
+          elseif(io_memory.le.1.0e9_dp.and.io_memory.gt.1.0e6_dp)then
+             write(stdout,1)"IO requirements",io_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"IO requirements",io_memory*byte_to_giga,'GB'
+          end if
+
+
+          if (basis_memory.le.1.0e3_dp)then
+             write(stdout,1)"Basis requirements",basis_memory,'B'
+          elseif(basis_memory.le.1.0e6_dp.and.basis_memory.gt.1.0e3_dp)then
+             write(stdout,1)"Basis requirements",basis_memory*byte_to_kilo,'KB'
+          elseif(basis_memory.le.1.0e9_dp.and.basis_memory.gt.1.0e6_dp)then
+             write(stdout,1)"Basis requirements",basis_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"Basis requirements",basis_memory*byte_to_giga,'GB'
+          end if
+
+
+          if (pot_memory.le.1.0e3_dp)then
+             write(stdout,1)"Potential requirements",pot_memory,'B'
+          elseif(pot_memory.le.1.0e6_dp.and.pot_memory.gt.1.0e3_dp)then
+             write(stdout,1)"Potential requirements",pot_memory*byte_to_kilo,'KB'
+          elseif(pot_memory.le.1.0e9_dp.and.pot_memory.gt.1.0e6_dp)then
+             write(stdout,1)"Potential requirements",pot_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"Potential requirements",pot_memory*byte_to_giga,'GB'
+          end if
+
+
+          if (wave_memory.le.1.0e3_dp)then
+             write(stdout,1)"Wavefunction requirements",wave_memory,'B'
+          elseif(wave_memory.le.1.0e6_dp.and.wave_memory.gt.1.0e3_dp)then
+             write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_kilo,'KB'
+          elseif(wave_memory.le.1.0e9_dp.and.wave_memory.gt.1.0e6_dp)then
+             write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_giga,'GB'
+          end if
+
+          if (den_memory.le.1.0e3_dp)then
+             write(stdout,1)"Density requirements",den_memory,'B'
+          elseif(den_memory.le.1.0e6_dp.and.den_memory.gt.1.0e3_dp)then
+             write(stdout,1)"Density requirements",den_memory*byte_to_kilo,'KB'
+          elseif(den_memory.le.1.0e9_dp.and.den_memory.gt.1.0e6_dp)then
+             write(stdout,1)"Density requirements",den_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"Density requirements",den_memory*byte_to_giga,'GB'
+          end if
+
+          if (gen_memory.le.1.0e3_dp)then
+             write(stdout,1)"General requirements",gen_memory,'B'
+          elseif(gen_memory.le.1.0e6_dp.and.gen_memory.gt.1.0e3_dp)then
+             write(stdout,1)"General requirements",gen_memory*byte_to_kilo,'KB'
+          elseif(gen_memory.le.1.0e9_dp.and.gen_memory.gt.1.0e6_dp)then
+             write(stdout,1)"General requirements",gen_memory*byte_to_mega,'MB'
+          else 
+             write(stdout,1)"General requirements",gen_memory*byte_to_giga,'GB'
+          end if
+
+          write(stdout,*)"        |                              ===============  | <-- MEM"
        end if
-
-
-       if (basis_memory.le.1.0e3_dp)then
-          write(stdout,1)"Basis requirements",basis_memory,'B'
-       elseif(basis_memory.le.1.0e6_dp.and.basis_memory.gt.1.0e3_dp)then
-          write(stdout,1)"Basis requirements",basis_memory*byte_to_kilo,'KB'
-       elseif(basis_memory.le.1.0e9_dp.and.basis_memory.gt.1.0e6_dp)then
-          write(stdout,1)"Basis requirements",basis_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"Basis requirements",basis_memory*byte_to_giga,'GB'
-       end if
-
-
-       if (pot_memory.le.1.0e3_dp)then
-          write(stdout,1)"Potential requirements",pot_memory,'B'
-       elseif(pot_memory.le.1.0e6_dp.and.pot_memory.gt.1.0e3_dp)then
-          write(stdout,1)"Potential requirements",pot_memory*byte_to_kilo,'KB'
-       elseif(pot_memory.le.1.0e9_dp.and.pot_memory.gt.1.0e6_dp)then
-          write(stdout,1)"Potential requirements",pot_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"Potential requirements",pot_memory*byte_to_giga,'GB'
-       end if
-
-
-       if (wave_memory.le.1.0e3_dp)then
-          write(stdout,1)"Wavefunction requirements",wave_memory,'B'
-       elseif(wave_memory.le.1.0e6_dp.and.wave_memory.gt.1.0e3_dp)then
-          write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_kilo,'KB'
-       elseif(wave_memory.le.1.0e9_dp.and.wave_memory.gt.1.0e6_dp)then
-          write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"Wavefunction requirements",wave_memory*byte_to_giga,'GB'
-       end if
-
-       if (den_memory.le.1.0e3_dp)then
-          write(stdout,1)"Density requirements",den_memory,'B'
-       elseif(den_memory.le.1.0e6_dp.and.den_memory.gt.1.0e3_dp)then
-          write(stdout,1)"Density requirements",den_memory*byte_to_kilo,'KB'
-       elseif(den_memory.le.1.0e9_dp.and.den_memory.gt.1.0e6_dp)then
-          write(stdout,1)"Density requirements",den_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"Density requirements",den_memory*byte_to_giga,'GB'
-       end if
-
-       if (gen_memory.le.1.0e3_dp)then
-          write(stdout,1)"General requirements",gen_memory,'B'
-       elseif(gen_memory.le.1.0e6_dp.and.gen_memory.gt.1.0e3_dp)then
-          write(stdout,1)"General requirements",gen_memory*byte_to_kilo,'KB'
-       elseif(gen_memory.le.1.0e9_dp.and.gen_memory.gt.1.0e6_dp)then
-          write(stdout,1)"General requirements",gen_memory*byte_to_mega,'MB'
-       else 
-          write(stdout,1)"General requirements",gen_memory*byte_to_giga,'GB'
-       end if
-
-       write(stdout,*)"    +                                      ================== +"
-
        if (tot_memory.le.1.0e3_dp)then
           write(stdout,1)"Total requirements",tot_memory,'B'
        elseif(tot_memory.le.1.0e6_dp.and.tot_memory.gt.1.0e3_dp)then
@@ -1769,8 +1771,8 @@ contains
        else 
           write(stdout,1)"Total requirements",tot_memory*byte_to_giga,'GB'
        end if
-       write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
+       write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
        if (nprocs.gt.1)then
           if (tot_max.le.1.0e3_dp)then
              write(stdout,1)"Maximum memory per process",tot_max,'B'
@@ -1784,7 +1786,8 @@ contains
 
 
 
-          write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+          write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
        end if
 
 !!$       write(stdout,1)"Basis requirements" ,basis_memory*byte_to_mega,'MB'
@@ -1795,7 +1798,7 @@ contains
 !!$       write(stdout,1)"Total memory requirements",tot_memory*byte_to_mega
 !!$       write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     end if
-1   format(T6"+",4x,a,T43,":",3x,f10.3,2x,a2,T64,"+")
+1   format(T10,"|",1x,a,T38,":",3x,f10.3,2x,a2,T58,"| <-- MEM")
 
 
 

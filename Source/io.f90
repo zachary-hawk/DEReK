@@ -6,6 +6,8 @@ module io
        &,comms_library_version,comms_version
   use memory, only : memory_init,memory_allocate,memory_deallocate
   use iso_fortran_env, only : compiler_version
+  use iso_c_binding
+ 
   implicit none
 
   logical,           public                :: file_exists
@@ -19,7 +21,7 @@ module io
   character(100),dimension(:),allocatable  :: keys_default
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
-  character(100),dimension(:),allocatable  :: keys_cat
+  integer       ,dimension(:),allocatable  :: keys_cat
 
   character(100) :: version = "1.0.0"   ! Master version for all instances
   character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK"
@@ -27,8 +29,17 @@ module io
 
   integer                                  :: max_params=1
   logical, private :: cell_declared=.false.
+  integer,parameter :: fft_v_len = 64
+
+  interface
+     function fftw_version_ptr_c()bind (c,name='padded_fftw_version')
+       use iso_c_binding
+       type(c_ptr) :: fftw_version_ptr_c
+     end function fftw_version_ptr_c
+  end interface
 
 
+  
   type  parameters
      ! %Begin: parameters
 
@@ -57,7 +68,7 @@ module io
      logical :: calc_memory = .false.
      integer :: iprint =            1
      real(dp) :: finite_barrier_height =    10.00_dp
-     real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5,0.5,0.5/)
+     real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5_dp,0.5_dp,0.5_dp/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
      real(dp) :: periodic_pot_amp =    10.00_dp
      integer :: random_seed =            0
@@ -67,6 +78,8 @@ module io
      logical :: restart = .false.
      logical :: write_formatted_potex = .false.
      character(len=30) :: output_level = 'minimal'
+     real(dp),dimension(1:3) :: ext_efield =    (/0.0_dp,0.0_dp,0.0_dp/)
+     real(dp),dimension(1:3) :: ext_bfield =    (/0.0_dp,0.0_dp,0.0_dp/)
      ! %End: parameters
   end type parameters
 
@@ -104,12 +117,14 @@ module io
   character(len=30),parameter,public ::key_write_formatted_density   = 'write_formatted_density'
   character(len=30),parameter,public ::key_write_formatted_potex   = 'write_formatted_potex'
   character(len=30),parameter,public ::key_output_level   = 'output_level'
+  character(len=30),parameter,public ::key_ext_efield   = 'ext_efield'
+  character(len=30),parameter,public ::key_ext_bfield   = 'ext_bfield'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          32
+  integer,parameter::max_keys=          34
   ! %End: max_param
 
 
@@ -135,6 +150,7 @@ module io
 
   type(parameters),public,save :: current_params
   type(structure) ,public,save :: current_structure
+
 
 
   !external DGETRF
@@ -381,7 +397,7 @@ contains
              read(param,*,iostat=stat) dummy_params%task
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              select case(dummy_params%task)
-             case ('singlepoint','bandstructure','dos')               
+             case ('singlepoint','bandstructure','dos')
                 continue
              case default
                 call io_errors("Unknown task: "//param)
@@ -439,6 +455,7 @@ contains
              read(param,*,iostat=stat) dummy_params%iprint
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
+             if (dummy_params%iprint.lt.1 .or. dummy_params%iprint.gt.3)call io_errors('print_level  must be between 1 and 3')
           case(key_finite_barrier_height)
              read(param,*,iostat=stat) dummy_params%finite_barrier_height
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
@@ -487,6 +504,14 @@ contains
              case default
                 call io_errors("Invalid output: "//param)
              end select
+          case(key_ext_efield)
+             read(param,*,iostat=stat) dummy_params%ext_efield(1),dummy_params%ext_efield(2),dummy_params%ext_efield(3)
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+          case(key_ext_bfield)
+             read(param,*,iostat=stat) dummy_params%ext_bfield(1),dummy_params%ext_bfield(2),dummy_params%ext_bfield(3)
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
              ! %End: case_read
           case default
              call io_errors(" Error parsing keyword: "//key)
@@ -523,8 +548,8 @@ contains
 
 
     ! Set the file writing
-    do i = 1,max_params      
-       if (trim(adjustl(present_array(i))).eq.'output_level')then     
+    do i = 1,max_params
+       if (trim(adjustl(present_array(i))).eq.'output_level')then
           select case(dummy_params%output_level)
           case('minimal')
              dummy_params%write_wvfn               = .false.
@@ -946,8 +971,11 @@ contains
     implicit none
     logical  :: print_flag
 
-    character(60) :: junk
-    integer       :: i ! loops
+    character(100) :: junk
+    integer       :: i,j ! loops
+    character(30),dimension(1:8) :: cats
+    integer,      dimension(1:max_keys) :: mapping
+
     ! Allocate all the arrays for the parameters
     allocate(keys_array(1:max_keys))
     allocate(keys_default(1:max_keys))
@@ -993,6 +1021,8 @@ contains
     keys_array(30)=trim(key_write_formatted_density)
     keys_array(31)=trim(key_write_formatted_potex)
     keys_array(32)=trim(key_output_level)
+    keys_array(33)=trim(key_ext_efield)
+    keys_array(34)=trim(key_ext_bfield)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -1062,21 +1092,23 @@ contains
     keys_default(31)=trim(adjustl(junk))
     write(junk,*)current_params%output_level
     keys_default(32)=trim(adjustl(junk))
+    write(junk,*)current_params%ext_efield
+    keys_default(33)=trim(adjustl(junk))
+    write(junk,*)current_params%ext_bfield
+    keys_default(34)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
-
-    keys_description(1)='A dryrun allows the calculation to be &
-         & initialised to check the input files without starting any intensive calculations'
+    keys_description(1)='Check the input files without starting any intensive calculations'
     keys_description(2)='Turn on profilling of the code'
     keys_description(3)='Number of electrons in the calculation'
     keys_description(4)='Energy convergence tolerance of the SCF cycle'
-    keys_description(5)='LDA'
+    keys_description(5)='Exchange and correlation functional'
     keys_description(6)='Maximum plane wave energy used to determine G vector basis'
     keys_description(7)='G vector grid scale for fine grid basis'
     keys_description(8)='Write wavefunction to file'
     keys_description(9)='Type of calculation to perform'
-    keys_description(10)='Incllude spin orbit coupling in the calculation'
+    keys_description(10)='Include spin orbit coupling in the calculation'
     keys_description(11)='Maximum number of SCF steps'
     keys_description(12)='The type of method used for SCF minimisation, either EDFT or DM'
     keys_description(13)='Electronic temperature used to smear the Fermi level, for better convergence'
@@ -1099,6 +1131,8 @@ contains
     keys_description(30)='Write the density to a human readble file'
     keys_description(31)='Write the external potential to a human readable file'
     keys_description(32)='Level to set amount of output files written.'
+    keys_description(33)='Real vector of externally applied electric field'
+    keys_description(34)='Vector of externally applied magnetic field in Tesla'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1135,54 +1169,72 @@ contains
     keys_allowed(30)='Boolean'
     keys_allowed(31)='Boolean'
     keys_allowed(32)='none, minimal, all'
+    keys_allowed(33)='any real vector'
+    keys_allowed(34)='Any real vector'
     ! %End: assign_allowed
 
 
+    cats = (/'FUNDAMENTAL  '&
+         &  ,'PLANEWAVES   '&
+         &  ,'MINIMISATION '&
+         &  ,'POTENTIAL    '&
+         &  ,'WAVEFUNCTION '&
+         &  ,'I/O          '&
+         &  ,'MISCELLANEOUS'&
+         &  ,'ADVANCED     '/)
+    !  %Begin: assign_cats
+    keys_cat(1) =7
+    keys_cat(2) =7
+    keys_cat(3) =1
+    keys_cat(4) =3
+    keys_cat(5) =1
+    keys_cat(6) =2
+    keys_cat(7) =2
+    keys_cat(8) =6
+    keys_cat(9) =1
+    keys_cat(10)=8
+    keys_cat(11)=3
+    keys_cat(12)=3
+    keys_cat(13)=3
+    keys_cat(14)=5
+    keys_cat(15)=6
+    keys_cat(16)=6
+    keys_cat(17)=6
+    keys_cat(18)=4
+    keys_cat(19)=1
+    keys_cat(20)=6
+    keys_cat(21)=7
+    keys_cat(22)=6
+    keys_cat(23)=4
+    keys_cat(24)=4
+    keys_cat(25)=4
+    keys_cat(26)=4
+    keys_cat(27)=6
+    keys_cat(28)=6
+    keys_cat(29)=6
+    keys_cat(30)=6
+    keys_cat(31)=6
+    keys_cat(32)=6
+    keys_cat(33)=           8
+    keys_cat(34)=           8
+    ! %End: assign_cats
+    call io_alphabetise(keys_array,max_keys,mapping)
 
-
-    keys_cat(1) ='Misc'
-    keys_cat(2) ='Misc'
-    keys_cat(3) ='Fundamental'
-    keys_cat(4) ='Fundamental'
-    keys_cat(5) ='Fundamental'
-    keys_cat(6) ='Planewaves'
-    keys_cat(7) ='Planewaves'
-    keys_cat(8) ='IO'
-    keys_cat(9) ='Fundamental'
-    keys_cat(10)='Advanced'
-    keys_cat(11)='Fundamental'
-    keys_cat(12)='Minimisation'
-    keys_cat(13)='Minimisation'
-    keys_cat(14)='Wave'
-    keys_cat(15)='IO'
-    keys_cat(16)='IO'
-    keys_cat(17)='IO'
-    keys_cat(18)='Potential'
-    keys_cat(19)='Fundamental'
-    keys_cat(20)='IO'
-    keys_cat(21)='Misc'
-    keys_cat(22)='Mist'
-    keys_cat(23)='Potential'
-    keys_cat(24)='Potential'
-    keys_cat(25)='Potential'
-    keys_cat(26)='Potential'
-    keys_cat(27)='Misc'
-    keys_cat(28)='IO'
-    keys_cat(29)='IO'
-    keys_cat(30)='IO'
-    keys_cat(31)='IO'
-    keys_cat(32)='IO'
-
-
-    
     ! do the loop for printing stuff
 
     if (print_flag)then
 100    format(1x,A,T35,A)
        write(*,*)
-       do i=1,max_keys
-          write(*,100) io_case(trim(keys_array(i)),.true.),trim(keys_description(i))
+       do j=1,8
+          write(*,*)adjustl(trim(cats(j)))
+          write(*,*)repeat('-',len(adjustl(trim(cats(j)))))
 
+          do i=1,max_keys
+             if (keys_cat(mapping(i)).eq.j )then
+                write(*,100) io_case(trim(keys_array(mapping(i))),.true.),trim(keys_description(mapping(i)))
+             end if
+          end do
+          write(*,*)
        end do
     end if
 
@@ -1209,9 +1261,9 @@ contains
     integer :: maj_mpi,min_mpi,min_char
     character(len=max_version_length) :: mpi_c_version
     character(len=3) :: MPI_version_num
-    character(len=100):: compile_version,cpuinfo
+    character(len=100):: compile_version,cpuinfo,git_version
     character(100)    :: arch_string
-
+    integer           :: math_maj,math_min,math_patch
     logical,optional,intent(in) :: comment
 
     call trace_entry("io_sys_info")
@@ -1220,12 +1272,12 @@ contains
 
     if (comms_arch.eq."MPI")then
        call COMMS_LIBRARY_VERSION(mpi_c_version)
-       call COMMS_VERSION(min_mpi,maj_mpi)
+       call COMMS_VERSION(maj_mpi,min_mpi)
 
-       write(mpi_version_num,97)min_mpi,maj_mpi
-97     format(i1,"."i1)
-       min_char=scan(mpi_c_version,".")
-       !print*, mpi_c_version,mpi_version_num
+       write(mpi_version_num,97)maj_mpi,min_mpi
+97     format(i1,".",i1)
+       min_char=scan(mpi_c_version,",")
+
     end if
 
 #ifdef __INTEL_COMPILER
@@ -1247,6 +1299,12 @@ contains
 
 #define opt opt_strat
 
+#ifdef gitversion
+#define git_version gitversion
+#endif
+    
+    ! Get the version of openblas
+    call ilaver(math_maj,math_min,math_patch)
 
 
     compile_version=compiler_version()
@@ -1261,25 +1319,31 @@ contains
           write(unit,*) "# Compile Date       : ",__DATE__, ",",__TIME__
           write(unit,*) "# Operating System   : ",trim(arch_string)
           write(unit,*) "# System CPU         : ",trim(cpuinfo)
-          write(unit,*) "# Parallelisation    : ", comms_arch
+          write(unit,*) "# Communications     : ", comms_arch
           if (comms_arch.eq."MPI")then
-             write(unit,*) "# MPI Version        : ",mpi_c_version(1:min_char+1)
+             write(unit,*) "# MPI Version        : ",mpi_c_version(1:min_char)
           end if
           write(unit,*) "# Optimisation       : ",opt
           write(unit,*) "# Physical Constants : ",const_version
+          write(unit,*) "# FFTW3 Version      : ",trim(f_fftw_version())
+          write(unit,'(1x,a,i0,".",I0,".",i0)') "# OpenBLAS Version   : ",math_maj,math_min,math_patch
+       
           write(unit,*) '# '
        end if
     else
+       write(unit,*) "Code Version       : ",git_version
        write(unit,*) "Compiler           : ",compiler," ",Trim(compile_version)
        write(unit,*) "Compile Date       : ",__DATE__, ",",__TIME__
        write(unit,*) "Operating System   : ",trim(arch_string)
        write(unit,*) "System CPU         : ",trim(cpuinfo)
        write(unit,*) "Parallelisation    : ", comms_arch
        if (comms_arch.eq."MPI")then
-          write(unit,*) "MPI Version        : ",mpi_c_version(1:min_char+1)
+          write(unit,*) "MPI Version        : ",mpi_c_version(1:min_char)
        end if
        write(unit,*) "Optimisation       : ",opt
        write(unit,*) "Physical Constants : ",const_version
+       write(unit,*) "FFTW3 Version      : ",trim(f_fftw_version())
+       write(unit,'(1x,a,i0,".",I0,".",i0)') "OpenBLAS Version   : ",math_maj,math_min,math_patch
        write(unit,*)
     end if
 
@@ -1654,86 +1718,61 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNIT CELL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (current_params%iprint.ge.1) then ! cell info is a must
-       write(stdout,*)"+"//repeat("-",(width-15)/2)//"  UNIT CELL  "//repeat("-",(width-16)/2)//"+"
+       write(stdout,*)"+"//repeat("=",(width-15)/2)//"  UNIT CELL  "//repeat("=",(width-16)/2)//"+"
 
-       write(stdout,*)
-       write(stdout,*) "            Lattice (A)                   Inverse Lattice (1/A)         "
+       write(stdout,23)
+       write(stdout,*) "|           Lattice (A)                   Inverse Lattice (1/A)    |"
        write(stdout,10) current_structure%cell(1,:)*bohr_to_angstrom,current_structure%inv_cell(1,:)/bohr_to_angstrom
        write(stdout,10) current_structure%cell(2,:)*bohr_to_angstrom,current_structure%inv_cell(2,:)/bohr_to_angstrom
        write(stdout,10) current_structure%cell(3,:)*bohr_to_angstrom,current_structure%inv_cell(3,:)/bohr_to_angstrom
-       write(stdout,*)
+       write(stdout,23)
        write(stdout,12) "Cell Volume =", current_structure%volume*bohr_to_angstrom**3
 
-       write(stdout,*)
-       write(stdout,*) "                      Lattice Parameters (A)"
-       write(stdout,*) "                      ----------------------"
+       write(stdout,23)
+       write(stdout,*) "|                       Lattice Parameters (A)                     |"
+       write(stdout,*) "|                       ----------------------                     |"
        write(stdout,11) 'a =',current_structure%lattice_a*bohr_to_angstrom,&
             & 'b =',current_structure%lattice_b*bohr_to_angstrom,&
             & 'c =', current_structure%lattice_c*bohr_to_angstrom
-       write(stdout,*)
-       write(stdout,*) "                          Cell Angles (o)"
-       write(stdout,*) "                          ---------------"
+       write(stdout,23)
+       write(stdout,*) "|                           Cell Angles (o)                        |"
+       write(stdout,*) "|                           ---------------                        |"
        write(stdout,11) 'alpha =',current_structure%alpha,'beta =',current_structure%beta,'gamma =', current_structure%gamma
 
-       write(stdout,*)
-       write(stdout,*)
+       write(stdout,23)
+       write(stdout,23)
     end if
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! BZ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    if (current_params%iprint.ge.2) then ! BZ is a little more verbose, so we will only do iprint 2
-       write(stdout,*)"+"//repeat("-",(width-15)/2)//" BZ SAMPLING "//repeat("-",(width-16)/2)//"+"
-       write(stdout,*)
-
-
-       write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-       write(stdout,13)"SCF MP kpoint grid :",&
-            & current_params%kpt_mp_grid(1),current_params%kpt_mp_grid(2),current_params%kpt_mp_grid(3)
-       write(stdout,131)"    Number kpoints :",&
-            & current_params%kpt_mp_grid(1)*current_params%kpt_mp_grid(2)*current_params%kpt_mp_grid(3)
-       if (current_params%iprint.ge.2)then
-          write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-          write(stdout,*) "        |     Number          Fractional co-ordinate      | <-- KPNT"
-          write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-          do i=1,current_structure%num_kpoints
-             write(stdout,14) i,current_structure%kpt_scf_list(i,1),&
-                  & current_structure%kpt_scf_list(i,2),&
-                  & current_structure%kpt_scf_list(i,3)
-          end do
-
-       end if
-       write(stdout,*) "        +-------------------------------------------------+ <-- KPNT"
-
-       write(stdout,*)
-    end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GENERAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if (current_params%iprint.ge.1) then
-       write(stdout,*)"+"//repeat("-",(width-15)/2)//"   GENERAL   "//repeat("-",(width-16)/2)//"+"
-       write(stdout,*)
+       write(stdout,*)"+"//repeat("=",(width-30)/2)//"   CALCULATION PARAMETERS   "//repeat("=",(width-30)/2)//"+"
+       write(stdout,23)
+       write(stdout,*)"|                              General                             |"
+       write(stdout,*)"|                              -------                             |"
 
        write(stdout,15)"Calculation type",adjustr(trim(current_params%task))
        write(stdout,15)"XC Functional",adjustr(trim(current_params%xc_functional))
-       write(stdout,19)"Spin orbit coupling",io_print_logical(current_params%soc)
        write(stdout,16)"Verbosity",current_params%iprint
        write(stdout,16)"Random seed", current_params%random_seed
-       write(stdout,*)
+       write(stdout,23)
 
 
-       write(stdout,*)"                        Electronic Parameters"
-       write(stdout,*)"                        ---------------------"
+       write(stdout,*)"|                       Electronic Parameters                      |"
+       write(stdout,*)"|                       ---------------------                      |"
        write(stdout,16)"Number of electrons",current_params%n_electrons
        write(stdout,16)"Number of conduction bands",current_params%conduction_bands
        write(stdout,17)"Electronic temperature (K)",current_params%electronic_temp
-       write(stdout,*)
-       write(stdout,*)"                         Potential Parameters"
-       write(stdout,*)"                         --------------------"
+       write(stdout,23)
+       write(stdout,*)"|                        Potential Parameters                      |"
+       write(stdout,*)"|                        --------------------                      |"
        select case(trim(current_params%external_pot))
        case('jelly')
           write(stdout,15)"External potential",adjustr('Jellium')
        case('finite_barrier')
           write(stdout,15)"External potential",adjustr('Finite Barrier')
-          write(stdout,22)"Fractional barrier widths",current_params%finite_barrier_width
+          write(stdout,22)"Frac. barrier widths",current_params%finite_barrier_width
           write(stdout,17)"Barrier height (eV)",current_params%finite_barrier_height*hartree_to_ev
        case('periodic_pot')
           write(stdout,15)"External potential",adjustr('Periodic Potential')
@@ -1744,15 +1783,15 @@ contains
           write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot))
        end select
 
-       write(stdout,*)
-       write(stdout,*)"                            SCF Parameters"
-       write(stdout,*)"                            --------------"
+       write(stdout,23)
+       write(stdout,*)"|                           SCF Parameters                         |"
+       write(stdout,*)"|                           --------------                         |"
        write(stdout,16)"Maximum SCF steps",current_params%max_scf
        write(stdout,15)"SCF method",adjustr(trim(current_params%scf_method))
        write(stdout,18)"SCF convergence tolerance (eV)",current_params%energy_tol*hartree_to_ev
-       write(stdout,*)
-       write(stdout,*)"                            I/O Parameters"
-       write(stdout,*)"                            --------------"
+       write(stdout,23)
+       write(stdout,*)"|                           I/O Parameters                         |"
+       write(stdout,*)"|                           --------------                         |"
        write(stdout,19)"Write wavefunction",io_print_logical(current_params%write_wvfn)
        write(stdout,19)"Write continuation file",io_print_logical(current_params%write_state)
        write(stdout,19)"Write density",io_print_logical(current_params%write_density)
@@ -1760,31 +1799,92 @@ contains
        write(stdout,19)"Write potential",io_print_logical(current_params%write_potential)
        write(stdout,19)"Write formatted potential",io_print_logical(current_params%write_formatted_potential)
        write(stdout,19)"Write external potential",io_print_logical(current_params%write_potex)
-       write(stdout,19)"Write formated external potential",io_print_logical(current_params%write_formatted_potex)
+       write(stdout,19)"Write formatted ext. potential",io_print_logical(current_params%write_formatted_potex)
        write(stdout,19)"Write electronic spectrum",io_print_logical(current_params%write_spec)
        write(stdout,19)"Calculate memory",io_print_logical(current_params%calc_memory)
 
+       write(stdout,23)
+       write(stdout,*)"|                         Advanced Parameters                      |"
+       write(stdout,*)"|                         -------------------                      |"
+       write(stdout,19)"Spin orbit coupling",io_print_logical(current_params%soc)
+       write(stdout,22)"External E-field (eV/A)", current_params%ext_efield
+       write(stdout,22)"External B-field (T)", current_params%ext_Bfield
+
+
+
     end if
 
+23  format(T2,'|',T69,'|')
+15  format(T2,'|',1x,a,T36,":",T38,a30,1x,'|')   ! Character
+16  format(T2,'|',1x,a,T36,":",T56,i12,1x,'|')   ! Integer
+17  format(T2,'|',1x,a,T36,":",T56,f12.3,1x,'|')   ! Real
+18  format(T2,'|',1x,a,T36,":",T56,ES12.2,1x,'|')   ! Science
+19  format(T2,'|',1x,a,T36,":",T56,A12,1x,'|')   ! Logical
+21  format(T2,'|',1x,a,T36,":",T53,3(i4,1x),1x,'|')   ! Integer vec
+22  format(T2,'|',1x,a,T36,":",T51,3(f5.3,1x),'|')   ! Real vec
 
-15  format(T2,a,T36,":",T40,a30)   ! Character
-16  format(T2,a,T36,":",T58,i12)   ! Integer
-17  format(T2,a,T36,":",T58,f12.3)   ! Real
-18  format(T2,a,T36,":",T58,ES12.2)   ! Science
-19  format(T2,a,T36,":",T58,A12)   ! Logical
-21  format(T2,a,T36,":",T56,3(i4,1x))   ! Integer vec
-22  format(T2,a,T36,":",T53,3(f5.3,1x))   ! Real vec
-
-14  format(T10,"|",T16,i4,T31,3(f7.4,1x),T60,"| <-- KPNT")
-13  format(T10,"|",T19,a,3x,3(i3,1x),T60,"| <-- KPNT")
-131 format(T10,"|",T19,a,3x,i4,T60,"| <-- KPNT")
-12  format(20x,a14,2x,f12.6,2x,"A**3")
-11  format(10x,3(a7,1x,f7.4,1x))
-10  format(1x, 3(f10.7,1x), 3x, 3(f10.7,1x))
+12  format(T2,'|',20x,a14,2x,f12.6,2x,"A**3",T69,'|')
+11  format(T2'|',10x,3(a7,1x,f7.4,1x),T69,'|')
+10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'|')
 
     call trace_exit("io_write_params")
     return
   end subroutine io_write_params
+
+
+  subroutine io_print_kpt()
+    implicit none
+    character(50)   :: sec_title
+    integer         :: width=69,length,i
+    ! Stuff for getting run time
+    character(len=3),dimension(12)  :: months
+    integer                         :: d_t(8)
+    character*10                    :: b(3)
+
+    character(len=:), allocatable :: string
+
+    call trace_entry('io_print_kpt')
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! BZ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if (on_root_node)then
+       if (current_params%iprint.ge.1) then ! BZ is a little more verbose, so we will only do iprint 2
+          !write(stdout,*)"+"//repeat("-",(width-15)/2)//" BZ SAMPLING "//repeat("-",(width-16)/2)//"+"
+          !write(stdout,*)
+          write(stdout,*)
+          write(stdout,*) "        +-----------------------------------------------+ <-- KPT "
+          write(stdout,*) "        |  B R I L L O U I N  Z O N E  S A M P L I N G  | <-- KPT "
+          write(stdout,*) "        |                 K-point report                | <-- KPT "
+          !write(stdout,*) "        +-----------------------------------------------+ <-- KPT "
+
+
+          write(stdout,*) "        +-----------------------------------------------+ <-- KPT "
+          write(stdout,13)"SCF MP kpoint grid :",&
+               & current_params%kpt_mp_grid(1),current_params%kpt_mp_grid(2),current_params%kpt_mp_grid(3)
+          write(stdout,131)"    Number kpoints :",&
+               & current_params%kpt_mp_grid(1)*current_params%kpt_mp_grid(2)*current_params%kpt_mp_grid(3)
+          if (current_params%iprint.ge.2)then
+             write(stdout,*) "        +-----------------------------------------------+ <-- KPT "
+             write(stdout,*) "        |    Number          Fractional co-ordinate     | <-- KPT "
+             write(stdout,*) "        +-----------------------------------------------+ <-- KPT "
+             do i=1,current_structure%num_kpoints
+                write(stdout,14) i,current_structure%kpt_scf_list(i,1),&
+                     & current_structure%kpt_scf_list(i,2),&
+                     & current_structure%kpt_scf_list(i,3)
+             end do
+
+          end if
+          write(stdout,*) "        +-----------------------------------------------+ <-- KPT"
+
+          write(stdout,*)
+       end if
+
+
+14     format(T10,"|",T16,i4,T31,3(f7.4,1x),T58,"| <-- KPT")
+13     format(T10,"|",T19,a,3x,3(i3,1x),T58,"| <-- KPT")
+131    format(T10,"|",T19,a,3x,i4,T58,"| <-- KPT")
+    end if
+    call trace_exit('io_print_kpt')
+
+  end subroutine io_print_kpt
 
   subroutine io_dist_kpt()
     !==============================================================================!
@@ -2074,7 +2174,91 @@ contains
     return
   end subroutine io_warnings
 
+
+
+  subroutine io_alphabetise(arr, size,mapping)
+    character(len=*), dimension(:) :: arr
+    integer, intent(in) :: size
+    integer :: i, j
+    character(len=len(arr(1))) :: temp
+    character(len=len(arr(1))),dimension(1:size) :: arr_copy
+    integer, dimension(:), intent(out) :: mapping
+    mapping = [(i, i=1, size)]
+
+    arr_copy = arr
+
+
+    do i = 1, size - 1
+       do j = i + 1, size
+          if (arr_copy(i) > arr_copy(j)) then
+             ! Swap elements
+             temp = arr_copy(i)
+             arr_copy(i) = arr_copy(j)
+             arr_copy(j) = temp
+          end if
+       end do
+    end do
+
+    outer:do i = 1, size
+       do j= 1, size
+
+          if (arr(i) .eq. arr_copy(j))then
+             mapping(j) = i
+
+             cycle outer
+          end if
+       end do
+    end do outer
+
+
+    !do i = 1, size
+    !   print*,i,arr(i),arr_copy(i)
+    !end do
+
+  end subroutine io_alphabetise
+
+  subroutine io_alphabet_mapping(arr, size, mapping)
+    character(len=*), dimension(:), intent(in) :: arr
+    integer, intent(in) :: size
+    integer, dimension(:), intent(out) :: mapping
+    integer :: i, j
+
+    ! Initialize the mapping array
+    mapping = [(i, i=1, size)]
+
+    do i = 1, size - 1
+       do j = i + 1, size
+          if (arr(mapping(i)) > arr(mapping(j))) then
+             ! Swap indices in the mapping array
+             mapping(i:j) = [mapping(j), mapping(i)]
+          end if
+       end do
+    end do
+  end subroutine io_alphabet_mapping
+
+
+  character(len=fft_v_len) function f_fftw_version()
+
+    implicit none
+    integer :: i
+    character(kind=c_char), dimension(:), pointer :: fftw_version_ptr
+
+    call c_f_pointer(fftw_version_ptr_c(), fftw_version_ptr, [fft_v_len])
+
+    f_fftw_version = ' '
+    do i=1, fft_v_len
+       if( fftw_version_ptr(i) == C_NULL_CHAR ) exit
+
+       f_fftw_version(i:i) = fftw_version_ptr(i)
+    end do
+
+    return
+  end function f_fftw_version
+
+
 end module io
+ 
+ 
  
  
  

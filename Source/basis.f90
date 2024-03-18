@@ -192,16 +192,16 @@ contains
 
     ! Write out the basis set information to the .derek
 15  format(T2,a,T36,":",T58,a12)   ! Character                                                                                                                                                          
-16  format(T2,a,T36,":",T58,i12)   ! Integer
-21  format(T2,a,T36,":",T56,3(i4,1x))   ! Integer vec
-17  format(T2,a,T36,":",T58,f12.3)   ! Real                                                                                                                                                             
+16  format(T2,"| " ,a,T36,":",T56,i12,T69,'|')   ! Integer
+21  format(T2,"| " ,a,T36,":",T54,3(i4,1x),T69,'|')   ! Integer vec
+17  format(T2,"| " ,a,T36,":",T56,f12.3,T69,'|')   ! Real                                                                                                                                                             
 18  format(T2,a,T36,":",T58,ES12.2)   ! Science                                                                                                                                                         
 19  format(T2,a,T36,":",T58,L12)   ! Logical 
 
     if (current_params%iprint.ge.2)then ! this is verbose
-       write(stdout,*)
-       write(stdout,*)"                          Basis Set Parameters"
-       write(stdout,*)"                          --------------------"
+       write(stdout,*)"|                                                                  |"
+       write(stdout,*)"|                         Basis Set Parameters                     |"
+       write(stdout,*)"|                         --------------------                     |"
        write(stdout,17)"Plane wave cut off (eV)",current_params%cut_off_energy*hartree_to_ev
        write(stdout,17)"G vector fine scale",current_params%g_fine_scale
        write(stdout,16)"Number of standard grid points",current_basis%num_grid_points

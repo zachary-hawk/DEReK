@@ -26,7 +26,7 @@ module comms
   integer,public,save                  :: dist_kpt
   integer,public,save                  :: dist_gvec
 
-  character(3)                         :: comms_arch="mpi"
+  character(3)                         :: comms_arch="MPI"
 
 
   !-------------------------------------------------------!
@@ -144,23 +144,23 @@ contains
     if (present(report))then
        if (report)then
           if (on_root_node)then
-             write(stdout,*)
-             write(stdout,*)"                           Comms parameters"
-             write(stdout,*)"                           ----------------"
+             write(stdout,*)"|                                                                  |"
+             write(stdout,*)"|                          Comms parameters                        |" 
+             write(stdout,*)"|                          ----------------                        |"
              write(stdout,16)"Number of processes",nprocs
              write(stdout,16)"Distributed by kpoint",dist_kpt
              write(stdout,16)"Distributed by g vector",dist_gvec
-             write(stdout,*)"+"//repeat("-",66)//"+"
+             write(stdout,*)"+"//repeat("=",66)//"+"
              write(stdout,*)
           end if
        end if
     end if
-15  format(t2,a,t36,":",t58,a12)   ! character                                                                                                                                                          
-16  format(t2,a,t36,":",t58,i12)   ! integer                                                                                                                                                            
-17  format(t2,a,t36,":",t58,f12.3)   ! real                                                                                                                                                             
-18  format(t2,a,t36,":",t58,es12.2)   ! science                                                                                                                                                         
-19  format(t2,a,t36,":",t58,l12)   ! logical  
-
+15  format(t2,'| ',a,t36,":",t56,a12,T69,'|')   ! character
+16  format(t2,'| ',a,t36,":",t56,i12,T69,'|')   ! integer
+17  format(t2,'| ',a,t36,":",t56,f12.3,T69,'|')   ! real
+18  format(t2,'| ',a,t36,":",t56,es12.2,T69,'|')   ! science
+19  format(t2,'| ',a,t36,":",t56,l12,T69,'|')   ! logical
+  
 
 
     call trace_exit('comms_scheme')

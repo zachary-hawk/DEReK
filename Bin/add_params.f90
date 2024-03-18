@@ -18,7 +18,7 @@ program add_params
   real(dp)          :: real_var
   integer           :: int_var
   logical           :: logi_var
-
+  integer           :: data_cat
 
 
 
@@ -32,6 +32,7 @@ program add_params
   write(*,*) "Type parameter description:"
   read(*,'(a)') descr
   write(*,*) "Type the default value"
+
 
 !!$  var_name="help"
 !!$  key_name="help_key"
@@ -55,6 +56,10 @@ program add_params
   write(*,*) "Type allowed values:"
   read(*,'(A)') allowed
 
+  write(*,*) "Type data category (1=Fundamental,2=Planewaves,3=Minimisation,4=Potential,5=Wavefunction,6=I/O,7=Misc,8=Advanced)"
+  read(*,*) data_cat
+
+
   ! open the io files
   open(newunit=io_unit,access="STREAM",form="FORMATTED",file="../Source/io.f90",status="OLD",action="READ")
   open(newunit=io_buff,access="STREAM",form="FORMATTED",file="../Source/io_add_params.f90",status="UNKNOWN")
@@ -67,7 +72,7 @@ program add_params
      if (index(line,"%End:").ne.0)then
         read(line,*) junk, end, action
         if (trim(action).eq."parameters")then
-           
+
            select case(dat_type)
            case("L")
               if (logi_var)then             
@@ -96,7 +101,7 @@ program add_params
            backspace(io_buff)
            write(io_buff,*)"integer,parameter::max_keys=",max_param
            write(io_buff,*)" ! %End: max_param"
-           
+
         else if (trim(action).eq."keys") then
            write(io_buff,*)"character(len=30),parameter,public ::","key_"//trim(var_name),"   = ","'",trim(key_name),"'"
            write(io_buff,*)trim(line)
@@ -123,6 +128,11 @@ program add_params
            write(io_buff,*)'if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)'
            write(io_buff,*)"present_array(i)=key"
            write(io_buff,*)"! %End: case_read"
+
+        else if (trim(action).eq."assign_cats")then
+           write(junk,*)max_param
+           write(io_buff,*) "keys_cat(",trim(adjustl(junk)),")=",data_cat
+           write(io_buff,*)trim(line)
         end if
      else
         write(io_buff,*)trim(line)
