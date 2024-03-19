@@ -76,8 +76,11 @@ OBJ+=$(BUILD_DIR)/fftw3_version.o
 CC=gcc
 CCFLAGS= -w 
 
-$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
+#$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
 $(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS)
+
+
+$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
 
 
 $(BUILD_DIR)/%.o: %.c
@@ -100,7 +103,6 @@ $(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
 	@$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
-
 
 
 

@@ -7,12 +7,14 @@ module io
   use memory, only : memory_init,memory_allocate,memory_deallocate
   use iso_fortran_env, only : compiler_version
   use iso_c_binding
- 
+
   implicit none
 
   logical,           public                :: file_exists
   character(20),     public                :: seed
   integer,           public                :: stdout
+
+  integer,parameter                        :: n_cats = 8
 
 
   character(100),dimension(:),allocatable  :: present_array
@@ -22,9 +24,9 @@ module io
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
   integer       ,dimension(:),allocatable  :: keys_cat
-
+  character(30) ,dimension(1:n_cats)            :: cats
   character(100) :: version = "1.0.0"   ! Master version for all instances
-  character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK"
+  character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK (c) 2024 - Z. Hawkhead"
   logical        :: read_params
 
   integer                                  :: max_params=1
@@ -39,7 +41,7 @@ module io
   end interface
 
 
-  
+
   type  parameters
      ! %Begin: parameters
 
@@ -748,6 +750,7 @@ contains
 
     logical          ::   search = .false.
     logical          ::   help   = .false.
+    logical          ::   list   = .false.
     integer::file
     integer :: maj_mpi,min_mpi,min_char
     character(len=max_version_length) :: mpi_c_version
@@ -760,8 +763,11 @@ contains
 
     if (nargs.eq.0)then
        seed='derek'
+       write(*,*) trim(info)
+       write(*,*) trim(version)
+
        call io_help()
-       call io_errors("no seed provided.")
+       !call io_errors("no seed provided.")
     end if
 
 
@@ -798,8 +804,8 @@ contains
           call get_command_argument(arg_index,name)
           select case(adjustl(trim(name)))
           case("-h","--help")
-             write(*,*) trim(version)
              write(*,*) trim(info)
+             write(*,*) trim(version)
              read_params=.false.
              call io_list_params(.false.)
              help=.true.
@@ -808,8 +814,8 @@ contains
                 stop
              end if
           case("-s","--search")
-             write(*,*) trim(version)
              write(*,*) trim(info)
+             write(*,*) trim(version)
              write(*,*)
              read_params=.false.
              call io_list_params(.false.)
@@ -824,15 +830,28 @@ contains
              stop
           case("-d","--dryrun")
              current_params%dryrun=.true.
+             if (nargs.lt.2)then
+                write(*,*) trim(info)
+                write(*,*) trim(version)
+                call io_help()
+             end if
           case ('-r','--restart')
              current_params%restart=.true.
-          case("-l","--list")
-             write(*,*) trim(version)
-             write(*,*) trim(info)
-             read_params=.false.
-             call io_list_params(.true.)
-             stop
+             if (nargs.lt.2)then
+                write(*,*) trim(info)
+                write(*,*) trim(version)
+                call io_help()
+             end if
 
+          case("-l","--list")
+             read_params=.false.
+             list=.true.
+             if (arg_index.eq.nargs)then
+                write(*,*) trim(info)
+                write(*,*) trim(version)
+                call io_list_params(.true.)
+                stop
+             end if
           case default
              if (help)then
                 call io_help(name)
@@ -842,9 +861,19 @@ contains
                 call io_search(io_case(name))
                 search=.false.
                 stop
+             else if(list)then
+                write(*,*) trim(info)
+                write(*,*) trim(version)
+                write(*,*)
+                call io_list_params(.true.,io_case(name))
+                list=.false.
+                stop
+
              else
                 seed=name
                 if (seed(1:1).eq.'-')then
+                   write(*,*) trim(info)
+                   write(*,*) trim(version)
                    write(*,*)"Unknown argument: ",trim(seed)
                    call io_help()
                 end if
@@ -854,10 +883,14 @@ contains
           end select
        end do
     else
-       write(*,*) trim(version)
        write(*,*) trim(info)
+       write(*,*) trim(version)
        call io_help()
     end if
+
+
+
+
     return
   end subroutine io_cl_parser
 
@@ -904,11 +937,11 @@ contains
 
        write(*,*)  "Usage:"
        write(*,30) "derek.mpi","<seed>","Run a calculation from <seed>.info"
-       write(*,30) '    "    ',"-v","Print version information."
-       write(*,30) '    "    ', "-h,--help   <keyword>","Get help and commandline options."
-       write(*,30) '    "    ',"-s,--search <keyword>", "Search list of available parameters"
-       write(*,30) '    "    ',"-l,--list","Get list of parameters avilable for the user."
-       write(*,30) '    "    ', "-d,--dryrun <seed>","Run calculation to check input files"
+       write(*,30) '    "    ', "-v","Print version information."
+       write(*,30) '    "    ', "-h,--help    <keyword>","Get help and commandline options. Optional keyword."
+       write(*,30) '    "    ', "-s,--search  <keyword>", "Search list of available parameters."
+       write(*,30) '    "    ', "-l,--list    <keyword>","Print list of parameters. Optional keyword for specific category."
+       write(*,30) '    "    ', "-d,--dryrun  <seed>","Run calculation to check input files."
        write(*,30) '    "    ', "-r,--restart <seed>","Run calculation continuing from a previous <seed>.state file"
     end if
 30  format(2x,A,4x,A,T40,":",3x,A)
@@ -956,7 +989,7 @@ contains
     return
   end subroutine io_search
 
-  subroutine io_list_params(print_flag)
+  subroutine io_list_params(print_flag,string)
     !==============================================================================!
     !                         I O _ L I S T _ P A R A M S                          !
     !==============================================================================!
@@ -970,10 +1003,12 @@ contains
     !==============================================================================!
     implicit none
     logical  :: print_flag
-
+    character(*),optional  :: string
     character(100) :: junk
     integer       :: i,j ! loops
-    character(30),dimension(1:8) :: cats
+
+
+    integer :: cat_index = -1
     integer,      dimension(1:max_keys) :: mapping
 
     ! Allocate all the arrays for the parameters
@@ -1222,19 +1257,35 @@ contains
 
     ! do the loop for printing stuff
 
+    if (present(string))then 
+       do i=1,n_cats
+          if (trim(string).eq.trim(io_case(cats(i))))then
+             cat_index = i
+          end if
+       end do
+       if (cat_index.eq.-1)then
+          write(*,*) "Unknown category: ",trim(string)
+          stop
+       end if
+    end if
+
+
+
     if (print_flag)then
 100    format(1x,A,T35,A)
        write(*,*)
        do j=1,8
-          write(*,*)adjustl(trim(cats(j)))
-          write(*,*)repeat('-',len(adjustl(trim(cats(j)))))
+          if (cat_index.eq.-1 .or. j.eq.cat_index)then
+             write(*,*)adjustl(trim(cats(j)))
+             write(*,*)repeat('-',len(adjustl(trim(cats(j)))))
 
-          do i=1,max_keys
-             if (keys_cat(mapping(i)).eq.j )then
-                write(*,100) io_case(trim(keys_array(mapping(i))),.true.),trim(keys_description(mapping(i)))
-             end if
-          end do
-          write(*,*)
+             do i=1,max_keys
+                if (keys_cat(mapping(i)).eq.j )then
+                   write(*,100) io_case(trim(keys_array(mapping(i))),.true.),trim(keys_description(mapping(i)))
+                end if
+             end do
+             write(*,*)
+          end if
        end do
     end if
 
@@ -1302,7 +1353,7 @@ contains
 #ifdef gitversion
 #define git_version gitversion
 #endif
-    
+
     ! Get the version of openblas
     call ilaver(math_maj,math_min,math_patch)
 
@@ -1327,7 +1378,7 @@ contains
           write(unit,*) "# Physical Constants : ",const_version
           write(unit,*) "# FFTW3 Version      : ",trim(f_fftw_version())
           write(unit,'(1x,a,i0,".",I0,".",i0)') "# OpenBLAS Version   : ",math_maj,math_min,math_patch
-       
+
           write(unit,*) '# '
        end if
     else
@@ -1401,7 +1452,7 @@ contains
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "|            Thesis: http://etheses.dur.ac.uk/14737/               |"
     write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2023                   |"
+    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2024                   |"
     write(stdout,*) "+==================================================================+"
     call io_sys_info(stdout)
     call trace_exit('io_header')
@@ -2257,22 +2308,3 @@ contains
 
 
 end module io
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
