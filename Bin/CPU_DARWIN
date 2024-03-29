@@ -1,0 +1,5 @@
+#!/bin/bash
+
+var="$(sysctl -n machdep.cpu.brand_string)"
+
+echo "'"'"'$var'"'"'"

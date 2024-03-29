@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+var="$(lscpu | sed -nr '/Model name/ s/.*:\s*(.*) @ .*/\1/p')"
+
+echo "'"'"'$var'"'"'"

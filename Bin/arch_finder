@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+name="$(uname -s)"
+
+
+
+version="$(uname -r)"
+
+echo "'"'"'${name}-${version}'"'"'"
+
