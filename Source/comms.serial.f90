@@ -66,6 +66,7 @@ module COMMS
      module procedure COMMS_BCAST_INT_ARRAY
      module procedure COMMS_BCAST_REAL_ARRAY
      module procedure COMMS_BCAST_DOUBLE_ARRAY
+     module procedure COMMS_BCAST_LOGICAL
   end interface comms_bcast
 
   public comms_wtime
@@ -238,10 +239,10 @@ contains
     integer :: ierr
     call trace_entry("COMMS_INIT")
 
-   
+
     rank=0
     nprocs=1
-    
+
     if (rank.eq.0)then
        on_root_node=.true.
     else
@@ -263,9 +264,9 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  16/08/2019                                            !
     !==============================================================================!
-   
+
     return
-    
+
 
   end subroutine COMMS_FINALISE
 
@@ -286,7 +287,7 @@ contains
     !==============================================================================!
     integer,intent(inout) :: rank
     call trace_entry("COMMS_RANK")
-    
+
     call trace_exit("COMMS_RANK")
 
   end subroutine COMMS_RANK
@@ -305,7 +306,7 @@ contains
     !==============================================================================!
     integer,intent(inout) :: nprocs
     call trace_entry("COMMS_SIZE")
-    
+
     call trace_exit("COMMS_SIZE")
   end subroutine COMMS_SIZE
 
@@ -474,7 +475,7 @@ contains
        end do
        num_g_node=num_g_points
        num_fine_g_node=num_fine_g_points
-       
+
     elseif (num_kpts.lt.nprocs)then
        ! there is always only 1 kpt per node
        loc_kpt_array(1) = rank+1-dist_kpt*int(real(rank,dp)/real(dist_kpt,dp))
@@ -968,5 +969,35 @@ contains
 
     call trace_exit("COMMS_BCAST_DOUBLE_ARRAY")
   end subroutine COMMS_BCAST_DOUBLE_ARRAY
+  subroutine comms_bcast_logical(start_buff)
+    !==============================================================================!
+    !                    C O M M S _ B C A S T _ L O G I C A L                     !
+    !==============================================================================!
+    ! Mpi wrapper for broacasting logical variable from rood node to all           !
+    ! childeren                                                                    !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
+    logical :: start_buff
+    call trace_entry('comms_bcast_logical')
+
+    call trace_exit('comms_bcast_logical')
+  end subroutine comms_bcast_logical
+
+  function  comms_wall_time() result(time)
+    use trace, only : global_time,global_start,trace_entry,trace_exit
+    real(dp) :: time
+    call trace_entry('comms_wall_time')
+    ! this is called on all nodes, it starts by setting the global time variable to 0
+    call cpu_time(time)
+    time = time - global_start
+
+    call comms_reduce(global_time,1,"max")
+
+    call trace_exit('comms_wall_time')
+  end function comms_wall_time
 
 end module COMMS

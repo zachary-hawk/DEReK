@@ -49,7 +49,7 @@ endif
 ifeq ($(BUILD),debug)
 OPT= '"DEBUG"'
 ifeq ($(F90),gfortran)
-FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -Wl,-no_pie -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch    -D opt_strat=$(OPT) -I$(FFTWDIR) -L$(OPENBLASDIR)
+FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -Wl, -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch    -D opt_strat=$(OPT) -I$(FFTWDIR) -L$(OPENBLASDIR)
 endif
 
 ifeq ($(F90),ifort)

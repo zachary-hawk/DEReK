@@ -2146,12 +2146,15 @@ contains
 
        !write(stdout,*)"|                          Comms Parameters                        |"
        !write(stdout,*)"|                          ----------------                        |"
-       grp='COM'
-       call io_heading(stdout,'Communication Parameters')
-       write(stdout,16)"Number of processes",nprocs,grp
-       write(stdout,16)"Distributed by kpoint",dist_kpt,grp
-       write(stdout,16)"Distributed by g vector",dist_gvec,grp
-       write(stdout,23) grp
+       if (comms_arch.eq."MPI")then
+          grp='COM'
+          call io_heading(stdout,'Communication Parameters')
+          write(stdout,16)"Number of processes",nprocs,grp
+          write(stdout,16)"Distributed by kpoint",dist_kpt,grp
+          write(stdout,16)"Distributed by g vector",dist_gvec,grp
+
+          write(stdout,23) grp
+       end if
        !write(stdout,*)"|                       Brillouin Zone Sampling                    |"
        !write(stdout,*)"|                       -----------------------                    |"
        grp='KPT'
@@ -2732,7 +2735,7 @@ contains
        write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
     else
        write(unit,*)'+',repeat('=',glob_line_len-1),'+'
-       write(unit,*)line
+       write(unit,*)trim(line)
        write(unit,*)'+',repeat('=',glob_line_len-1),'+'
     end if
   end subroutine io_section
