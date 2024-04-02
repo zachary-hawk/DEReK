@@ -46,7 +46,7 @@ module io
      ! %Begin: parameters
 
      !Calculation parameters
-     logical :: dryrun = .false.
+     logical :: check = .false.
      logical :: debugging = .false.
      integer :: n_electrons =            1
      real(dp) :: energy_tol =    1.0E-7_dp!*ev_to_hartree
@@ -82,12 +82,20 @@ module io
      character(len=30) :: output_level = 'minimal'
      real(dp),dimension(1:3) :: ext_efield =    (/0.0_dp,0.0_dp,0.0_dp/)
      real(dp),dimension(1:3) :: ext_bfield =    (/0.0_dp,0.0_dp,0.0_dp/)
+     character(len=30) :: unit_energy = 'eV'
+     character(len=30) :: unit_length = 'A'
+     character(len=30) :: unit_efield = 'eV'
+     character(len=30) :: unit_bfield = 'T'
+     character(len=30) :: out_energy_unit = 'eV'
+     character(len=30) :: out_len_unit = 'A'
+     character(len=30) :: out_efield_unit = 'eV/A/e'
+     character(len=30) :: out_bfield_unit = 'G'
      ! %End: parameters
   end type parameters
 
   ! %Begin: keys
 
-  character(len=30),parameter,public ::key_dryrun   = 'dryrun'
+  character(len=30),parameter,public ::key_check   = 'check'
   character(len=30),parameter,public ::key_debugging   = 'profilling'
   character(len=30),parameter,public ::key_n_electrons   = 'n_electrons'
   character(len=30),parameter,public ::key_energy_tol   = 'energy_tol'
@@ -121,12 +129,20 @@ module io
   character(len=30),parameter,public ::key_output_level   = 'output_level'
   character(len=30),parameter,public ::key_ext_efield   = 'ext_efield'
   character(len=30),parameter,public ::key_ext_bfield   = 'ext_bfield'
+  character(len=30),parameter,public ::key_unit_energy   = 'unit_energy'
+  character(len=30),parameter,public ::key_unit_length   = 'unit_length'
+  character(len=30),parameter,public ::key_unit_efield   = 'unit_efield'
+  character(len=30),parameter,public ::key_unit_bfield   = 'unit_bfield'
+  character(len=30),parameter,public ::key_out_energy_unit   = 'unit_energy_out'
+  character(len=30),parameter,public ::key_out_len_unit   = 'unit_length_out'
+  character(len=30),parameter,public ::key_out_efield_unit   = 'unit_efield_out'
+  character(len=30),parameter,public ::key_out_bfield_unit   = 'unit_bfield_out'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          34
+  integer,parameter::max_keys=          42
   ! %End: max_param
 
 
@@ -239,13 +255,14 @@ contains
     ! We have the lattice we can define params
     call io_lattice_to_abc()
 
+    call io_convert_all()
 
+!!$    ! Check the units and convert, we do this here because it handles all of the defaults too.
+!!$    current_params%cut_off_energy=current_params%cut_off_energy*ev_to_hartree
+!!$    current_params%energy_tol = current_params%energy_tol * ev_to_hartree
+!!$    current_params%finite_barrier_height=current_params%finite_barrier_height * ev_to_hartree
+!!$    current_params%periodic_pot_amp=current_params%periodic_pot_amp * ev_to_hartree
 
-    ! Check the units and convert
-    current_params%cut_off_energy=current_params%cut_off_energy*ev_to_hartree
-    current_params%energy_tol = current_params%energy_tol * ev_to_hartree
-    current_params%finite_barrier_height=current_params%finite_barrier_height * ev_to_hartree
-    current_params%periodic_pot_amp=current_params%periodic_pot_amp * ev_to_hartree
     ! Work out the new values of some on the fly parameters
     current_params%nbands=current_params%n_electrons+current_params%conduction_bands
 
@@ -255,6 +272,41 @@ contains
     return
   end subroutine io_initialise
 
+  subroutine io_convert_all()
+    !==============================================================================!
+    !                         I O _ C O N V E R T _ A L L                          !
+    !==============================================================================!
+    ! Helper routine for performing unit conversion on all of the parameters       !
+    ! that need to be in atomic units.                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
+    call trace_entry('io_convert_all')
+
+    current_params%energy_tol = io_to_atomic(current_params%energy_tol,current_params%unit_energy)
+    current_params%cut_off_energy = io_to_atomic(current_params%cut_off_energy,current_params%unit_energy)
+    current_params%electronic_temp =    io_to_atomic(current_params%electronic_temp,'K')
+    current_params%finite_barrier_height =    io_to_atomic(current_params%finite_barrier_height,current_params%unit_energy)
+    current_params%finite_barrier_width(1) =  io_to_atomic(current_params%finite_barrier_width(1),current_params%unit_length)
+    current_params%finite_barrier_width(2) =  io_to_atomic(current_params%finite_barrier_width(2),current_params%unit_length)
+    current_params%finite_barrier_width(3) =  io_to_atomic(current_params%finite_barrier_width(3),current_params%unit_length)
+
+    current_params%periodic_pot_amp =io_to_atomic(current_params%periodic_pot_amp,current_params%unit_energy)
+    current_params%ext_efield(1) =io_to_atomic(current_params%ext_efield(1),current_params%unit_efield)
+    current_params%ext_efield(2) =io_to_atomic(current_params%ext_efield(2),current_params%unit_efield)
+    current_params%ext_efield(3) =io_to_atomic(current_params%ext_efield(3),current_params%unit_efield)
+
+    current_params%ext_bfield(1) =io_to_atomic(current_params%ext_bfield(1),current_params%unit_bfield)
+    current_params%ext_bfield(2) =io_to_atomic(current_params%ext_bfield(2),current_params%unit_bfield)
+    current_params%ext_bfield(3) =io_to_atomic(current_params%ext_bfield(3),current_params%unit_bfield)
+
+
+
+    call trace_exit('io_convert_all')
+  end subroutine io_convert_all
 
   subroutine io_read_param(dummy_params)
     !==============================================================================!
@@ -325,8 +377,12 @@ contains
           if (comment) cycle ! skip if comment
           !Do some trimming
           key=adjustl(trim(io_case(key)))
-          param=adjustl(trim(io_case(param)))
 
+          ! We need to preserve the capitalisation for the units, so make an exception
+
+          if (index(key,'unit').eq.0)then
+             param=adjustl(trim(io_case(param)))
+          end if
 
           ! Check for spelling
 
@@ -361,8 +417,8 @@ contains
           ! %Begin: case_read
           select case(key)
 
-          case(key_dryrun)
-             read(param,*,iostat=stat) dummy_params%dryrun
+          case(key_check)
+             read(param,*,iostat=stat) dummy_params%check
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_debugging)
@@ -504,7 +560,7 @@ contains
              case ('none','minimal','all')
                 continue
              case default
-                call io_errors("Invalid output: "//param)
+                call io_errors("Invalid output: "//param//" for key: "//key)
              end select
           case(key_ext_efield)
              read(param,*,iostat=stat) dummy_params%ext_efield(1),dummy_params%ext_efield(2),dummy_params%ext_efield(3)
@@ -514,6 +570,90 @@ contains
              read(param,*,iostat=stat) dummy_params%ext_bfield(1),dummy_params%ext_bfield(2),dummy_params%ext_bfield(3)
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
+          case(key_unit_energy)
+             read(param,*,iostat=stat) dummy_params%unit_energy
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             ! Error checking for energy unit
+             select case(dummy_params%unit_energy)
+             case('Ha','mHa','eV','meV','Ry','mRy','J')
+                continue
+             case default
+                call io_errors('Invalid energy unit')
+             end select
+          case(key_unit_length)
+             read(param,*,iostat=stat) dummy_params%unit_length
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             ! Error checking for length unit
+             select case(dummy_params%unit_length)
+             case('m','mm','cm','nm','mum','pm','A','bohr')
+                continue
+             case default
+                call io_errors('Invalid length unit')
+             end select
+          case(key_unit_efield)
+             read(param,*,iostat=stat) dummy_params%unit_efield
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             ! Error checking for unit
+             select case(dummy_params%unit_efield)
+             case('Ha/Bohr/e','eV/A/e','N/C')
+                continue
+             case default
+                call io_errors('Invalid electric field unit')
+             end select
+          case(key_unit_bfield)
+             read(param,*,iostat=stat) dummy_params%unit_bfield
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             ! Error checking for unit
+             select case(dummy_params%unit_bfield)
+             case('T','G','agr')
+                continue
+             case default
+                call io_errors('Invalid magnetic field unit')
+             end select
+          case(key_out_energy_unit)
+             read(param,*,iostat=stat) dummy_params%out_energy_unit
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             select case(dummy_params%out_energy_unit)
+             case('Ha','mHa','eV','meV','Ry','mRy','J')
+                continue
+             case default
+                call io_errors('Invalid output energy unit')
+             end select
+          case(key_out_len_unit)
+             read(param,*,iostat=stat) dummy_params%out_len_unit
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             select case(dummy_params%out_len_unit)
+             case('m','mm','cm','nm','mum','pm','A','bohr')
+                continue
+             case default
+                call io_errors('Invalid output length unit')
+             end select
+          case(key_out_efield_unit)
+             read(param,*,iostat=stat) dummy_params%out_efield_unit
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             select case(dummy_params%out_efield_unit)
+             case('Ha/Bohr/e','eV/A/e','N/C')
+                continue
+             case default
+                call io_errors('Invalid output electric field unit')
+             end select
+          case(key_out_bfield_unit)
+             read(param,*,iostat=stat) dummy_params%out_bfield_unit
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
+             select case(dummy_params%out_bfield_unit)
+             case('T','G','agr')
+                continue
+             case default
+                call io_errors('Invalid out magnetic field unit')
+             end select
              ! %End: case_read
           case default
              call io_errors(" Error parsing keyword: "//key)
@@ -828,8 +968,8 @@ contains
              call io_header()
              read_params=.false.
              stop
-          case("-d","--dryrun")
-             current_params%dryrun=.true.
+          case("-c","--check")
+             current_params%check=.true.
              if (nargs.lt.2)then
                 write(*,*) trim(info)
                 write(*,*) trim(version)
@@ -941,7 +1081,7 @@ contains
        write(*,30) '    "    ', "-h,--help    <keyword>","Get help and commandline options. Optional keyword."
        write(*,30) '    "    ', "-s,--search  <keyword>", "Search list of available parameters."
        write(*,30) '    "    ', "-l,--list    <keyword>","Print list of parameters. Optional keyword for specific category."
-       write(*,30) '    "    ', "-d,--dryrun  <seed>","Run calculation to check input files."
+       write(*,30) '    "    ', "-c,--check   <seed>","Run calculation to check input files."
        write(*,30) '    "    ', "-r,--restart <seed>","Run calculation continuing from a previous <seed>.state file"
     end if
 30  format(2x,A,4x,A,T40,":",3x,A)
@@ -1023,7 +1163,7 @@ contains
     ! assign the keys
     ! %Begin: assign_keys
 
-    keys_array(1)=trim(key_dryrun)
+    keys_array(1)=trim(key_check)
     keys_array(2)=trim(key_debugging)
     keys_array(3)=trim(key_n_electrons)
     keys_array(4)=trim(key_energy_tol)
@@ -1058,11 +1198,19 @@ contains
     keys_array(32)=trim(key_output_level)
     keys_array(33)=trim(key_ext_efield)
     keys_array(34)=trim(key_ext_bfield)
+    keys_array(35)=trim(key_unit_energy)
+    keys_array(36)=trim(key_unit_length)
+    keys_array(37)=trim(key_unit_efield)
+    keys_array(38)=trim(key_unit_bfield)
+    keys_array(39)=trim(key_out_energy_unit)
+    keys_array(40)=trim(key_out_len_unit)
+    keys_array(41)=trim(key_out_efield_unit)
+    keys_array(42)=trim(key_out_bfield_unit)
     ! %End: assign_keys
 
     ! %Begin: assign_default
 
-    write(junk,*)current_params%dryrun
+    write(junk,*)current_params%check
     keys_default(1)=trim(adjustl(junk))
     write(junk,*)current_params%debugging
     keys_default(2)=trim(adjustl(junk))
@@ -1131,6 +1279,22 @@ contains
     keys_default(33)=trim(adjustl(junk))
     write(junk,*)current_params%ext_bfield
     keys_default(34)=trim(adjustl(junk))
+    write(junk,*)current_params%unit_energy
+    keys_default(35)=trim(adjustl(junk))
+    write(junk,*)current_params%unit_length
+    keys_default(36)=trim(adjustl(junk))
+    write(junk,*)current_params%unit_efield
+    keys_default(37)=trim(adjustl(junk))
+    write(junk,*)current_params%unit_bfield
+    keys_default(38)=trim(adjustl(junk))
+    write(junk,*)current_params%out_energy_unit
+    keys_default(39)=trim(adjustl(junk))
+    write(junk,*)current_params%out_len_unit
+    keys_default(40)=trim(adjustl(junk))
+    write(junk,*)current_params%out_efield_unit
+    keys_default(41)=trim(adjustl(junk))
+    write(junk,*)current_params%out_bfield_unit
+    keys_default(42)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1168,6 +1332,14 @@ contains
     keys_description(32)='Level to set amount of output files written.'
     keys_description(33)='Real vector of externally applied electric field'
     keys_description(34)='Vector of externally applied magnetic field in Tesla'
+    keys_description(35)='Unit of energy to be used to parse all energy terms in the .info file'                
+    keys_description(36)='Unit of length to be used to parse all length terms in the .info file'                
+    keys_description(37)='Unit of electric field to be used to parse all electric field terms in the .info file'
+    keys_description(38)='Unit of magnetic field to be used to parse all magnetic field terms in the .info file'
+    keys_description(39)='Unit of energy to be used to output all energy terms in the .derek file'                
+    keys_description(40)='Unit of length to be used to output all length terms in the .derek file'                
+    keys_description(41)='Unit of electric field to be output to parse all electric field terms in the .derek file'
+    keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .derek file'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1206,6 +1378,14 @@ contains
     keys_allowed(32)='none, minimal, all'
     keys_allowed(33)='any real vector'
     keys_allowed(34)='Any real vector'
+    keys_allowed(35)='Ha mHa eV meV Ry mRy J'
+    keys_allowed(36)='m mm cm nm mum pm A bohr'
+    keys_allowed(37)='eV/A/e Ha/Bohr/e N/C'
+    keys_allowed(38)='T G agr'
+    keys_allowed(39)='Ha mHa eV meV Ry mRy J'
+    keys_allowed(40)='m mm cm nm mum pm A bohr'
+    keys_allowed(41)='eV/A/e Ha/Bohr/e N/C'
+    keys_allowed(42)='T G agr'
     ! %End: assign_allowed
 
 
@@ -1250,14 +1430,22 @@ contains
     keys_cat(30)=6
     keys_cat(31)=6
     keys_cat(32)=6
-    keys_cat(33)=           8
-    keys_cat(34)=           8
+    keys_cat(33)=8
+    keys_cat(34)=8
+    keys_cat(35)=6
+    keys_cat(36)=6
+    keys_cat(37)=6
+    keys_cat(38)=6
+    keys_cat(39)=6
+    keys_cat(40)=6
+    keys_cat(41)=6
+    keys_cat(42)=6
     ! %End: assign_cats
     call io_alphabetise(keys_array,max_keys,mapping)
 
     ! do the loop for printing stuff
 
-    if (present(string))then 
+    if (present(string))then
        do i=1,n_cats
           if (trim(string).eq.trim(io_case(cats(i))))then
              cat_index = i
@@ -1459,11 +1647,11 @@ contains
   end subroutine io_header
 
 
-  subroutine io_dryrun()
+  subroutine io_check()
     !==============================================================================!
     !                              I O _ D R Y R U N                               !
     !==============================================================================!
-    ! Subroutine for handlind the dryrun command which allows for parameter        !
+    ! Subroutine for handlind the check command which allows for parameter        !
     ! checking                                                                     !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
@@ -1472,24 +1660,24 @@ contains
     ! Author:   Z. Hawkhead  23/02/2020                                            !
     !==============================================================================!
     implicit none
-    call trace_entry("io_dryrun")
+    call trace_entry("io_check")
     if (on_root_node)then
        write(stdout,*) " "
        write(stdout,'(16x,A)') "****************************************"
        write(stdout,'(16x,A)') "*                                      *"
-       write(stdout,'(16x,A)') "*         Dryrun complete....          *"
+       write(stdout,'(16x,A)') "*         Check complete....          *"
        write(stdout,'(16x,A)') "*          No errors found             *"
        write(stdout,'(16x,A)') "*                                      *"
        write(stdout,'(16x,A)') "****************************************"
     end if
     call io_finalise()
-    call trace_exit("io_dryrun")
+    call trace_exit("io_check")
     call trace_exit("derek")
     call COMMS_FINALISE()
     call trace_finalise(current_params%debugging,rank,seed=seed)
     stop
 
-  end subroutine io_dryrun
+  end subroutine io_check
 
 
 
@@ -1617,7 +1805,11 @@ contains
        end do
        cell_declared=.true.
        ! convert to Bohr
-       current_structure%cell(:,:)=current_structure%cell(:,:)*angstrom_to_bohr
+       do i =1,3
+          do j =1,3
+             current_structure%cell(i,j)=io_to_atomic(current_structure%cell(i,j),current_params%unit_length)
+          end do
+       end do
 
 
     case default
@@ -1762,8 +1954,12 @@ contains
     character*10                    :: b(3)
 
     character(len=:), allocatable :: string
+    character(10) :: out_invlen_unit
+    character(10) :: out_vol_unit
 
     call trace_entry("io_write_params")
+    out_invlen_unit = trim(current_params%out_len_unit)//'-1'
+    out_vol_unit = trim(current_params%out_len_unit)//'**3'
 
     call date_and_time(b(1), b(2), b(3), d_t)
     months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -1782,26 +1978,49 @@ contains
 
     grp = 'CEL'
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! UNIT CELL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !----------------------------------------! UNIT CELL !------------------------------------------!
     if (current_params%iprint.ge.1) then ! cell info is a must
        !write(stdout,*)"+"//repeat("=",(width-15)/2)//"  UNIT CELL  "//repeat("=",(width-16)/2)//"+"
        write(stdout,24)
        call io_subsection(stdout,'unit cell')
        write(stdout,23) grp
-       write(stdout,*) "|           Lattice (A)                   Inverse Lattice (1/A)    | <-- ",grp
-       write(stdout,10) current_structure%cell(1,:)*bohr_to_angstrom,current_structure%inv_cell(1,:)/bohr_to_angstrom,grp
-       write(stdout,10) current_structure%cell(2,:)*bohr_to_angstrom,current_structure%inv_cell(2,:)/bohr_to_angstrom,grp
-       write(stdout,10) current_structure%cell(3,:)*bohr_to_angstrom,current_structure%inv_cell(3,:)/bohr_to_angstrom,grp
+       write(stdout,'(T2,"|",T14,"Lattice (",a,")",T44,"Inverse Lattice (1/",a,")",T69,"| <-- ",a)')&
+            & trim(current_params%out_len_unit),trim(current_params%out_len_unit),grp
+       write(stdout,10) io_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%inv_cell(1,1),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(1,2),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(1,3),trim(out_invlen_unit)),&
+            & grp
+
+       write(stdout,10) io_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%inv_cell(2,1),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(2,2),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(2,3),trim(out_invlen_unit)),&
+            & grp
+
+       write(stdout,10) io_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
+            & io_from_atomic(current_structure%inv_cell(3,1),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(3,2),trim(out_invlen_unit)),&
+            & io_from_atomic(current_structure%inv_cell(3,3),trim(out_invlen_unit)),&
+            & grp
+
+
        write(stdout,23) grp
-       write(stdout,12) "Cell Volume =", current_structure%volume*bohr_to_angstrom**3,grp
+       write(stdout,12) "Cell Volume =", io_from_atomic(current_structure%volume,trim(out_vol_unit)),trim(out_vol_unit),grp
 
        write(stdout,23) grp
        !write(stdout,*) "|                       Lattice Parameters (A)                     |"
        !write(stdout,*) "|                       ----------------------                     |"
-       call io_heading(stdout,'Lattice Parameters (A)')
-       write(stdout,11) 'a =',current_structure%lattice_a*bohr_to_angstrom,&
-            & 'b =',current_structure%lattice_b*bohr_to_angstrom,&
-            & 'c =', current_structure%lattice_c*bohr_to_angstrom,grp
+       call io_heading(stdout,'Lattice Parameters ('//trim(current_params%out_len_unit)//')')
+       write(stdout,11) 'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit)),&
+            & 'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit)),&
+            & 'c =', io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit)),grp
        write(stdout,23) grp
        !write(stdout,*) "|                           Cell Angles (o)                        |"
        !write(stdout,*) "|                           ---------------                        |"
@@ -1813,7 +2032,7 @@ contains
     end if
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GENERAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !------------------------------------- GENERAL -------------------------------------------!
     !call io_section(stdout,"testing")
     !call io_subsection(stdout,"testing")
     grp = 'GEN'
@@ -1851,11 +2070,13 @@ contains
        case('finite_barrier')
           write(stdout,15)"External potential",adjustr('Finite Barrier'),grp
           write(stdout,22)"Frac. barrier widths",current_params%finite_barrier_width,grp
-          write(stdout,17)"Barrier height (eV)",current_params%finite_barrier_height*hartree_to_ev,grp
+          write(stdout,17)"Barrier height ("//trim(current_params%out_energy_unit)//")",&
+               & io_from_atomic(current_params%finite_barrier_height,trim(current_params%out_energy_unit)),grp
        case('periodic_pot')
           write(stdout,15)"External potential",adjustr('Periodic Potential'),grp
           write(stdout,21)"Periodic grid",current_params%periodic_pot_grid,grp
-          write(stdout,17)"Potential amplitude (eV)",current_params%periodic_pot_amp*hartree_to_ev,grp
+          write(stdout,17)"Potential amplitude  ("//trim(current_params%out_energy_unit)//")",&
+               & io_from_atomic(current_params%periodic_pot_amp,trim(current_params%out_energy_unit)),grp
        case default
           write(stdout,15)"External potential",adjustr('Custom Potential'),grp
           write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot)),grp
@@ -1868,7 +2089,8 @@ contains
        call io_heading(stdout,'Minimisation Parameters')
        write(stdout,16)"Maximum SCF steps",current_params%max_scf,grp
        write(stdout,15)"SCF method",adjustr(trim(current_params%scf_method)),grp
-       write(stdout,18)"SCF convergence tolerance (eV)",current_params%energy_tol*hartree_to_ev,grp
+       write(stdout,18)"SCF convergence tolerance ("//trim(current_params%out_energy_unit)//")",&
+            &io_from_atomic(current_params%energy_tol,trim(current_params%out_energy_unit)),grp
        write(stdout,23) grp
        !write(stdout,*)"|                           I/O Parameters                         |"
        !write(stdout,*)"|                           --------------                         |"
@@ -1891,17 +2113,27 @@ contains
        grp='ADV'
        call io_heading(stdout,'Advanced Parameters')
        write(stdout,19)"Spin orbit coupling",io_print_logical(current_params%soc),grp
-       write(stdout,22)"External E-field (eV/A)", current_params%ext_efield,grp
-       write(stdout,22)"External B-field (T)", current_params%ext_Bfield,grp
+       write(stdout,22)"External E-field ("//trim(current_params%out_efield_unit)//')',&
+            & io_from_atomic(current_params%ext_Efield(1),current_params%unit_efield),&
+            & io_from_atomic(current_params%ext_Efield(2),current_params%unit_efield),&
+            & io_from_atomic(current_params%ext_Efield(3),current_params%unit_efield),&
+            & grp
+
+       write(stdout,22)"External B-field ("//trim(current_params%out_bfield_unit)//')',&
+            & io_from_atomic(current_params%ext_Bfield(1),current_params%unit_bfield),&
+            & io_from_atomic(current_params%ext_Bfield(2),current_params%unit_bfield),&
+            & io_from_atomic(current_params%ext_Bfield(3),current_params%unit_bfield),&
+            & grp
        write(stdout,23) grp
 
-       if (current_params%iprint.ge.2)then ! this is verbose                                                                                                                                              
+       if (current_params%iprint.ge.2)then ! this is verbose
 
           ! write(stdout,*)"|                         Basis Set Parameters                     |"
           ! write(stdout,*)"|                         --------------------                     |"
           grp = 'BAS'
-          call io_heading(stdout,'Basis Set Parameters')         
-          write(stdout,17)"Plane wave cut off (eV)",current_params%cut_off_energy*hartree_to_ev,grp
+          call io_heading(stdout,'Basis Set Parameters')
+          write(stdout,17)"Plane wave cut off ("//trim(current_params%out_energy_unit)//")",&
+               io_from_atomic(current_params%cut_off_energy,trim(current_params%out_energy_unit)),grp
           write(stdout,17)"G vector fine scale",current_params%g_fine_scale,grp
           write(stdout,16)"Number of standard grid points",num_grid_points,grp
           write(stdout,16)"Number of fine grid points",num_fine_grid_points,grp
@@ -1919,12 +2151,12 @@ contains
        write(stdout,16)"Number of processes",nprocs,grp
        write(stdout,16)"Distributed by kpoint",dist_kpt,grp
        write(stdout,16)"Distributed by g vector",dist_gvec,grp
-       write(stdout,23) grp       
+       write(stdout,23) grp
        !write(stdout,*)"|                       Brillouin Zone Sampling                    |"
        !write(stdout,*)"|                       -----------------------                    |"
        grp='KPT'
        call io_subsection(stdout,'brillouin zone sampling')
-       write(stdout,23) grp       
+       write(stdout,23) grp
        write(stdout,21)"SCF MP kpoint grid",&
             & current_params%kpt_mp_grid(1),current_params%kpt_mp_grid(2),current_params%kpt_mp_grid(3),grp
        write(stdout,16)"Number kpoints",&
@@ -1938,7 +2170,7 @@ contains
           !write(stdout,*)"+"//repeat("=",(width-30)/2)//"       K-POINT REPORT       "//repeat("=",(width-30)/2)//"+"
           call io_heading(stdout,'K-Point Report')
           !write(stdout,*)"|                                                                  |"
-          write(stdout,*)"|         Number                      Fractional Coordinate        | <-- ",grp 
+          write(stdout,*)"|         Number                      Fractional Coordinate        | <-- ",grp
           write(stdout,*)"+------------------------------------------------------------------+ <-- ",grp
           do i=1,current_structure%num_kpoints
              write(stdout,31) i,current_structure%kpt_scf_list(i,1),&
@@ -1959,7 +2191,7 @@ contains
     call io_mem_report()
     write(stdout,*)
 
-    if (on_root_node)then
+    if (on_root_node.and..not.current_params%check)then
        write(stdout,*)
        write(stdout,*)
        write(stdout,*)"+==================================================================+"
@@ -1984,9 +2216,9 @@ contains
 21  format(T2,'|',1x,a,T36,":",T54,3(i4,1x),'| <-- ',a)   ! Integer vec
 22  format(T2,'|',1x,a,T36,":",T51,3(f5.3,1x),'| <-- ',a)   ! Real vec
 
-12  format(T2,'|',20x,a14,2x,f12.6,2x,"A**3",T69,'| <-- ',a)
-11  format(T2'|',10x,3(a7,1x,f7.4,1x),T69,'| <-- ',a)
-10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'| <-- ',a)
+12  format(T2,'|',18x,a14,2x,g14.6,2x,a,T69,'| <-- ',a)
+11  format(T2'|',7x,3(a7,1x,g9.3,1x),T69,'| <-- ',a)
+10  format(1x,'|',4x,3(g9.3,1x), 2x, 3(g9.3,1x),T69,'| <-- ',a)
 31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
 
     call trace_exit("io_write_params")
@@ -1995,6 +2227,16 @@ contains
 
 
 !!$  subroutine io_print_kpt()
+  !==============================================================================!
+  !                           I O _ P R I N T _ K P T                            !
+  !==============================================================================!
+  ! Defunct                                                                      !
+  !------------------------------------------------------------------------------!
+  ! Arguments:                                                                   !
+  !           None                                                               !
+  !------------------------------------------------------------------------------!
+  ! Author:   Z. Hawkhead  31/03/2024                                            !
+  !==============================================================================!
 !!$    implicit none
 !!$    character(50)   :: sec_title
 !!$    integer         :: width=69,length,i
@@ -2320,6 +2562,17 @@ contains
   end function io_print_logical
 
   subroutine io_warnings(message)
+    !==============================================================================!
+    !                            I O _ W A R N I N G S                             !
+    !==============================================================================!
+    ! Io routine for printing out a warning (and tracking warnings) if there is    !
+    ! an issue with the calculation that doesnt result in a fatal crash.           !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           message,           intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     implicit none
     character(*),optional   :: message
     call trace_entry('io_warnings')
@@ -2336,6 +2589,17 @@ contains
 
 
   subroutine io_alphabetise(arr, size,mapping)
+    !==============================================================================!
+    !                         I O _ A L P H A B E T I S E                          !
+    !==============================================================================!
+    ! Routine for applying a sorting routine for alphabetising the list of         !
+    ! available parameters                                                         !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           ar,                intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     character(len=*), dimension(:) :: arr
     integer, intent(in) :: size
     integer :: i, j
@@ -2377,6 +2641,17 @@ contains
   end subroutine io_alphabetise
 
   subroutine io_alphabet_mapping(arr, size, mapping)
+    !==============================================================================!
+    !                    I O _ A L P H A B E T _ M A P P I N G                     !
+    !==============================================================================!
+    ! Routine for producing a map that corresponds to the alphabetical order of    !
+    ! a list of parameters.                                                        !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           ar,                intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     character(len=*), dimension(:), intent(in) :: arr
     integer, intent(in) :: size
     integer, dimension(:), intent(out) :: mapping
@@ -2416,6 +2691,19 @@ contains
 
 
   subroutine io_section(unit,title,cat)
+    !==============================================================================!
+    !                             I O _ S E C T I O N                              !
+    !==============================================================================!
+    ! Small routine for generating a section header to be outputted to the         !
+    ! specified file. Makes for uniform formatting in the output file              !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           unit,              intent :: in                                    !
+    !           title,             intent :: in                                    !
+    !           cat,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     character(*),intent(in) :: title
     integer     ,intent(in) :: unit
     character(3),intent(in),optional :: cat
@@ -2436,7 +2724,7 @@ contains
     end if
 
     write(line,'("|",a,a,a,T68,"|")')repeat(" ",left_pad),trim(new_title),repeat(" ",right_pad)
-    
+
     if (present(cat))then
 
        write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
@@ -2450,6 +2738,18 @@ contains
   end subroutine io_section
 
   subroutine io_subsection(unit,title)
+    !==============================================================================!
+    !                          I O _ S U B S E C T I O N                           !
+    !==============================================================================!
+    ! Small routine for generating a section header to be outputted to the         !
+    ! specified file. Makes for uniform formatting in the output file              !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           unit,              intent :: in                                    !
+    !           title,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     character(*),intent(in) :: title
     integer     ,intent(in) :: unit
 
@@ -2535,20 +2835,20 @@ contains
     call comms_reduce(tot_max,1,'max')
 
 
-    if (on_root_node)then 
+    if (on_root_node)then
 
        !write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
        !write(stdout,*)"        |        M E M O R Y   E S T I M A T E S        | <-- MEM"
        !write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
        call io_section(stdout,'memory estimates','MEM')
-       if (current_params%iprint.ge.2)then 
+       if (current_params%iprint.ge.2)then
           if (io_memory.le.1.0e3_dp)then
              write(stdout,17)"IO requirements",io_memory,'B'
           elseif(io_memory.le.1.0e6_dp.and.io_memory.gt.1.0e3_dp)then
              write(stdout,17)"IO requirements",io_memory*byte_to_kilo,'KB'
           elseif(io_memory.le.1.0e9_dp.and.io_memory.gt.1.0e6_dp)then
              write(stdout,17)"IO requirements",io_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"IO requirements",io_memory*byte_to_giga,'GB'
           end if
 
@@ -2559,7 +2859,7 @@ contains
              write(stdout,17)"Basis requirements",basis_memory*byte_to_kilo,'KB'
           elseif(basis_memory.le.1.0e9_dp.and.basis_memory.gt.1.0e6_dp)then
              write(stdout,17)"Basis requirements",basis_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"Basis requirements",basis_memory*byte_to_giga,'GB'
           end if
 
@@ -2570,7 +2870,7 @@ contains
              write(stdout,17)"Potential requirements",pot_memory*byte_to_kilo,'KB'
           elseif(pot_memory.le.1.0e9_dp.and.pot_memory.gt.1.0e6_dp)then
              write(stdout,17)"Potential requirements",pot_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"Potential requirements",pot_memory*byte_to_giga,'GB'
           end if
 
@@ -2581,7 +2881,7 @@ contains
              write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_kilo,'KB'
           elseif(wave_memory.le.1.0e9_dp.and.wave_memory.gt.1.0e6_dp)then
              write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_giga,'GB'
           end if
 
@@ -2591,7 +2891,7 @@ contains
              write(stdout,17)"Density requirements",den_memory*byte_to_kilo,'KB'
           elseif(den_memory.le.1.0e9_dp.and.den_memory.gt.1.0e6_dp)then
              write(stdout,17)"Density requirements",den_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"Density requirements",den_memory*byte_to_giga,'GB'
           end if
 
@@ -2601,7 +2901,7 @@ contains
              write(stdout,17)"General requirements",gen_memory*byte_to_kilo,'KB'
           elseif(gen_memory.le.1.0e9_dp.and.gen_memory.gt.1.0e6_dp)then
              write(stdout,17)"General requirements",gen_memory*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"General requirements",gen_memory*byte_to_giga,'GB'
           end if
 
@@ -2613,7 +2913,7 @@ contains
           write(stdout,17)"Total requirements",tot_memory*byte_to_kilo,'KB'
        elseif(tot_memory.le.1.0e9_dp.and.tot_memory.gt.1.0e6_dp)then
           write(stdout,17)"Total requirements",tot_memory*byte_to_mega,'MB'
-       else 
+       else
           write(stdout,17)"Total requirements",tot_memory*byte_to_giga,'GB'
        end if
 
@@ -2625,13 +2925,13 @@ contains
              write(stdout,17)"Maximum memory per process",tot_max*byte_to_kilo,'KB'
           elseif(tot_max.le.1.0e9_dp.and.tot_max.gt.1.0e6_dp)then
              write(stdout,17)"Maximum memory per process",tot_max*byte_to_mega,'MB'
-          else 
+          else
              write(stdout,17)"Maximum memory per process",tot_max*byte_to_giga,'GB'
           end if
 
 
           write(stdout,*)"+------------------------------------------------------------------+ <-- MEM"
-          
+
 
        end if
 
@@ -2660,13 +2960,72 @@ contains
 10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'| <-- ',a)
 31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
 
-
-
-
-
-
     call trace_exit("io_mem_report")
 
   end subroutine io_mem_report
 
+
+  function io_to_atomic(quant,unit) result(quant_atom)
+
+    real(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit
+
+    real(dp)                     :: quant_atom
+    call trace_entry('io_to_atomic')
+
+    if(count(conv_units.eq.unit).eq.0) call io_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    quant_atom = sum(quant*conv_values,MASK=conv_units.eq.unit)
+
+
+
+    call trace_exit('io_to_atomic')
+  end function io_to_atomic
+
+  function io_from_atomic(quant,unit) result(quant_si)
+
+    real(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit
+
+    real(dp)                     :: quant_si
+    call trace_entry('io_from_atomic')
+
+    if(count(conv_units.eq.unit).eq.0) call io_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    quant_si = sum(quant/conv_values,MASK=conv_units.eq.unit)
+
+    call trace_exit('io_from_atomic')
+  end function io_from_atomic
+
+  function io_conversion(quant,unit1,unit2) result(quant_new)
+
+    real(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit1,unit2
+
+    real(dp)                     :: quant_new
+    call trace_entry('io_conversion')
+
+    if(count(conv_units.eq.unit1).eq.0) call io_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call io_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    ! First convert it to atomic
+    quant_new =  io_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = io_from_atomic(quant_new,unit2)
+
+    call trace_exit('io_conversion')
+  end function io_conversion
+
+
 end module io
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

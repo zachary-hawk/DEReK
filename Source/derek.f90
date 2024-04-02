@@ -1,12 +1,14 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 program derek
   use constants
   use comms
   use trace, only: trace_entry,trace_exit,trace_init,trace_finalise
   use io   , only: io_initialise, io_errors,current_params,seed,stdout,&
-       & io_dryrun,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings
+       & io_check,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings,&
+       & io_from_atomic,io_to_atomic,io_conversion
   use memory,only: memory_deallocate
   use basis, only: basis_init,current_basis, basis_recip2real, basis_real2recip
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
@@ -29,23 +31,27 @@ program derek
   integer :: i, j,n=3
   complex(kind=dp) , allocatable,dimension(:) :: test_fft
   real(kind=dp) , allocatable,dimension(:) :: test_fft_x
+  real(dp) :: testvar
 
 
-
-  call trace_init()           ! Set up trace 
-  call trace_entry("derek")   
-  call comms_init()           ! Start the MPI        
+  call trace_init()           ! Set up trace
+  call trace_entry("derek")
+  call constants_initialise()
+  call comms_init()           ! Start the MPI
   call io_initialise()        ! Open up the files and read
+
 
   if (current_params%restart) then
      call io_warnings("Restart currently unavailable, continuing without.")
      !call state_restart()
   end if
-  call utils_init_random()    ! Set the random seed
+  call utils_init_random()    ! Set the random seed 
   call basis_init()           ! Set up basis data
   call io_dist_kpt()          ! Distribute the k-points
 
+
   ! Workout the distribution
+
   call comms_distribute(current_structure%kpts_on_node,&
        & current_basis%local_grid_points,&
        & current_basis%local_fine_grid_points,&
@@ -56,7 +62,7 @@ program derek
        & current_basis%num_fine_node)
 
 
-  !call io_print_kpt()
+
   ! allocate all of the things held in the state
   call state_init()
 
@@ -70,23 +76,17 @@ program derek
        &, current_basis%fine_ngy&
        &, current_basis%fine_ngz)      ! Write out all the parameters, need to pass it the basis info 
 
-
   ! report the memory usage, probably won't need much more memory stuff after this 
   !call memory_report(stdout,current_params%iprint,current_params%calc_memory)
 
   ! Now check if its a dry run before going on
-  if (current_params%dryrun)then
-     call io_dryrun()
+  if (current_params%check)then
+     call io_check()
   end if
-
 
 
   ! After the initialisation is finished, we move onto the electronic minimisation..
   ! Calculation starts here, all before this point was initialisation, we report it in the output
-
-
-
-
   call electronic_minimise()
 
 

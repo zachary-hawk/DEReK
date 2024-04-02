@@ -2,6 +2,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module state
   use constants
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec,comms_wall_time

@@ -2,10 +2,11 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 module electronic
   use constants
   use trace, only : trace_entry,trace_exit,global_start
-  use io, only: stdout,current_params,glob_line_len,io_flush,io_warnings,io_section
+  use io, only: stdout,current_params,glob_line_len,io_flush,io_warnings,io_section,io_from_atomic
   use state, only: current_state
   use comms
 
@@ -15,38 +16,71 @@ module electronic
 contains
 
   subroutine electronic_minimise()
+    !==============================================================================!
+    !                    E L E C T R O N I C _ M I N I M I S E                     !
+    !==============================================================================!
+    ! Electronic minimisation routine. This should only be a routine for calling   !
+    ! other routines. There should be no major computation carried out here.       !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
 
     call trace_entry('electronic_minimise')
 
 
     call electronic_init()
-    
-    
+
+
     call electronic_scf()
 
     call electronic_scf_report()
-    
+
 
     call trace_exit('electronic_minimise')
   end subroutine electronic_minimise
 
   subroutine electronic_init()
+    !==============================================================================!
+    !                        E L E C T R O N I C _ I N I T                         !
+    !==============================================================================!
+    ! Inititation routine for the electronic properties module, in fairness its    !
+    ! probably a little pointless                                                  !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     call trace_entry('electronic_init')
 
     ! We start by writing out some stuff, we want to have indicate the start of the calculation
-    
+
     if (on_root_node)then
        call io_section(stdout,'self-consistent field')
 !!$       write(stdout,*)"+------------------------------------------------------------------+"
 !!$       write(stdout,*)"|             S E L F - C O N S I S T E N T  F I E L D             |"
 !!$       write(stdout,*)"+------------------------------------------------------------------+"
     end if
-    
+
     call trace_exit('electronic_init')
   end subroutine electronic_init
 
 
   subroutine electronic_scf()
+    !==============================================================================!
+    !                         E L E C T R O N I C _ S C F                          !
+    !==============================================================================!
+    ! Electronic routine for perfoming the scf minimisation. The majority of the   !
+    ! calculation will be carried out in this routine.                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
 
     !counters
     integer :: iscf=0
@@ -75,7 +109,7 @@ contains
        call io_flush(stdout)
 
        ! To start we need to report the initial energy, there will be no change
-       write(stdout,11)iscf,current_energy,wall_time
+       write(stdout,11)iscf,io_from_atomic(current_energy,trim(current_params%out_energy_unit)),wall_time
     end if
 
     !print*,rank,'before loop'
@@ -88,11 +122,13 @@ contains
 
 
        if (on_root_node)&
-            & write(stdout,12)iscf,current_energy,current_energy - energy_hist,wall_time       
+            & write(stdout,12)iscf,io_from_atomic(current_energy,trim(current_params%out_energy_unit)),&
+            & io_from_atomic(current_energy - energy_hist,trim(current_params%out_energy_unit)),&
+            & wall_time       
        !print*,'rank',rank
 
 
-!!!!! At This point, the energy tolerance and the energy history should be common to all nodes!!!!
+       !**** At This point, the energy tolerance and the energy history should be common to all nodes!!!!
        ! Check for convergence on the root_node
        !print*,rank,current_state%converged
 
@@ -120,7 +156,17 @@ contains
   end subroutine electronic_scf
 
   subroutine electronic_scf_report()
-    
+    !==============================================================================!
+    !                  E L E C T R O N I C _ S C F _ R E P O R T                   !
+    !==============================================================================!
+    ! This is an i/o routine for printing out the results of the SCF calculation   !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
+
     call trace_entry('electronic_scf_report')
     ! Check for convergence once we have finished the scf
     if (on_root_node)then
@@ -129,8 +175,10 @@ contains
 
           write(stdout,*)"|                 CONVERGED SUCCESSFULLY                   | <-- SCF"
           write(stdout,*)"+----------------------------------------------------------+ <-- SCF"
-          write(stdout,111)'Total energy',current_state%total_energy, 'eV'
-          write(stdout,111)'Fermi energy',current_state%efermi,       'eV'
+          write(stdout,111)'Total energy',io_from_atomic(current_state%total_energy, &
+               & trim(current_params%out_energy_unit)),trim(current_params%out_energy_unit)
+          write(stdout,111)'Fermi energy',io_from_atomic(current_state%efermi,&
+               & trim(current_params%out_energy_unit)),trim(current_params%out_energy_unit)
           write(stdout,111)'Total moment',current_state%tot_moment,   'hbar/2'
           write(stdout,112)'Total spin  ',current_state%total_spin(1),&
                & current_state%total_spin(2),&
@@ -141,8 +189,8 @@ contains
                & current_state%total_modspin(3),&
                & 'hbar/2'
 
-          
-111       format(1x,'|',T4,a,':',T35,g21.12,T55,a,T61,'| <-- SCF')         
+
+111       format(1x,'|',T4,a,':',T30,g21.12e3,T55,a,T61,'| <-- SCF')         
 112       format(1x,'|',T4,a,':',T17,3(g12.4),T55,a,T61,'| <-- SCF')         
        else
 

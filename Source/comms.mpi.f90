@@ -1,4 +1,5 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead
@@ -1053,6 +1054,17 @@ contains
   end subroutine COMMS_BCAST_DOUBLE_ARRAY
 
   subroutine comms_bcast_logical(start_buff)
+!==============================================================================!
+!                    C O M M S _ B C A S T _ L O G I C A L                     !
+!==============================================================================!
+! Mpi wrapper for broacasting logical variable from rood node to all           !
+! childeren                                                                    !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           start_buff,        intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  31/03/2024                                            !
+!==============================================================================!
     logical :: start_buff
     call trace_entry('comms_bcast_logical')
     call mpi_bcast(start_buff,1,MPI_LOGICAL,0,MPI_COMM_WORLD,status1,ierr)

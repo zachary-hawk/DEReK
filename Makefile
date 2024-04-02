@@ -39,7 +39,7 @@ GIT_VERSION=$(shell Bin/git_log.sh)
 SOURCE_DIR = ./Source
 
 # Create the path 
-BUILD_PATH=DEReK$(version)_$(F90)_$(BUILD)_$(CODATA_YEAR)_$(shell hostname -s)_$(COMMS_ARCH)
+BUILD_PATH=DEReK$(version)_$(F90)_$(BUILD)_$(shell hostname -s)_$(COMMS_ARCH)
 
 BUILD_DIR = ../Build/$(BUILD_PATH)
 BUILD_LOC = ./Build/$(BUILD_PATH)
