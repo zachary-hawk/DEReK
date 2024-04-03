@@ -2737,6 +2737,7 @@ contains
        write(unit,*)'+',repeat('=',glob_line_len-1),'+'
        write(unit,*)trim(line)
        write(unit,*)'+',repeat('=',glob_line_len-1),'+'
+
     end if
   end subroutine io_section
 
