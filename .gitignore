@@ -7,3 +7,6 @@ Source_backup
 Bin/add_params
 */*.mod
 Build/*
+Logos/*.svg
+Logos/*.pptx
+Logos/*.ipynb

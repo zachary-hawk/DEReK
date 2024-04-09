@@ -41,7 +41,9 @@ module io
   end interface
 
 
-
+  
+  
+  
   type  parameters
      ! %Begin: parameters
 
@@ -140,13 +142,12 @@ module io
   ! %End: keys
 
 
-
+  
 
   integer,parameter::max_keys=          42
   ! %End: max_param
 
-
-
+  
   type structure
      real(dp),dimension(1:3,1:3)         :: cell ! cell matrix
      real(dp),dimension(1:3,1:3)         :: inv_cell ! inverse cell matrix
