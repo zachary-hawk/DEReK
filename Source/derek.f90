@@ -97,27 +97,27 @@ program derek
 
 
   ! doing some big testing here
-!!$
-!!$  call memory_allocate(test_fft,1,current_basis%ngx,'B')
-!!$  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
-!!$
-!!$
-!!$  ! define a function
-!!$  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
-!!$
-!!$  test_fft = exp(-(test_fft_x-0.5_dp)**2/(0.03_dp)**2)!sin(test_fft_x*pi*2) + sin(4*test_fft_x*pi*2)
-!!$  test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
-!!$  test_fft(43:63) = 1.0_dp
-!!$  do i = 1, current_basis%ngx
-!!$     write(120,*) test_fft_x(i),real(test_fft(i))
-!!$  end do
-!!$
-!!$
-!!$  i=1
-!!$  call fft_1d(test_fft,'STD',i)
-!!$  do i = 1, current_basis%ngx
-!!$     write(121,*) test_fft_x(i),real(test_fft(i))
-!!$  end do
+
+  call memory_allocate(test_fft,1,current_basis%ngx,'B')
+  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
+
+
+  ! define a function
+  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+
+  test_fft = exp(-(test_fft_x-0.5_dp)**2/(0.03_dp)**2)!sin(test_fft_x*pi*2) + sin(4*test_fft_x*pi*2)
+  test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
+  !test_fft(43:63) = 1.0_dp
+  do i = 1, current_basis%ngx
+     write(120,*) test_fft_x(i),real(test_fft(i))
+  end do
+
+
+  i=1
+  call fft_1d(test_fft,'STD',i)
+  do i = 1, current_basis%ngx
+     write(121,*) test_fft_x(i),real(test_fft(i))
+  end do
 
 
 

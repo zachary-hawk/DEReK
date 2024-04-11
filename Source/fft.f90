@@ -6,7 +6,7 @@ module fft
   use trace, only : trace_entry, trace_exit
   use memory, only : memory_allocate, memory_deallocate
   use io, only : io_errors
-  include 'fftw3.f03'
+  !include 'fftw3.f03'
 
   ! Define the plans for the standard and fine grids, both forwards and backwards
   type (c_ptr) :: plan_std_fwd
@@ -20,6 +20,11 @@ module fft
   type (c_ptr) :: plan_fine_fwd_1d
   type (c_ptr) :: plan_fine_bwd_1d
 
+  ! Define some FFT constants
+  integer(C_INT), parameter :: FFTW_FORWARD = -1
+  integer(C_INT), parameter :: FFTW_BACKWARD = +1
+  integer(C_INT), parameter :: FFTW_ESTIMATE = 64
+  
   ! The arrays that will be used for the input 
 
   complex(dp), dimension(:,:,:), allocatable :: indata
@@ -32,7 +37,34 @@ module fft
   complex(dp), dimension(:), allocatable :: outdata_1d
   complex(dp), dimension(:), allocatable :: indata_fine_1d
   complex(dp), dimension(:), allocatable :: outdata_fine_1d
+  interface
+     type(C_PTR) function fftw_plan_dft_3d(n0,n1,n2,in,out,sign,flags) bind(C, name='fftw_plan_dft_3d')
+       import
+       integer(C_INT), value :: n0
+       integer(C_INT), value :: n1
+       integer(C_INT), value :: n2
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: in
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: out
+       integer(C_INT), value :: sign
+       integer(C_INT), value :: flags
+     end function fftw_plan_dft_3d
 
+     type(C_PTR) function fftw_plan_dft_1d(n,in,out,sign,flags) bind(C, name='fftw_plan_dft_1d')
+       import
+       integer(C_INT), value :: n
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: in
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: out
+       integer(C_INT), value :: sign
+       integer(C_INT), value :: flags
+     end function fftw_plan_dft_1d
+     subroutine fftw_execute_dft(p,in,out) bind(C, name='fftw_execute_dft')
+       import
+       type(C_PTR), value :: p
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(inout) :: in
+       complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: out
+     end subroutine fftw_execute_dft
+
+  end interface
 
   ! Local dimensions
   integer :: loc_nx,loc_ny, loc_nz, loc_nx_fine,loc_ny_fine,loc_nz_fine
@@ -82,7 +114,7 @@ contains
     call memory_allocate(indata_fine_1d, 1, nx_fine,'B')
     call memory_allocate(outdata_fine_1d, 1, nx_fine,'B')
 
-    
+
 
     loc_nx = nx
     loc_ny = ny
@@ -103,7 +135,7 @@ contains
     indata_fine_1d(:) = 0.0_dp
     outdata_fine_1d(:) = 0.0_dp
 
-    
+
     plan_std_fwd = fftw_plan_dft_3d(nz,ny,nx, indata, outdata,FFTW_FORWARD, FFTW_ESTIMATE)
     plan_std_bwd = fftw_plan_dft_3d(nz,ny,nx, indata, outdata,FFTW_BACKWARD, FFTW_ESTIMATE)
     plan_fine_fwd = fftw_plan_dft_3d(nz_fine,ny_fine,nx_fine, indata, outdata,FFTW_FORWARD, FFTW_ESTIMATE)
@@ -113,7 +145,7 @@ contains
     plan_std_bwd_1d = fftw_plan_dft_1d(nz, indata_1d, outdata_1d,FFTW_BACKWARD, FFTW_ESTIMATE)
     plan_fine_fwd_1d = fftw_plan_dft_1d(nz_fine, indata_1d, outdata_1d,FFTW_FORWARD, FFTW_ESTIMATE)
     plan_fine_bwd_1d = fftw_plan_dft_1d(nz_fine, indata_1d, outdata_1d,FFTW_BACKWARD, FFTW_ESTIMATE)
-    
+
 
 
 
@@ -255,7 +287,7 @@ contains
        else
           call io_errors("direction must be +1 or -1")
        end if
-       
+
        in_grid=outdata_1d
     case('FINE')
 
