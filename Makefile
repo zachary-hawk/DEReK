@@ -32,7 +32,7 @@ $(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortra
 # Version info from io.f90
 version=$(shell Bin/version.sh)
 GIT_VERSION=$(shell Bin/git_log.sh)
-ARCH = $(shell Bin/arch)
+ARCH = $(shell Bin/arch $(F90))
 #####################################
 #      DIRECTORY LOCATIONS          #
 #####################################
