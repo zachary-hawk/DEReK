@@ -32,6 +32,7 @@ $(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortra
 # Version info from io.f90
 version=$(shell Bin/version.sh)
 GIT_VERSION=$(shell Bin/git_log.sh)
+ARCH = $(shell Bin/arch)
 #####################################
 #      DIRECTORY LOCATIONS          #
 #####################################
@@ -39,7 +40,7 @@ GIT_VERSION=$(shell Bin/git_log.sh)
 SOURCE_DIR = ./Source
 
 # Create the path 
-BUILD_PATH=DEReK$(version)_$(F90)_$(BUILD)_$(shell hostname -s)_$(COMMS_ARCH)
+BUILD_PATH=DEReK$(version)_$(ARCH)_$(BUILD)_$(COMMS_ARCH)
 
 BUILD_DIR = ../Build/$(BUILD_PATH)
 BUILD_LOC = ./Build/$(BUILD_PATH)

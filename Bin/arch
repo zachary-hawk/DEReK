@@ -1,0 +1,51 @@
+ #!/bin/bash
+
+# Determine the type of system
+if [[ "$(uname)" == "Linux" ]]; then
+    system_type="Linux_$(uname -r)"
+elif [[ "$(uname)" == "Darwin" ]]; then
+    system_type="Darwin_$(uname -r)"
+elif [[ "$(uname)" == "CYGWIN"* ]]; then
+    system_type="Cygwin_$(uname -r)"
+else
+    system_type="Unix"
+fi
+
+# Detect Fortran compiler and its version
+detect_fortran_compiler() {
+    if command -v gfortran &> /dev/null; then
+        fortran_compiler="gfortran"
+    elif command -v ifort &> /dev/null; then
+        fortran_compiler="ifort"
+    elif command -v g77 &> /dev/null; then
+        fortran_compiler="g77"
+    else
+        fortran_compiler="Unknown"
+    fi
+
+    # Get the version of the detected Fortran compiler
+    case "$fortran_compiler" in
+        "gfortran")
+            fortran_version=$(gfortran --version | head -n 1 | awk '{print $NF}')
+            ;;
+        "ifort")
+            fortran_version=$(ifort --version | head -n 1 | awk '{print $NF}')
+            ;;
+        "g77")
+            fortran_version=$(g77 --version | head -n 1 | awk '{print $NF}')
+            ;;
+        *)
+            fortran_version="N/A"
+            ;;
+    esac
+}
+
+# Call the function to detect Fortran compiler
+detect_fortran_compiler
+
+# Get the hostname
+hostname=$(hostname -s)
+
+# Output the results
+echo "${system_type}_${fortran_compiler}_${fortran_version}_${hostname}"
+

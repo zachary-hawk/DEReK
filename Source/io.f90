@@ -1625,7 +1625,7 @@ contains
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
     write(stdout,*) "|                                                                  |"
-    write(stdout,'(T2,"|",T28,A, 1x, A,T69 ,"|")') 'Version', version
+    write(stdout,'(T2,"|",T28,A, 1x, A,T69 ,"|")') 'Version', trim(version)
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "+------------------------------------------------------------------+"
     write(stdout,*) "|     Salutations! Welcome to the Durham Electronic RElaxation     |"
