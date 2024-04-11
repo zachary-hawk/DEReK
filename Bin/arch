@@ -1,15 +1,16 @@
- #!/bin/sh
+#!/bin/sh
 
 # Determine the type of system
-if [[ "$(uname)" == "Linux" ]]; then
+if uname | grep -q "Linux"; then
     system_type="Linux_$(uname -r)"
-elif [[ "$(uname)" == "Darwin" ]]; then
+elif uname | grep -q "Darwin"; then
     system_type="Darwin_$(uname -r)"
-elif [[ "$(uname)" == "CYGWIN"* ]]; then
-    system_type="Cygwin_$(uname -r)"
+elif uname | grep -q "CYGWIN"; then
+    system_type="Cygwin"
 else
     system_type="Unix"
 fi
+
 
 
 # Get the hostname
