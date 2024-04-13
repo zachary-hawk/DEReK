@@ -49,7 +49,7 @@ endif
 ifeq ($(BUILD),debug)
 OPT= '"DEBUG"'
 ifeq ($(F90),gfortran)
-FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -Wl, -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch    -D opt_strat=$(OPT) -I$(FFTWDIR) -L$(OPENBLASDIR)
+FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation  -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch    -D opt_strat=$(OPT) -I$(FFTWDIR) -L$(OPENBLASDIR)
 endif
 
 ifeq ($(F90),ifort)
@@ -102,7 +102,7 @@ $(BUILD_DIR)/%.o: %.$(COMMS_ARCH).f90
 $(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
-	@$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
+	$(MPI_F90) $(FCFLAGS) -o $@ $(OBJ) 
 
 
 
