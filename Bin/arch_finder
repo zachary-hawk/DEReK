@@ -7,5 +7,5 @@ name="$(uname -s)"
 
 version="$(uname -r)"
 
-echo "'"'"'${name}-${version}'"'"'"
+echo ${name}-${version}
 

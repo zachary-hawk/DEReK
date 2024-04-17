@@ -5,6 +5,7 @@ module io
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
        &,comms_library_version,comms_version,dist_kpt,dist_gvec
   use memory
+  use sys, only : current_sys,sys_init
   use iso_fortran_env, only : compiler_version
   use iso_c_binding
 
@@ -31,14 +32,8 @@ module io
 
   integer                                  :: max_params=1
   logical, private :: cell_declared=.false.
-  integer,parameter :: fft_v_len = 64
 
-  interface
-     function fftw_version_ptr_c()bind (c,name='padded_fftw_version')
-       use iso_c_binding
-       type(c_ptr) :: fftw_version_ptr_c
-     end function fftw_version_ptr_c
-  end interface
+
 
 
   
@@ -208,6 +203,8 @@ contains
 
 
     call trace_entry("io_initialise")
+    call sys_init()
+
     call io_cl_parser() ! Read the commandline arguments
 
     call memory_init(seed)
@@ -922,22 +919,6 @@ contains
        !print*, mpi_c_version,mpi_version_num
     end if
 
-#ifdef __INTEL_COMPILER
-#define compiler "Intel Compiler"
-
-#endif
-#ifdef __GFORTRAN__
-#define compiler "GNU Fortran"
-    !#define compile_version __VERSION__
-#endif
-
-#define opt opt_strat
-    compile_version=compiler_version()
-    if (compiler.eq."Intel Compiler")then
-       compile_version=compiler_version()
-       compile_version=trim(compile_version(87:97))
-    end if
-
 
     if (nargs.gt.0)then
        do arg_index=1,nargs
@@ -1498,94 +1479,28 @@ contains
     !==============================================================================!
     integer,intent(in) :: unit
     integer::file
-    integer :: maj_mpi,min_mpi,min_char
-    character(len=max_version_length) :: mpi_c_version
-    character(len=3) :: MPI_version_num
-    character(len=100):: compile_version,cpuinfo,git_version
-    character(100)    :: arch_string
-    integer           :: math_maj,math_min,math_patch
     logical,optional,intent(in) :: comment
-
+    character(1) :: comment_char 
     call trace_entry("io_sys_info")
-
-
-
-    if (comms_arch.eq."MPI")then
-       call COMMS_LIBRARY_VERSION(mpi_c_version)
-       call COMMS_VERSION(maj_mpi,min_mpi)
-
-       write(mpi_version_num,97)maj_mpi,min_mpi
-97     format(i1,".",i1)
-       min_char=scan(mpi_c_version,",")
-
-    end if
-
-#ifdef __INTEL_COMPILER
-#define compiler "Intel Compiler"
-
-#endif
-#ifdef __GFORTRAN__
-#define compiler "GNU Fortran"
-    !#define compile_version __VERSION__
-#endif
-
-#ifdef arch
-#define arch_string arch
-#endif
-
-#ifdef cpu
-#define cpuinfo cpu
-#endif
-
-#define opt opt_strat
-
-#ifdef gitversion
-#define git_version gitversion
-#endif
-
-    ! Get the version of openblas
-    call ilaver(math_maj,math_min,math_patch)
-
-
-    compile_version=compiler_version()
-    if (compiler.eq."Intel Compiler")then
-       compile_version=compiler_version()
-
-       compile_version=trim(compile_version(87:97))
-    end if
+    comment_char = ' '
     if (present(comment))then
-       if (comment)then
-          write(unit,*) "# Compiler           : ",compiler," ",Trim(compile_version)
-          write(unit,*) "# Compile Date       : ",__DATE__, ",",__TIME__
-          write(unit,*) "# Operating System   : ",trim(arch_string)
-          write(unit,*) "# System CPU         : ",trim(cpuinfo)
-          write(unit,*) "# Communications     : ", comms_arch
-          if (comms_arch.eq."MPI")then
-             write(unit,*) "# MPI Version        : ",mpi_c_version(1:min_char)
-          end if
-          write(unit,*) "# Optimisation       : ",opt
-          write(unit,*) "# Physical Constants : ",const_version
-          write(unit,*) "# FFTW3 Version      : ",trim(f_fftw_version())
-          write(unit,'(1x,a,i0,".",I0,".",i0)') "# OpenBLAS Version   : ",math_maj,math_min,math_patch
-
-          write(unit,*) '# '
-       end if
-    else
-       write(unit,*) "Code Version       : ",git_version
-       write(unit,*) "Compiler           : ",compiler," ",Trim(compile_version)
-       write(unit,*) "Compile Date       : ",__DATE__, ",",__TIME__
-       write(unit,*) "Operating System   : ",trim(arch_string)
-       write(unit,*) "System CPU         : ",trim(cpuinfo)
-       write(unit,*) "Parallelisation    : ", comms_arch
-       if (comms_arch.eq."MPI")then
-          write(unit,*) "MPI Version        : ",mpi_c_version(1:min_char)
-       end if
-       write(unit,*) "Optimisation       : ",opt
-       write(unit,*) "Physical Constants : ",const_version
-       write(unit,*) "FFTW3 Version      : ",trim(f_fftw_version())
-       write(unit,'(1x,a,i0,".",I0,".",i0)') "OpenBLAS Version   : ",math_maj,math_min,math_patch
-       write(unit,*)
+       if (comment)comment_char='#'       
     end if
+    write(unit,*)trim(comment_char),"Code Version       : ",current_sys%git
+    write(unit,*)trim(comment_char),"Compiler           : ",current_sys%compiler
+    write(unit,*)trim(comment_char),"Compile Date       : ",current_sys%date
+    write(unit,*)trim(comment_char),"Operating System   : ",current_sys%arch
+    write(unit,*)trim(comment_char),"System CPU         : ",current_sys%cpu
+    write(unit,*)trim(comment_char),"Parallelisation    : ",current_sys%comms
+    if (comms_arch.eq."MPI")then
+       write(unit,*)trim(comment_char),"MPI Version        : ",current_sys%comms_version
+    end if
+    write(unit,*)trim(comment_char),"Optimisation       : ",current_sys%opt
+    write(unit,*)trim(comment_char),"Physical Constants : ",current_sys%consts
+    write(unit,*)trim(comment_char),"FFTW3 Version      : ",current_sys%ffts
+    write(unit,*)trim(comment_char),"OpenBLAS Version   : ",current_sys%openblas
+    write(unit,*)trim(comment_char)
+
 
 
 !!$    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
@@ -2674,24 +2589,6 @@ contains
     end do
   end subroutine io_alphabet_mapping
 
-
-  character(len=fft_v_len) function f_fftw_version()
-
-    implicit none
-    integer :: i
-    character(kind=c_char), dimension(:), pointer :: fftw_version_ptr
-
-    call c_f_pointer(fftw_version_ptr_c(), fftw_version_ptr, [fft_v_len])
-
-    f_fftw_version = ' '
-    do i=1, fft_v_len
-       if( fftw_version_ptr(i) == C_NULL_CHAR ) exit
-
-       f_fftw_version(i:i) = fftw_version_ptr(i)
-    end do
-
-    return
-  end function f_fftw_version
 
 
   subroutine io_section(unit,title,cat)
