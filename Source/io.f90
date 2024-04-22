@@ -15,12 +15,13 @@ module io
   character(20),     public                :: seed
   integer,           public                :: stdout
   integer,           public,parameter      :: glob_line_len =67
-  integer,parameter                        :: n_cats = 8
+  integer,parameter                        :: n_cats = 9
   character(3)                             :: grp ! group for printing the parameters
 
   character(100),dimension(:),allocatable  :: present_array
   character(100),dimension(:),allocatable  :: keys_array
   character(100),dimension(:),allocatable  :: keys_description
+  character(200),dimension(:),allocatable  :: keys_example ! An optional example, for complicated keys
   character(100),dimension(:),allocatable  :: keys_default
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
@@ -64,13 +65,13 @@ module io
      character(len=30) :: external_pot = 'Jelly'
      integer,dimension(1:3) :: kpt_mp_grid = (/1,1,1/)
      logical :: write_spec = .true.
-     logical :: calc_memory = .false.
+     logical :: write_memory = .false.
      integer :: iprint =            1
      real(dp) :: finite_barrier_height =    10.00_dp
      real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5_dp,0.5_dp,0.5_dp/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
      real(dp) :: periodic_pot_amp =    10.00_dp
-     integer :: random_seed =            0
+    integer :: random_seed =            0
      logical :: write_formatted_potential = .false.
      logical :: write_potex = .false.
      logical :: write_formatted_density = .false.
@@ -81,7 +82,7 @@ module io
      real(dp),dimension(1:3) :: ext_bfield =    (/0.0_dp,0.0_dp,0.0_dp/)
      character(len=30) :: unit_energy = 'eV'
      character(len=30) :: unit_length = 'A'
-     character(len=30) :: unit_efield = 'eV'
+     character(len=30) :: unit_efield = 'eV/A/e'
      character(len=30) :: unit_bfield = 'T'
      character(len=30) :: out_energy_unit = 'eV'
      character(len=30) :: out_len_unit = 'A'
@@ -112,7 +113,7 @@ module io
   character(len=30),parameter,public ::key_external_pot   = 'external_pot'
   character(len=30),parameter,public ::key_kpt_mp_grid   = 'kpt_mp_grid'
   character(len=30),parameter,public ::key_write_spec   = 'write_spec'
-  character(len=30),parameter,public ::key_calc_memory   = 'calc_memory'
+  character(len=30),parameter,public ::key_write_memory   = 'write_memory'
   character(len=30),parameter,public ::key_iprint   = 'print_level'
   character(len=30),parameter,public ::key_finite_barrier_height   = 'finite_barrier_height'
   character(len=30),parameter,public ::key_finite_barrier_width   = 'finite_barrier_width'
@@ -139,7 +140,7 @@ module io
 
   
 
-  integer,parameter::max_keys=          42
+  integer,parameter::max_keys=          43
   ! %End: max_param
 
   
@@ -207,7 +208,7 @@ contains
 
     call io_cl_parser() ! Read the commandline arguments
 
-    call memory_init(seed)
+    !call memory_init(seed)
 
     ! Get the length of the parameters file
     inquire(file=trim(seed)//'.info',exist=file_exists)
@@ -247,7 +248,8 @@ contains
 
     if (read_params) call io_read_param(current_params)
     if (.not.cell_declared) call io_errors(" No lattice provided")
-
+    call memory_init(seed,current_params%write_memory)
+    call io_kpoint_grid()
 
 
     ! We have the lattice we can define params
@@ -364,7 +366,7 @@ contains
           if (index(trim(line),'!').gt.0)cycle
 
           ! read the block data
-          if (index(io_case(line),"%begin").gt.0)then
+          if (index(io_case(line),"$begin").gt.0)then
              call io_block_parse(line,stat)
              cycle
           end if
@@ -503,8 +505,8 @@ contains
              read(param,*,iostat=stat) dummy_params%write_spec
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
-          case(key_calc_memory)
-             read(param,*,iostat=stat) dummy_params%calc_memory
+          case(key_write_memory)
+             read(param,*,iostat=stat) dummy_params%write_memory
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
           case(key_iprint)
@@ -732,7 +734,7 @@ contains
        dummy_params%write_spec               = .true.
     end if
 
-    call io_kpoint_grid()
+
 
     call trace_exit("io_read_param")
     return
@@ -817,6 +819,7 @@ contains
     write(2,*) "Error in ",trim(current_sub),": ",message
 
     call trace_stack(2,rank,seed=seed)
+
     stop
     return
   end subroutine io_errors
@@ -1001,7 +1004,6 @@ contains
                 end if
                 read_params=.true.
              end if
-
           end select
        end do
     else
@@ -1033,7 +1035,6 @@ contains
     logical                 :: found=.false.
 
     if (present(string))then
-
        do i=1,max_keys
           if (trim(keys_array(i)).eq.io_case(trim(string))) then
              found=.true.
@@ -1044,6 +1045,11 @@ contains
              write(*,*)
              write(*,*) "Allowed Values: ",trim(keys_allowed(i))
              write(*,*) "Default:        ",trim(keys_default(i))
+             if (keys_example(i).ne.'')then
+                write(*,*)
+                write(*,*) "Example: "
+                write(*,*)trim(keys_example(i))
+             end if
              write(*,*)
 12           format(1x,a,1x,a,1x,a)
 
@@ -1056,7 +1062,6 @@ contains
           write(*,*)
        end if
     else
-
        write(*,*)  "Usage:"
        write(*,30) "derek.mpi","<seed>","Run a calculation from <seed>.info"
        write(*,30) '    "    ', "-v","Print version information."
@@ -1127,7 +1132,7 @@ contains
     logical  :: print_flag
     character(*),optional  :: string
     character(100) :: junk
-    integer       :: i,j ! loops
+    integer       :: i,j,nl ! loops
 
 
     integer :: cat_index = -1
@@ -1137,11 +1142,12 @@ contains
     allocate(keys_array(1:max_keys))
     allocate(keys_default(1:max_keys))
     allocate(keys_description(1:max_keys))
+    allocate(keys_example(1:max_keys))
     allocate(keys_allowed(1:max_keys))
     allocate(keys_cat(1:max_keys))
 
 
-
+    
     ! assign the keys
     ! %Begin: assign_keys
 
@@ -1165,7 +1171,7 @@ contains
     keys_array(18)=trim(key_external_pot)
     keys_array(19)=trim(key_kpt_mp_grid)
     keys_array(20)=trim(key_write_spec)
-    keys_array(21)=trim(key_calc_memory)
+    keys_array(21)=trim(key_write_memory)
     keys_array(22)=trim(key_iprint)
     keys_array(23)=trim(key_finite_barrier_height)
     keys_array(24)=trim(key_finite_barrier_width)
@@ -1188,6 +1194,7 @@ contains
     keys_array(40)=trim(key_out_len_unit)
     keys_array(41)=trim(key_out_efield_unit)
     keys_array(42)=trim(key_out_bfield_unit)
+    keys_array(43)='lattice'      ! Special case for block type, needs a help section, but doesnt need to be a key
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -1232,7 +1239,7 @@ contains
     keys_default(19)=trim(adjustl(junk))
     write(junk,*)current_params%write_spec
     keys_default(20)=trim(adjustl(junk))
-    write(junk,*)current_params%calc_memory
+    write(junk,*)current_params%write_memory
     keys_default(21)=trim(adjustl(junk))
     write(junk,*)current_params%iprint
     keys_default(22)=trim(adjustl(junk))
@@ -1244,7 +1251,6 @@ contains
     keys_default(25)=trim(adjustl(junk))
     write(junk,*)current_params%periodic_pot_amp
     keys_default(26)=trim(adjustl(junk))
-
     write(junk,*)current_params%random_seed
     keys_default(27)=trim(adjustl(junk))
     write(junk,*)current_params%write_formatted_potential
@@ -1277,6 +1283,8 @@ contains
     keys_default(41)=trim(adjustl(junk))
     write(junk,*)current_params%out_bfield_unit
     keys_default(42)=trim(adjustl(junk))
+    keys_default(43)=trim(adjustl('None'))  !! Special case for block data, no default, must be specified
+
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1300,7 +1308,7 @@ contains
     keys_description(18)='Provide an external potential, jelly, finite_barrier, periodic_pot or from file'
     keys_description(19)='Monkhurst pack grid for the SCF cycle'
     keys_description(20)='Write orbital information to spectral file'
-    keys_description(21)='Calculate memory usage throughout the calculation'
+    keys_description(21)='Write out the memory usage on each node throughout the calculation'
     keys_description(22)='Determine output verbosity in the output file'
     keys_description(23)='Height of the external potential barrier for a finite potential barrier in eV'
     keys_description(24)='Fractional width of barrier in each principal direction'
@@ -1322,6 +1330,7 @@ contains
     keys_description(40)='Unit of length to be used to output all length terms in the .derek file'                
     keys_description(41)='Unit of electric field to be output to parse all electric field terms in the .derek file'
     keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .derek file'
+    keys_description(43)='Block type data to define lattice vectors of unit cell '
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1368,8 +1377,63 @@ contains
     keys_allowed(40)='m mm cm nm mum pm A bohr'
     keys_allowed(41)='eV/A/e Ha/Bohr/e N/C'
     keys_allowed(42)='T G agr'
+    keys_allowed(43)='3x3 matrix of lattice vectors'
     ! %End: assign_allowed
 
+
+    ! %Begin: assign_example
+
+    keys_example(1) =''
+    keys_example(2) =''
+    keys_example(3) =''
+    keys_example(4) =''
+    keys_example(5) =''
+    keys_example(6) =''
+    keys_example(7) =''
+    keys_example(8) =''
+    keys_example(9) =''
+    keys_example(10)=''
+    keys_example(11)=''
+    keys_example(12)=''
+    keys_example(13)=''
+    keys_example(14)=''
+    keys_example(15)=''
+    keys_example(16)=''
+    keys_example(17)=''
+    keys_example(18)=''
+    keys_example(19)=''
+    keys_example(20)=''
+    keys_example(21)=''
+    keys_example(22)=''
+    keys_example(23)=''
+    keys_example(24)=''
+    keys_example(25)=''
+    keys_example(26)=''
+    keys_example(27)=''
+    keys_example(28)=''
+    keys_example(29)=''
+    keys_example(30)=''
+    keys_example(31)=''
+    keys_example(32)=''
+    keys_example(33)='EXT_EFIELD : 1.0 0.0 0.0'
+    keys_example(34)='EXT_BFIELD : 0.0 0.0 0.1'
+    keys_example(35)=''
+    keys_example(36)=''
+    keys_example(37)=''
+    keys_example(38)=''
+    keys_example(39)=''
+    keys_example(40)=''
+    keys_example(41)=''
+    keys_example(42)=''
+    keys_example(43)='$BLOCK lattice\n '//&
+         & ' 5.0 0.0 0.0\n '//&
+         & ' 0.0 5.0 0.0\n '//&
+         & ' 0.0 0.0 5.0\n '//&
+         & '$END lattice'
+    
+    ! %End: assign_example
+
+    
 
     cats = (/'FUNDAMENTAL  '&
          &  ,'PLANEWAVES   '&
@@ -1378,7 +1442,8 @@ contains
          &  ,'WAVEFUNCTION '&
          &  ,'I/O          '&
          &  ,'MISCELLANEOUS'&
-         &  ,'ADVANCED     '/)
+         &  ,'ADVANCED     '&
+         &  ,'BLOCK        '/)
     !  %Begin: assign_cats
     keys_cat(1) =7
     keys_cat(2) =7
@@ -1422,6 +1487,7 @@ contains
     keys_cat(40)=6
     keys_cat(41)=6
     keys_cat(42)=6
+    keys_cat(43)=9
     ! %End: assign_cats
     call io_alphabetise(keys_array,max_keys,mapping)
 
@@ -1444,11 +1510,10 @@ contains
     if (print_flag)then
 100    format(1x,A,T35,A)
        write(*,*)
-       do j=1,8
+       do j=1,n_cats
           if (cat_index.eq.-1 .or. j.eq.cat_index)then
              write(*,*)adjustl(trim(cats(j)))
              write(*,*)repeat('-',len(adjustl(trim(cats(j)))))
-
              do i=1,max_keys
                 if (keys_cat(mapping(i)).eq.j )then
                    write(*,100) io_case(trim(keys_array(mapping(i))),.true.),trim(keys_description(mapping(i)))
@@ -1486,19 +1551,19 @@ contains
     if (present(comment))then
        if (comment)comment_char='#'       
     end if
-    write(unit,*)trim(comment_char),"Code Version       : ",current_sys%git
-    write(unit,*)trim(comment_char),"Compiler           : ",current_sys%compiler
-    write(unit,*)trim(comment_char),"Compile Date       : ",current_sys%date
-    write(unit,*)trim(comment_char),"Operating System   : ",current_sys%arch
-    write(unit,*)trim(comment_char),"System CPU         : ",current_sys%cpu
-    write(unit,*)trim(comment_char),"Parallelisation    : ",current_sys%comms
+    write(unit,*)trim(comment_char),"Code Version       : ",trim(current_sys%git)
+    write(unit,*)trim(comment_char),"Compiler           : ",trim(current_sys%compiler)
+    write(unit,*)trim(comment_char),"Compile Date       : ",trim(current_sys%date)
+    write(unit,*)trim(comment_char),"Operating System   : ",trim(current_sys%arch)
+    write(unit,*)trim(comment_char),"System CPU         : ",trim(current_sys%cpu)
+    write(unit,*)trim(comment_char),"Parallelisation    : ",trim(current_sys%comms)
     if (comms_arch.eq."MPI")then
-       write(unit,*)trim(comment_char),"MPI Version        : ",current_sys%comms_version
+       write(unit,*)trim(comment_char),"MPI Version        : ",trim(current_sys%comms_version)
     end if
-    write(unit,*)trim(comment_char),"Optimisation       : ",current_sys%opt
-    write(unit,*)trim(comment_char),"Physical Constants : ",current_sys%consts
-    write(unit,*)trim(comment_char),"FFTW3 Version      : ",current_sys%ffts
-    write(unit,*)trim(comment_char),"OpenBLAS Version   : ",current_sys%openblas
+    write(unit,*)trim(comment_char),"Optimisation       : ",trim(current_sys%opt)
+    write(unit,*)trim(comment_char),"Physical Constants : ",trim(current_sys%consts)
+    write(unit,*)trim(comment_char),"FFTW3 Version      : ",trim(current_sys%ffts)
+    write(unit,*)trim(comment_char),"OpenBLAS Version   : ",trim(current_sys%openblas)
     write(unit,*)trim(comment_char)
 
 
@@ -1581,7 +1646,7 @@ contains
        write(stdout,*) " "
        write(stdout,'(16x,A)') "****************************************"
        write(stdout,'(16x,A)') "*                                      *"
-       write(stdout,'(16x,A)') "*         Check complete....          *"
+       write(stdout,'(16x,A)') "*         Check complete....           *"
        write(stdout,'(16x,A)') "*          No errors found             *"
        write(stdout,'(16x,A)') "*                                      *"
        write(stdout,'(16x,A)') "****************************************"
@@ -1681,7 +1746,7 @@ contains
     do
        read(1,'(a)',iostat=stat)buff
        buff=trim(adjustl(io_case(buff)))
-       if (index(buff,"%end").ne.0)then
+       if (index(buff,"$end").ne.0)then
           ! check to see if the blocks match
           read(buff,*,iostat=in_stat) block_str,block_type2
           if (in_stat.ne.0) call io_errors(" problem parsing end block")
@@ -2021,9 +2086,19 @@ contains
        write(stdout,19)"Write external potential",io_print_logical(current_params%write_potex),grp
        write(stdout,19)"Write formatted ext. potential",io_print_logical(current_params%write_formatted_potex),grp
        write(stdout,19)"Write electronic spectrum",io_print_logical(current_params%write_spec),grp
-       write(stdout,19)"Calculate memory",io_print_logical(current_params%calc_memory),grp
+       write(stdout,19)"Calculate memory",io_print_logical(current_params%write_memory),grp
 
        write(stdout,23) grp
+       !write(stdout,*)"|                                UNITS                             |"
+       !write(stdout,*)"|                                -----                             |"
+       if (current_params%iprint.gt.2)then
+          grp='UNT'
+          call io_heading(stdout,'Units')
+          write(stdout,15)"Energy unit (in|out)",trim(current_params%unit_energy)//' | '//trim(current_params%out_energy_unit),grp
+          write(stdout,15)"Length unit (in|out)",trim(current_params%unit_length)//' | '//trim(current_params%out_len_unit),grp
+          write(stdout,15)"E-field unit (in|out)",trim(current_params%unit_efield)//' | '//trim(current_params%out_efield_unit),grp
+          write(stdout,15)"B-field unit (in|out)",trim(current_params%unit_bfield)//' | '//trim(current_params%out_bfield_unit),grp
+       end if
        !write(stdout,*)"|                         Advanced Parameters                      |"
        !write(stdout,*)"|                         -------------------                      |"
        grp='ADV'

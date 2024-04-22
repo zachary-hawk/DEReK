@@ -15,8 +15,8 @@ module memory
   real(dp), public,save :: gen_memory
   real(dp), public,save :: den_memory
 
-  character(20) :: local_seed
-
+  character(20),private :: local_seed
+  logical,private       :: local_write_mem
   private
 
   interface memory_allocate
@@ -65,7 +65,7 @@ module memory
 
 contains
 
-  subroutine memory_init(seed)
+  subroutine memory_init(seed,write_mem)
     !==============================================================================!
     !                            M E M O R Y _ I N I T                             !
     !==============================================================================!
@@ -77,6 +77,7 @@ contains
     ! Author:   Z. Hawkhead  30/12/2021                                            !
     !==============================================================================!
     character(*) :: seed
+    logical      :: write_mem
     call trace_entry('memory_init')
 
     io_memory=0.0_dp
@@ -89,6 +90,7 @@ contains
 
 
     local_seed=seed
+    local_write_mem = write_mem
     call trace_exit('memory_init')
   end subroutine memory_init
 
@@ -1674,20 +1676,21 @@ contains
     logical :: opened
     mem_unit=345*rank+9103
 
+    if (local_write_mem)then
+       write(mem_name,'(a,".",i0.4,a)')trim(local_seed),rank,".mem"
+       inquire(mem_unit,opened=opened)
+       if (.not.opened)then
 
-    write(mem_name,'(a,".",i0.4,a)')trim(local_seed),rank,".mem"
-    inquire(mem_unit,opened=opened)
-    if (.not.opened)then
-       open(unit=mem_unit,file=mem_name,access="STREAM",form="FORMATTED")
-       write(mem_unit,*) "#  MEMORY TIME REPORT "
-       write(mem_unit,*) "#  Time (s)    IO (B) BASIS (B)   Wave (B)  Pot (B)   Den (B)   Gen (B)  Total (B) "
+          open(unit=mem_unit,file=mem_name,access="STREAM",form="FORMATTED")
+          write(mem_unit,*) "#  MEMORY TIME REPORT "
+          write(mem_unit,*) "#  Time (s)    IO (B) BASIS (B)   Wave (B)  Pot (B)   Den (B)   Gen (B)  Total (B) "
+
+       end if
+       call cpu_time(cur_time)
+
+       write(mem_unit,*) cur_time , io_memory,basis_memory,wave_memory,pot_memory,den_memory,gen_memory,tot_memory
 
     end if
-    call cpu_time(cur_time)
-
-    write(mem_unit,*) cur_time , io_memory,basis_memory,wave_memory,pot_memory,den_memory,gen_memory,tot_memory
-
-
 
 
   end subroutine memory_trace

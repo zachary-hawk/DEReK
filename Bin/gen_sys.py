@@ -36,11 +36,14 @@ contains
 
 
   subroutine sys_init
-    character(100)                :: compile_buff
-    character(100)                :: compile_version
+    character(100)                 :: compile_buff
+    character(100)                 :: compile_version
+    character(100)                 :: mpi_version_num
     integer                       :: math_maj,math_min,math_patch
     integer                       :: maj_mpi,min_mpi,min_char
     character(max_version_length) :: mpi_c_version
+    character(10) :: junk1, junk2
+
     call trace_entry('sys_init')
 
     ! Get the version of openblas
@@ -74,45 +77,53 @@ contains
     write(current_sys%compiler,*) trim(compile_buff)," ", trim(compile_version)
     current_sys%compiler = adjustl(current_sys%compiler)
     ! FFTS
-    write(current_sys%ffts,*) f_fftw_version()
+    write(current_sys%ffts,*) sys_fftw_version()
     current_sys%ffts = adjustl(current_sys%ffts) 
     !open blas
     write(current_sys%openblas,'(i0,".",I0,".",i0)')math_maj,math_min,math_patch
     ! comms
     if (comms_arch.eq."MPI")then
        call COMMS_LIBRARY_VERSION(mpi_c_version)
+       read(mpi_c_version,*) junk1, junk2
+       if (index(junk2,'MPI').eq.0)then
+           write(mpi_c_version,*)junk1
+       else
+           write(mpi_c_version,*)trim(junk1) ,' ',trim(junk2)
+       end if
        call COMMS_VERSION(maj_mpi,min_mpi)
+       write(mpi_version_num,1)maj_mpi,min_mpi
+1      format(i0,".",i0)
+       !min_char=scan(mpi_c_version,",")
 
-!write(mpi_version_num,1)maj_mpi,min_mpi
-1      format(i1,".",i1)
-       min_char=scan(mpi_c_version,",")
+
+
+    write(current_sys%comms_version,*) trim(adjustl(mpi_c_version))," ",trim(adjustl(mpi_version_num))
+    current_sys%comms_version  = trim(adjustl(current_sys%comms_version))
     end if
-
     current_sys%comms = adjustl(comms_arch)
-    current_sys%comms_version = adjustl(mpi_c_version(1:min_char))
-    ! Date and time
+! Date and time
     write(current_sys%date,*)trim(adjustl(__DATE__)), ", ",trim(adjustl(__TIME__))
      current_sys%date = adjustl(current_sys%date) 
 
     call trace_exit('sys_init')    
   end subroutine sys_init
-  character(len=fft_v_len) function f_fftw_version()
+  character(len=fft_v_len) function sys_fftw_version()
 
     implicit none
     integer :: i
     character(kind=c_char), dimension(:), pointer :: fftw_version_ptr
-    call trace_entry('f_fftw_version')
+    call trace_entry('sys_fftw_version')
     call c_f_pointer(fftw_version_ptr_c(), fftw_version_ptr, [fft_v_len])
 
-    f_fftw_version = ' '
+    sys_fftw_version = ' '
     do i=1, fft_v_len
        if( fftw_version_ptr(i) == C_NULL_CHAR ) exit
 
-       f_fftw_version(i:i) = fftw_version_ptr(i)
+       sys_fftw_version(i:i) = fftw_version_ptr(i)
     end do
-    call trace_exit('f_fftw_version')
+    call trace_exit('sys_fftw_version')
     return
-  end function f_fftw_version
+  end function sys_fftw_version
 
 
 end module sys

@@ -11,6 +11,7 @@ program add_params
   character(len=60) :: junk,junk2,junk3,junk4,var_name,key_name
   character(len=120):: descr
   character(len=30) :: allowed
+  character(len=200):: example
   ! types of data ::
   character(len=1) :: dat_type ! R, L, C or I
 
@@ -23,16 +24,16 @@ program add_params
 
 
   ! write to the terminal to get the data
-  write(*,*) "Type variable name:"
-  read(*,*) var_name
   write(*,*) "Type variable key:"
-  read(*,*) key_name
+  read(*,*) var_name
   write(*,*) "Type data type (allowed: I,C,R or L)"
   read(*,*) dat_type
   write(*,*) "Type parameter description:"
   read(*,'(a)') descr
+  write(*,*) "Type parameter description, if none - return"
+  read(*,'(a)')example
   write(*,*) "Type the default value"
-
+  
 
 !!$  var_name="help"
 !!$  key_name="help_key"
@@ -103,7 +104,7 @@ program add_params
            write(io_buff,*)" ! %End: max_param"
 
         else if (trim(action).eq."keys") then
-           write(io_buff,*)"character(len=30),parameter,public ::","key_"//trim(var_name),"   = ","'",trim(key_name),"'"
+           write(io_buff,*)"character(len=30),parameter,public ::","key_"//trim(var_name),"   = ","'",trim(var_name),"'"
            write(io_buff,*)trim(line)
         else if(trim(action).eq."assign_keys")then
            write(junk,*)max_param
@@ -128,11 +129,14 @@ program add_params
            write(io_buff,*)'if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)'
            write(io_buff,*)"present_array(i)=key"
            write(io_buff,*)"! %End: case_read"
-
         else if (trim(action).eq."assign_cats")then
            write(junk,*)max_param
            write(io_buff,*) "keys_cat(",trim(adjustl(junk)),")=",data_cat
            write(io_buff,*)trim(line)
+        else if (trim(action).eq.'assign_example')then
+           write(junk,*)max_param
+           write(io_buff,*) "keys_example(",trim(adjustl(junk)),")=","'",trim(example),"'"
+           write(io_buff,*)trim(line)          
         end if
      else
         write(io_buff,*)trim(line)

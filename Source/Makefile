@@ -56,8 +56,10 @@ endif
 
 
 # Start by calculating the dependencies
-#$(shell echo "Building dependencies...")
+
+#ECHO_SYS:=$(shell echo "Building system details...")
 SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)")
+#DEP:=$(shell echo "Building dependencies...")
 $(shell ../Bin/dependencies.py $(COMMS_ARCH) > include_dependencies.mk)
 SOURCE=$(shell cat include_dependencies.mk)
 
@@ -81,7 +83,7 @@ CC=gcc
 CCFLAGS= -w 
 
 #$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
-$(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS) -D arch=$(VAR)
+$(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS) 
 
 
 $(BUILD_DIR)/sys.o: FCFLAGS += -cpp 

@@ -1,11 +1,16 @@
-#!/bin/bash
+#!/bin/sh
 
 
 name="$(uname -s)"
 
+# for MacOS
+if command -v sw_vers &> /dev/null; then   
+    mac_name="$(sw_vers --productName)"
+    mac_ver="$(sw_vers --productVersion)"
+fi
 
 
 version="$(uname -r)"
 
-echo ${name}-${version}
+echo ${name}-${version} ${mac_name}-${mac_ver}
 
