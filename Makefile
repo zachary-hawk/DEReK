@@ -17,6 +17,9 @@ COMMS_ARCH= mpi
 # Year of physical constants: 2018, 2014
 CODATA_YEAR= 2018
 
+
+# Spell check safety: safe, normal, risky
+SAFETY= normal
 ########################################
 #       NO CHANGES BEYOND HERE         #
 ########################################
@@ -29,6 +32,7 @@ MPI_F90:=mpif90
 $(if $(filter-out serial mpi,$(COMMS_ARCH)), $(error COMMS_ARCH should be one of "mpi","serial" (not $(COMMS_ARCH))) )
 $(if $(filter-out debug fast,$(BUILD)), $(error BUILD should be one of "fast","debug" (not $(BUILD))) )
 $(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortran","ifort" (not $(F90))) )
+$(if $(filter-out safe normal risky ,$(SAFETY)), $(error SAFETY should be one of "safe","normal","risky" (not $(SATEFY))) )	
 # Version info from io.f90
 version=$(shell Bin/version.sh)
 GIT_VERSION=$(shell Bin/git_log.sh)
@@ -62,7 +66,7 @@ export SOURCE_DIR
 export CODATA_YEAR
 export COMMS_ARCH
 export GIT_VERSION
-
+export SAFETY
 .phony: all check_file
 
 all: fftw_file openblas_file subsystem
@@ -101,6 +105,6 @@ clean_all :
 clean_everything:
 	rm -rf Build/*
 
-dist:
-	tar  --exclude="./.git" --exclude="./Test" --exclude="./*/*.mpi" --exclude="./*/*.serial" --exclude="./Source/*.o" --exclude="./Source/*.mod" -cvf DEREK.tar .
+pack:
+	./Bin/tar_maker.sh
 

@@ -300,7 +300,7 @@ contains
        else
           call io_errors("direction must be +1 or -1")
        end if
-
+       
        in_grid=outdata_fine_1d
     case default
        call io_errors("unknown grid")

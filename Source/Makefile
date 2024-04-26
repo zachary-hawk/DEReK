@@ -58,7 +58,7 @@ endif
 # Start by calculating the dependencies
 
 #ECHO_SYS:=$(shell echo "Building system details...")
-SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)")
+SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)" "$(SAFETY)")
 #DEP:=$(shell echo "Building dependencies...")
 $(shell ../Bin/dependencies.py $(COMMS_ARCH) > include_dependencies.mk)
 SOURCE=$(shell cat include_dependencies.mk)

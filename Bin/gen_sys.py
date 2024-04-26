@@ -15,6 +15,7 @@ module sys
      character(100) :: cpu
      character(100) :: opt
      character(100) :: consts
+     character(100) :: max_lev
      ! On the fly parameters
      character(100) :: date
      character(100) :: compiler
@@ -55,6 +56,7 @@ contains
     current_sys%cpu   = trim(adjustl('$3'))
     current_sys%opt   = trim(adjustl('$4'))
     current_sys%consts= trim(adjustl('$5'))
+    current_sys%max_lev=trim(adjustl('$6'))
     !***
 
 
@@ -140,7 +142,8 @@ def main():
                                           .replace('$2', sys.argv[2]) \
                                           .replace('$3', sys.argv[3]) \
                                           .replace('$4', sys.argv[4]) \
-                                          .replace('$5', sys.argv[5])
+                                          .replace('$5', sys.argv[5]) \
+                                          .replace('$6', sys.argv[6])
     print(sys.argv[1],sys.argv[2])
     # Write the modified code to a file
     with open("sys.f90", "w") as file:

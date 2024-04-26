@@ -27,10 +27,13 @@ program derek
 
   ! TESTING
   ! Matrix and variables declaration
-  real(kind=dp), allocatable,dimension(:,:) :: matrix, inverted_matrix,result
+  real(kind=dp), allocatable,dimension(:,:)   :: matrix, inverted_matrix,result
   integer :: i, j,n=3
   complex(kind=dp) , allocatable,dimension(:) :: test_fft
-  real(kind=dp) , allocatable,dimension(:) :: test_fft_x
+  real(kind=dp) , allocatable,dimension(:)    :: test_fft_x
+  complex(kind=dp) , allocatable,dimension(:) :: test_fft_fine
+  real(kind=dp) , allocatable,dimension(:)    :: test_fft_x_fine
+
   real(dp) :: testvar
 
 
@@ -100,26 +103,62 @@ program derek
 
   call memory_allocate(test_fft,1,current_basis%ngx,'B')
   call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
-
+  call memory_allocate(test_fft_fine,1,current_basis%fine_ngx,'B')
+  call memory_allocate(test_fft_x_fine,1,current_basis%fine_ngx,'B')
+  
 
   ! define a function
-  test_fft_x =  [(1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+  test_fft_x =  [(twopi*1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+  test_fft_x_fine =  [(twopi*1.0*(i-1)/(current_basis%fine_ngx-1), i=1,current_basis%fine_ngx)]
 
-  test_fft = exp(-(test_fft_x-0.5_dp)**2/(0.03_dp)**2)!sin(test_fft_x*pi*2) + sin(4*test_fft_x*pi*2)
-  test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
+  test_fft = exp(-0.5*((test_fft_x - pi*0.4)/0.5)**2) / (0.5 * sqrt(2.0 * pi)) + &
+       & exp(-0.5*((test_fft_x - pi*1.1)/0.35)**2) / (0.35 * sqrt(2.0 * pi)) - &
+       & exp(-0.5*((test_fft_x - pi*1.4)/0.2)**2) / (0.2 * sqrt(2.0 * pi))
+
+
+  !test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
   !test_fft(43:63) = 1.0_dp
+  open(unit=120,file='real.txt',access='stream',form='FORMATTED')
   do i = 1, current_basis%ngx
+     call utils_random_number(testvar)
+     test_fft(i) = testvar
      write(120,*) test_fft_x(i),real(test_fft(i))
   end do
 
-
-  i=1
-  call fft_1d(test_fft,'STD',i)
+  i = 1
+  open(unit=121,file='fft.txt',access='stream',form='FORMATTED')
+  call fft_1d(test_fft,'STD',fft_forward)
   do i = 1, current_basis%ngx
      write(121,*) test_fft_x(i),real(test_fft(i))
   end do
+  
 
 
+  ! Zero the fine array
+  test_fft_fine(:) = cmplx_0
+  
+  !print*,current_basis%ngx/2
+  test_fft_fine(1:current_basis%ngx/2) = test_fft(1:current_basis%ngx/2)
+  !print*,current_basis%fine_ngx-current_basis%ngx/2,current_basis%fine_ngx
+  test_fft_fine(current_basis%fine_ngx-current_basis%ngx/2:current_basis%fine_ngx) = &
+       & test_fft(current_basis%ngx/2:current_basis%ngx)
+
+
+
+  i=1
+  open(unit=122,file='fft_padded.txt',access='stream',form='FORMATTED')
+  do i = 1, current_basis%fine_ngx
+     write(122,*) test_fft_x_fine(i),real(test_fft_fine(i))
+  end do
+  
+
+  call fft_1d(test_fft_fine,'FINE',fft_backward)
+  i=1
+  open(unit=123,file='real_padded.txt',access='stream',form='FORMATTED')
+  do i = 1, current_basis%fine_ngx
+     write(123,*) test_fft_x_fine(i),real(test_fft_fine(i)) 
+  end do
+  
 
   ! We can start tidying up now
 

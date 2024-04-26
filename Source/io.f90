@@ -344,7 +344,17 @@ contains
     integer :: max_lev=3
     call trace_entry("io_read_param")
 
-
+    ! Do parameter safety
+    select case(current_sys%max_lev)
+    case('safe')
+       max_lev = 0
+    case('normal')
+       max_lev = 3
+    case('risky')
+       max_lev = 5
+    case default
+       call io_errors('Unknown maximum spell check safety')
+    end select
 
     !Open the parameter file
     if (file_exists) then
@@ -1545,26 +1555,42 @@ contains
     integer,intent(in) :: unit
     integer::file
     logical,optional,intent(in) :: comment
-    character(1) :: comment_char 
+    character(1) :: comment_char
+    character(100)::fmt
     call trace_entry("io_sys_info")
     comment_char = ' '
     if (present(comment))then
        if (comment)comment_char='#'       
+       fmt='(1x,a,1x,a,T22,":",1x,a)'
+    else
+       fmt='(1x,"|",1x,a,a,T22,":",1x,a,T69,"|")'
     end if
-    write(unit,*)trim(comment_char),"Code Version       : ",trim(current_sys%git)
-    write(unit,*)trim(comment_char),"Compiler           : ",trim(current_sys%compiler)
-    write(unit,*)trim(comment_char),"Compile Date       : ",trim(current_sys%date)
-    write(unit,*)trim(comment_char),"Operating System   : ",trim(current_sys%arch)
-    write(unit,*)trim(comment_char),"System CPU         : ",trim(current_sys%cpu)
-    write(unit,*)trim(comment_char),"Parallelisation    : ",trim(current_sys%comms)
+
+
+    if (.not.present(comment))then
+
+       write(unit,*)"|                       SYSTEM INFORMATION                         |"
+       write(unit,*)"+==================================================================+"
+    end if
+    write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
+    write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
+    write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
+    write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
+    write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
+    write(unit,fmt)trim(comment_char),"Parallelisation  ",trim(current_sys%comms)
     if (comms_arch.eq."MPI")then
-       write(unit,*)trim(comment_char),"MPI Version        : ",trim(current_sys%comms_version)
+       write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
     end if
-    write(unit,*)trim(comment_char),"Optimisation       : ",trim(current_sys%opt)
-    write(unit,*)trim(comment_char),"Physical Constants : ",trim(current_sys%consts)
-    write(unit,*)trim(comment_char),"FFTW3 Version      : ",trim(current_sys%ffts)
-    write(unit,*)trim(comment_char),"OpenBLAS Version   : ",trim(current_sys%openblas)
-    write(unit,*)trim(comment_char)
+    write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
+    write(unit,fmt)trim(comment_char),"Physical Constant",trim(current_sys%consts)
+    write(unit,fmt)trim(comment_char),'Spell Check Safet',trim(current_sys%max_lev)
+    write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
+    write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
+    if (.not.present(comment))then
+       write(unit,*)"+==================================================================+"
+    end if
+    write(unit,*)
+    !write(unit,fmt)trim(comment_char)
 
 
 
@@ -1599,7 +1625,7 @@ contains
     write(stdout,*) "|  `888'   `Y8b  `888'     `8 `888   `Y88.           `888   .8P'   |"
     write(stdout,*) "|   888      888  888          888   .d88'  .ooooo.   888  d8'     |"
     write(stdout,*) "|   888      888  888oooo8     888ooo88P'  d88' `88b  88888[       |"
-    write(stdout,*) "|   888      888  888          888`88b.    888ooo888  888`88b.     |"
+    write(stdout,*) '|   888      888  888    "     888`88b.    888ooo888  888`88b.     |'
     write(stdout,*) "|   888     d88'  888       o  888  `88b.  888    .o  888  `88b.   |"
     write(stdout,*) "|  o888bood8P'   o888ooooood8 o888o  o888o `Y8bod8P' o888o  o888o  |"
     write(stdout,*) "|                                                                  |"
@@ -2005,9 +2031,8 @@ contains
        write(stdout,23) grp
        !write(stdout,*) "|                           Cell Angles (o)                        |"
        !write(stdout,*) "|                           ---------------                        |"
-       call io_heading(stdout,'Cell Angles (o)')
+       call io_heading(stdout,'Cell Angles ('//'o'//')')
        write(stdout,11) 'alpha =',current_structure%alpha,'beta =',current_structure%beta,'gamma =', current_structure%gamma,grp
-
        write(stdout,23) grp
        write(stdout,23) grp
     end if
@@ -2527,13 +2552,30 @@ contains
 1000 format(1x,"# |",14x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,13x,"|")
 
 
-    write(unit,*)" LATTICE (A)  "
-    write(unit,10) current_structure%cell(1,:)*bohr_to_angstrom, 'a =',current_structure%lattice_a*bohr_to_angstrom
-    write(unit,10) current_structure%cell(2,:)*bohr_to_angstrom, 'b =',current_structure%lattice_b*bohr_to_angstrom
-    write(unit,10) current_structure%cell(3,:)*bohr_to_angstrom, 'c =', current_structure%lattice_c*bohr_to_angstrom
+    write(unit,*)" LATTICE ("//trim(current_params%out_len_unit)//')'
+
+
+    write(unit,10) io_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
+         'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
+
+    write(unit,10) io_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
+         'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
+
+    write(unit,10) io_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
+         & io_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
+         'c =',io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
+
+!!$    write(unit,10) current_structure%cell(1,:)*bohr_to_angstrom, 'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
+!!$    write(unit,10) current_structure%cell(2,:)*bohr_to_angstrom, 'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
+!!$    write(unit,10) current_structure%cell(3,:)*bohr_to_angstrom, 'c =',io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
 10  format(1x, 3(f10.7,1x), 3x, a,f10.7,1x)
     write(unit,*)
-
+    
     call trace_exit('io_out_file_header')
 
   end subroutine io_out_file_header
@@ -2751,7 +2793,7 @@ contains
 
   end subroutine io_subsection
 
-  subroutine io_heading(unit,title)
+  subroutine io_heading(unit,title,override)
     character(*),intent(in) :: title
     integer     ,intent(in) :: unit
 
@@ -2760,7 +2802,7 @@ contains
     integer :: i,new_len
     integer :: left_pad,right_pad,pad = 0
     integer :: loc_line_len  = glob_line_len -1
-
+    integer,optional :: override
     new_title = title
     new_len = len(trim(new_title)) + 2*pad
 
@@ -2770,9 +2812,13 @@ contains
     if (left_pad+right_pad+new_len .lt. loc_line_len)then
        left_pad = left_pad+1
     end if
-
-    write(unit,*)'|',repeat(' ',left_pad),repeat(' ',pad),trim(new_title),repeat(' ',pad),repeat(' ',right_pad) , '| <-- ',grp
-    write(unit,*)'|',repeat(' ',left_pad),repeat(' ',pad),repeat('-',new_len),repeat(' ',pad),repeat(' ',right_pad) , '| <-- ',grp
+    
+    if (present(override))then
+       right_pad=right_pad+override
+    end if
+    
+    write(unit,*)'|',repeat(' ',left_pad+pad),trim(new_title),repeat(' ',right_pad+pad) , '| <-- ',grp
+    write(unit,*)'|',repeat(' ',left_pad+pad),repeat('-',new_len),repeat(' ',right_pad+pad) , '| <-- ',grp
 
 
 

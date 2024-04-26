@@ -115,6 +115,7 @@ contains
     !print*,rank,'before loop'
     current_state%converged = .false.
     do iscf = 1,current_params%max_scf
+       if (iscf .eq. 15)current_energy=energy_hist
        !print*,rank,'inside the loop'
        ! at the end, write out the energy
 
@@ -132,7 +133,7 @@ contains
        ! Check for convergence on the root_node
        !print*,rank,current_state%converged
 
-       if (iscf .eq. 15)current_energy=energy_hist
+
 
        if (on_root_node)then
           if (abs(current_energy-energy_hist).lt.current_params%energy_tol)then

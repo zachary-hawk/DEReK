@@ -10,3 +10,4 @@ Logos/*.svg
 Logos/*.pptx
 Logos/*.ipynb
 Source/sys.f90
+make_all

@@ -11,7 +11,7 @@ module constants
   real(dp),public,parameter    :: pi=3.141592653589793238462643383279502884197_dp
   real(dp),public,parameter    :: twopi=2.0_dp*pi
   real(dp),public,parameter    :: fourpi=4.0_dp*pi
-  real(dp),public,parameter    :: small_number= 1e-15
+  real(dp),public,parameter    :: small_number= 1.0e-15_dp
   real(dp),public,parameter    :: sqrt_two_pi=2.506628274631000241612355239340104162693_dp
 
   !Complex numbers                                                                                                            
@@ -21,18 +21,19 @@ module constants
 
   ! wont be needing these in while
   ! Conversion factors
-  ! Energies
-  real(dp), parameter,public :: ev_to_hartree = 0.036749308136649_dp
-  real(dp), parameter,public :: hartree_to_ev = 1.0_dp/ev_to_hartree
 
-  !Lengths
-  real(dp),parameter,public  :: angstrom_to_bohr = 1.8897259886_dp
-  real(dp),parameter,public  :: bohr_to_angstrom = 1.0_dp/angstrom_to_bohr
 
   !Angles
   real(dp),parameter,public  :: rad_to_deg=180.0_dp/pi
   real(dp),parameter,public  :: deg_to_rad=pi/180.0_dp
 
+  ! Usable FFT symbols
+  integer, public :: fft_forward = -1
+  integer, public :: fft_backward = 1
+  
+  
+  !Symbols
+  character(2), parameter :: deg_sym = char(int(Z'C2'))//char(int(Z'B0'))
 
 
 

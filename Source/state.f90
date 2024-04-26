@@ -277,7 +277,7 @@ contains
        end if
        close(wfn_file)
     end if
-    if (no_files)write(stdout,11)"No Auxiliary files to be written",wall_time
+    if (no_files)write(stdout,11)"No Auxiliary files to be written"
 
     write(stdout,*)"+-------------------------------------------------------+----------+"
     write(stdout,*)
@@ -285,7 +285,7 @@ contains
 
 
 10  format(1x,'|',1x a,1x,a,'>',1x,a,T58,'|',1x,f8.2,T69,'|')
-11  format(1x,'|',1x a,T58,'|',1x,f8.2,T69,'|')
+11  format(1x,'|',1x a,T69,'|')
     !!
 !!$    ! write the state
 !!$    if (current_params%write_state)then
