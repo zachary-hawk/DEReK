@@ -7,7 +7,7 @@ module basis
   use io,    only : stdout, current_params,current_structure
   use memory,only : memory_allocate,memory_deallocate
   use comms, only : comms_scheme,dist_gvec
-  use fft,   only : fft_init, fft_3d
+  use fft,   only : fft_init
   implicit none
 
 
@@ -39,25 +39,9 @@ module basis
   type(basis_dat),public,save :: current_basis
 
 
-  interface basis_real2recip
-     module procedure basis_real2recip_1d
-     module procedure basis_real2recip_3d
-     module procedure basis_real2recip_pot
-  end interface basis_real2recip
-
-  interface basis_recip2real
-     module procedure basis_recip2real_1d
-     module procedure basis_recip2real_3d
-     module procedure basis_recip2real_pot
-  end interface basis_recip2real
-
-
 
   ! PUBLIC ROUTINES 
   public  basis_init
-  public  basis_real2recip
-  public  basis_recip2real
-  public  basis_real2recip_pot
 
 
 contains
@@ -294,163 +278,6 @@ contains
     call trace_exit("basis_prime_fact")
     return
   end  subroutine basis_prime_fact
-
-
-  subroutine basis_real2recip_1d(array,grid_type)
-    !==============================================================================!
-    !                    B A S I S _ R E A L 2 R E C I P _ 1 D                     !
-    !==============================================================================!
-    ! Subroutine using the fftw3 fast fourier transforms for a 1d array.           !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           array,             intent :: inout                                 !
-    !           grid_type,         intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    complex(dp), dimension(:),intent(inout) :: array
-    character(4), intent(in)             :: grid_type
-    ! Backwards transform so dir = +1
-    integer  :: dir = 1
-
-    call trace_entry('basis_real2recip_1d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array,grid_type,dir)
-
-    call trace_exit('basis_real2recip_1d')
-  end subroutine basis_real2recip_1d
-
-
-  subroutine basis_recip2real_1d(array,grid_type)
-    !==============================================================================!
-    !                    B A S I S _ R E C I P 2 R E A L _ 1 D                     !
-    !==============================================================================!
-    ! Subroutine using the fftw3 fast fourier transforms for a 1d array.           !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           array,             intent :: inout                                 !
-    !           grid_type,         intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    complex(dp), dimension(:),intent(inout) :: array
-    character(4), intent(in)             :: grid_type
-    ! Backwards transform so dir = -1
-    integer  :: dir = -1
-
-    call trace_entry('basis_recip2real_1d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array,grid_type,dir)
-
-    call trace_exit('basis_recip2real_1d')
-  end subroutine basis_recip2real_1d
-
-
-  subroutine basis_real2recip_3d(array,grid_type)
-    !==============================================================================!
-    !                    B A S I S _ R E A L 2 R E C I P _ 3 D                     !
-    !==============================================================================!
-    ! Subroutine using the fftw3 fast fourier transforms for a 3d array.           !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           array,             intent :: inout                                 !
-    !           grid_type,         intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    complex(dp), dimension(:,:),intent(inout) :: array
-    character(4), intent(in)                 :: grid_type
-    ! Backwards transform so dir = +1
-    integer  :: dir = 1
-
-    call trace_entry('basis_real2recip_1d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array(:,1),grid_type,dir)
-    call fft_3d(array(:,2),grid_type,dir)
-    call fft_3d(array(:,3),grid_type,dir)
-
-    call trace_exit('basis_real2recip_1d')
-  end subroutine basis_real2recip_3d
-
-
-  subroutine basis_recip2real_3d(array,grid_type)
-    !==============================================================================!
-    !                    B A S I S _ R E C I P 2 R E A L _ 3 D                     !
-    !==============================================================================!
-    ! Subroutine using the fftw3 fast fourier transforms for a 3d array            !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           array,             intent :: inout                                 !
-    !           grid_type,         intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    complex(dp), dimension(:,:),intent(inout) :: array
-    character(4), intent(in)                 :: grid_type
-    ! Backwards transform so dir = -1
-    integer  :: dir = -1
-
-    call trace_entry('basis_recip2real_3d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array(:,1),grid_type,dir)
-    call fft_3d(array(:,2),grid_type,dir)
-    call fft_3d(array(:,3),grid_type,dir)
-
-    call trace_exit('basis_recip2real_3d')
-  end subroutine basis_recip2real_3d
-
-
-  subroutine basis_real2recip_pot(array,grid_type)
-    !==============================================================================!
-    !                   B A S I S _ R E A L 2 R E C I P _ P O T                    !
-    !==============================================================================!
-    ! Subroutine using the fftw3 fast fourier transforms for a potential           !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           array,             intent :: inout                                 !
-    !           grid_type,         intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    complex(dp), dimension(:,:,:),intent(inout) :: array
-    character(4), intent(in)                 :: grid_type
-    ! Backwards transform so dir = +1
-    integer  :: dir = 1
-
-    call trace_entry('basis_real2recip_1d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array(:,1,1),grid_type,dir)
-    call fft_3d(array(:,1,2),grid_type,dir)
-    call fft_3d(array(:,2,1),grid_type,dir)
-    call fft_3d(array(:,2,2),grid_type,dir)
-
-
-    call trace_exit('basis_real2recip_1d')
-  end subroutine basis_real2recip_pot
-
-
-  subroutine basis_recip2real_pot(array,grid_type)
-    complex(dp), dimension(:,:,:),intent(inout) :: array
-    character(4), intent(in)                 :: grid_type
-    ! Backwards transform so dir = -1
-    integer  :: dir = -1
-
-    call trace_entry('basis_recip2real_3d')
-
-    ! Here is the call to fft - should only be done from these routines 
-    call fft_3d(array(:,1,1),grid_type,dir)
-    call fft_3d(array(:,1,2),grid_type,dir)
-    call fft_3d(array(:,2,1),grid_type,dir)
-    call fft_3d(array(:,2,2),grid_type,dir)
-
-    call trace_exit('basis_recip2real_3d')
-  end subroutine basis_recip2real_pot
-
 
 
 

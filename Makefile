@@ -17,7 +17,6 @@ COMMS_ARCH= mpi
 # Year of physical constants: 2018, 2014
 CODATA_YEAR= 2018
 
-
 # Spell check safety: safe, normal, risky
 SAFETY= normal
 ########################################
@@ -33,16 +32,19 @@ $(if $(filter-out serial mpi,$(COMMS_ARCH)), $(error COMMS_ARCH should be one of
 $(if $(filter-out debug fast,$(BUILD)), $(error BUILD should be one of "fast","debug" (not $(BUILD))) )
 $(if $(filter-out gfortran ifort ,$(F90)), $(error F90 should be one of "gfortran","ifort" (not $(F90))) )
 $(if $(filter-out safe normal risky ,$(SAFETY)), $(error SAFETY should be one of "safe","normal","risky" (not $(SATEFY))) )	
+
 # Version info from io.f90
 version=$(shell Bin/version.sh)
+
 GIT_VERSION=$(shell Bin/git_log.sh)
 ARCH = $(shell Bin/arch $(F90))
+
 #####################################
 #      DIRECTORY LOCATIONS          #
 #####################################
 
 SOURCE_DIR = ./Source
-
+BIN_DIR = ./Bin
 # Create the path 
 BUILD_PATH=DEReK$(version)_$(ARCH)_$(BUILD)_$(COMMS_ARCH)
 
@@ -52,6 +54,7 @@ BUILD_LOC = ./Build/$(BUILD_PATH)
 
 FFTW_FILE := $(BUILD_LOC)/fftw.dir
 OPENBLAS_FILE := $(BUILD_LOC)/openblas.dir
+LIBXC_FILE := $(BUILD_LOC)/libxc.dir
 
 ifeq ($(COMMS_ARCH),serial)
     MPI_F90 := $(F90)
@@ -69,7 +72,7 @@ export GIT_VERSION
 export SAFETY
 .phony: all check_file
 
-all: fftw_file openblas_file subsystem
+all: fftw_file openblas_file libxc_file subsystem
 
 
 
@@ -92,10 +95,20 @@ openblas_file:
 		read -p "" input_text; \
 		echo "$$input_text" > $(OPENBLAS_FILE); \
 	fi
-
+libxc_file:
+	@if [ ! -f $(LIBXC_FILE) ]; then \
+		mkdir -p $(BUILD_LOC);\
+		echo "########################################################"; \
+		echo "#  Please provide location of LIBXC library files:     #"; \
+		echo "########################################################"; \
+		read -p "" input_text; \
+		echo "$$input_text" > $(LIBXC_FILE); \
+	fi
 
 subsystem:
+	$(MAKE) -C $(BIN_DIR)
 	$(MAKE) -C $(SOURCE_DIR)
+	@rm -f $(BIN_DIR)/*.o $(BIN_DIR)/mpi_version
 
 
 clean:

@@ -1,11 +1,24 @@
 # Set the files with the directories for the libraries
 FFTWDIR=$(shell cat $(BUILD_DIR)/fftw.dir)
 OPENBLASDIR=$(shell cat $(BUILD_DIR)/openblas.dir)
+#LIBXCDIR=$(shell cat $(BUILD_DIR)/libxc.dir)	
+
+# Read the library directory path from libxc.dir file
+LIBXCDIR := $(shell cat $(BUILD_DIR)/libxc.dir)
+LIBXCDIR := $(patsubst %/,%,$(LIBXCDIR))
+
+# Determine the library directory path (with trailing slash)
+LIB_DIR := $(LIBXCDIR)/lib/
+
+# Determine the include directory path (with trailing slash)
+INCLUDE_DIR := $(LIBXCDIR)/include/
 
 
 # Find the system
 VAR := $(shell . ./../Bin/arch_finder)
 OS := $(shell uname -s)
+
+MPI_VERSION := $(shell  ./../Bin/mpi_version)
 
 ifeq ($(strip $(OS)),Darwin)
 CPU := $(shell . ./../Bin/CPU_DARWIN)
@@ -24,26 +37,26 @@ endif
 
 # Set up the compiler options, for compiler type and build speed
 ifeq ($(BUILD),fast)
-OPT= FAST
-ifeq ($(F90),gfortran)
-FCFLAGS= -fconvert=big-endian -fno-realloc-lhs -fopenmp -fPIC -O3 -funroll-loops -fno-signed-zeros -g -fbacktrace -march=native -mno-avx -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch  -L"$(FFTWDIR)" -L"$(OPENBLASDIR)"
-endif
-
-ifeq ($(F90),ifort)
-FCFLAGS=-convert big_endian -assume norealloc_lhs -diag-disable 8290 -diag-disable 8291 -qopenmp -fPIC -O3 -debug minimal -traceback -xHost -fbackslash -lfftw3 -lopenblas -L"$(FFTWDIR)" -L"$(OPENBLASDIR)"     
-endif
+    OPT= FAST
+    ifeq ($(F90),gfortran)
+        FCFLAGS= -fconvert=big-endian -fno-realloc-lhs -fopenmp -O3 -funroll-loops -fno-signed-zeros -g -fbacktrace -march=native -mno-avx -w -fallow-argument-mismatch 
+    endif
+    ifeq ($(F90),ifort)
+        FCFLAGS= -convert big_endian -assume norealloc_lhs -diag-disable 8290 -diag-disable 8291 -qopenmp -O3 -debug minimal -traceback -xHost -w 
+    endif
 endif
 
 ifeq ($(BUILD),debug)
-OPT= DEBUG
-ifeq ($(F90),gfortran)
-FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation  -fbackslash -lfftw3 -lopenblas -w -fallow-argument-mismatch  -L"$(FFTWDIR)" -L"$(OPENBLASDIR)"
+    OPT= DEBUG
+    ifeq ($(F90),gfortran)
+        FCFLAGS= -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -w -fallow-argument-mismatch 
+endif
+    ifeq ($(F90),ifort)
+        FCFLAGS= -convert big_endian -assume norealloc_lhs -diag-disable 8290 -diag-disable 8291 -qopenmp -Ddebug -O0 -g -debug extended -traceback -C -stand f03 -warn all -diag-disable 7025 -diag-disable 7712 -diag-disable 5268 -diag-disable 7847 -diag-disable 7893 -diag-disable 6439 -fbackslash -w
+endif
 endif
 
-ifeq ($(F90),ifort)
-FCFLAGS= -convert big_endian -assume norealloc_lhs -diag-disable 8290 -diag-disable 8291 -qopenmp -fPIC -Ddebug -O0 -g -debug extended -traceback -C -stand f03 -warn all -diag-disable 7025 -diag-disable 7712 -diag-disable 5268 -diag-disable 7847 -diag-disable 7893 -diag-disable 6439 -fbackslash -lfftw3 -lopenblas     -L"$(FFTWDIR)" -L"$(OPENBLASDIR)" 
-endif
-endif
+FCFLAGS += -fPIC -fbackslash -lfftw3 -lopenblas -lxc -lxcf03  -L$(FFTWDIR) -L$(OPENBLASDIR) -L$(LIB_DIR) -I$(INCLUDE_DIR)
 
 
 # Constants data
@@ -58,7 +71,7 @@ endif
 # Start by calculating the dependencies
 
 #ECHO_SYS:=$(shell echo "Building system details...")
-SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)" "$(SAFETY)")
+SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)" "$(SAFETY)" '$(MPI_VERSION)')
 #DEP:=$(shell echo "Building dependencies...")
 $(shell ../Bin/dependencies.py $(COMMS_ARCH) > include_dependencies.mk)
 SOURCE=$(shell cat include_dependencies.mk)

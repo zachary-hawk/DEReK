@@ -14,6 +14,7 @@ module wave
      integer                                      :: nbands
      integer                                      :: kpts
      logical                                      :: allocated=.false.
+     logical                                      :: recip = .true. ! Starts off in recip space
    contains
      procedure wave_write
      generic :: write(unformatted) => wave_write
@@ -24,6 +25,7 @@ module wave
      integer                                      :: kpt    ! Which kpoint the slice is for
      integer                                      :: nbands
      logical                                      :: allocated=.false.
+     logical                                      :: recip = .true.  ! Starts off in recip space
   end type wavefunction_slice
 
 

@@ -1586,6 +1586,7 @@ contains
     write(unit,fmt)trim(comment_char),'Spell Check Safet',trim(current_sys%max_lev)
     write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
     write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
+    write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
     if (.not.present(comment))then
        write(unit,*)"+==================================================================+"
     end if
@@ -1650,6 +1651,7 @@ contains
     write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2024                   |"
     write(stdout,*) "+==================================================================+"
     call io_sys_info(stdout)
+    call io_flush(stdout)
     call trace_exit('io_header')
   end subroutine io_header
 
@@ -2203,26 +2205,9 @@ contains
        write(stdout,*)
 
 
-
+    
     end if
-    ! Write out the memory report
-    write(stdout,*)
-    call io_mem_report()
-    write(stdout,*)
-
-    if (on_root_node.and..not.current_params%check)then
-       write(stdout,*)
-       write(stdout,*)
-       write(stdout,*)"+==================================================================+"
-       write(stdout,*)"|         I N I T I A L I S A T I O N   C O M P L E T E            |"
-       write(stdout,*)"|         ---------------------------------------------            |"
-       write(stdout,*)"|        Beginning the main phase of the calculation...            |"
-       write(stdout,*)"+==================================================================+"
-       write(stdout,*)
-       write(stdout,*)
-       write(stdout,*)
-    end if
-
+    call io_flush(stdout)
 
 
 23  format(T2,'|',T69,'| <-- ',a)
@@ -2754,6 +2739,7 @@ contains
        write(unit,*)'+',repeat('=',glob_line_len-1),'+'
 
     end if
+    call io_flush(unit)
   end subroutine io_section
 
   subroutine io_subsection(unit,title)
@@ -2789,7 +2775,7 @@ contains
     end if
 
     write(unit,*)'+',repeat('=',left_pad),repeat(' ',pad),trim(new_title),repeat(' ',pad),repeat('=',right_pad) , '+ <-- ',grp
-
+    call io_flush(unit)
 
   end subroutine io_subsection
 
@@ -2820,7 +2806,7 @@ contains
     write(unit,*)'|',repeat(' ',left_pad+pad),trim(new_title),repeat(' ',right_pad+pad) , '| <-- ',grp
     write(unit,*)'|',repeat(' ',left_pad+pad),repeat('-',new_len),repeat(' ',right_pad+pad) , '| <-- ',grp
 
-
+    call io_flush(unit)
 
   end subroutine io_heading
   subroutine io_mem_report()
@@ -2857,12 +2843,13 @@ contains
 
     call comms_reduce(tot_max,1,'max')
 
-
+    
     if (on_root_node)then
 
        !write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
        !write(stdout,*)"        |        M E M O R Y   E S T I M A T E S        | <-- MEM"
        !write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
+       write(stdout,*)
        call io_section(stdout,'memory estimates','MEM')
        if (current_params%iprint.ge.2)then
           if (io_memory.le.1.0e3_dp)then
@@ -2982,7 +2969,7 @@ contains
 11  format(T2'|',10x,3(a7,1x,f7.4,1x),T69,'| <-- ',a)
 10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'| <-- ',a)
 31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
-
+    call io_flush(stdout)
     call trace_exit("io_mem_report")
 
   end subroutine io_mem_report
@@ -3000,9 +2987,7 @@ contains
     ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
 
     quant_atom = sum(quant*conv_values,MASK=conv_units.eq.unit)
-
-
-
+    
     call trace_exit('io_to_atomic')
   end function io_to_atomic
 

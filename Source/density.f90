@@ -18,6 +18,7 @@ module density
      complex(dp),allocatable,dimension(:)   :: charge
      complex(dp),allocatable,dimension(:,:) :: spin
      logical                                :: allocated=.false.
+     logical                                :: recip = .false.
    contains
      procedure density_write
      generic :: write(unformatted) => density_write

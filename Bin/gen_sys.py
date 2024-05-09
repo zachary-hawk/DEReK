@@ -8,6 +8,7 @@ module sys
   use comms
   use iso_fortran_env
   use iso_c_binding
+  use xc_f03_lib_m, only: xc_f03_version,xc_f03_version_string
   type sys_info
      ! Compile time parameters
      character(100) :: git     
@@ -23,6 +24,7 @@ module sys
      character(100) :: comms_version
      character(100) :: ffts
      character(100) :: openblas
+     character(100) :: libxc
   end type sys_info
   interface
      function fftw_version_ptr_c()bind (c,name='padded_fftw_version')
@@ -44,6 +46,8 @@ contains
     integer                       :: maj_mpi,min_mpi,min_char
     character(max_version_length) :: mpi_c_version
     character(10) :: junk1, junk2
+    integer :: i, vmajor, vminor, vmicro
+
 
     call trace_entry('sys_init')
 
@@ -57,6 +61,7 @@ contains
     current_sys%opt   = trim(adjustl('$4'))
     current_sys%consts= trim(adjustl('$5'))
     current_sys%max_lev=trim(adjustl('$6'))
+    current_sys%comms_version = trim(adjustl('$7'))
     !***
 
 
@@ -83,32 +88,24 @@ contains
     current_sys%ffts = adjustl(current_sys%ffts) 
     !open blas
     write(current_sys%openblas,'(i0,".",I0,".",i0)')math_maj,math_min,math_patch
-    ! comms
-    if (comms_arch.eq."MPI")then
-       call COMMS_LIBRARY_VERSION(mpi_c_version)
-       read(mpi_c_version,*) junk1, junk2
-       if (index(junk2,'MPI').eq.0)then
-           write(mpi_c_version,*)junk1
-       else
-           write(mpi_c_version,*)trim(junk1) ,' ',trim(junk2)
-       end if
-       call COMMS_VERSION(maj_mpi,min_mpi)
-       write(mpi_version_num,1)maj_mpi,min_mpi
-1      format(i0,".",i0)
-       !min_char=scan(mpi_c_version,",")
 
 
-
-    write(current_sys%comms_version,*) trim(adjustl(mpi_c_version))," ",trim(adjustl(mpi_version_num))
-    current_sys%comms_version  = trim(adjustl(current_sys%comms_version))
-    end if
     current_sys%comms = adjustl(comms_arch)
 ! Date and time
     write(current_sys%date,*)trim(adjustl(__DATE__)), ", ",trim(adjustl(__TIME__))
      current_sys%date = adjustl(current_sys%date) 
 
+    ! LibXC version information
+     call xc_f03_version(vmajor, vminor, vmicro)
+     call xc_f03_version_string(current_sys%libxc)
+     !write(current_sys%libxc,'(I1,".",I1,".",I1)') vmajor, vminor, vmicro
+
+
+
+
     call trace_exit('sys_init')    
   end subroutine sys_init
+
   character(len=fft_v_len) function sys_fftw_version()
 
     implicit none
@@ -143,8 +140,9 @@ def main():
                                           .replace('$3', sys.argv[3]) \
                                           .replace('$4', sys.argv[4]) \
                                           .replace('$5', sys.argv[5]) \
-                                          .replace('$6', sys.argv[6])
-    print(sys.argv[1],sys.argv[2])
+                                          .replace('$6', sys.argv[6]) \
+                                          .replace('$7', sys.argv[7])
+    #print(sys.argv[1],sys.argv[2])
     # Write the modified code to a file
     with open("sys.f90", "w") as file:
         file.write(modified_code)

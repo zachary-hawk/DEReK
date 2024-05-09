@@ -6,13 +6,15 @@
 module state
   use constants
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec,comms_wall_time
-  use io,    only : current_structure,current_params,stdout,parameters,structure,seed,io_errors,seed,io_flush
+  use io,    only : current_structure,current_params,stdout,parameters,structure,seed,io_errors,seed,io_flush,io_section,&
+       & glob_line_len
   use basis, only : current_basis,basis_dat
   use wave,  only : wavefunction,wave_allocate,wave_initialise
   use pot,   only : potential, pot_allocate,pot_external_pot,pot_writef
   use trace, only : trace_entry,trace_exit
   use memory,only : memory_allocate,memory_deallocate
   use density,only : density_allocate,elec_den,density_writef
+
   type,public :: state_data
      type(wavefunction)   :: wfn     ! The current wavefunction
      type(basis_dat)      :: basis   ! The current basis
@@ -49,27 +51,95 @@ contains
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  11/01/2022                                            !
     !==============================================================================!
+    real(dp)  :: walltime,start
+
+
     call trace_entry('state_init')
     ! This is just going to allocate all of the things in state
 
-    ! First off lets initialise the wavefunciton
+    ! First off lets initialise the wavefunction
+
+
+    if (on_root_node )then
+       if (current_params%iprint.gt.1)call io_section(stdout,'state initialisation','INI')
+       if (current_params%iprint.gt.2)then
+          write(stdout,13)
+          write(stdout,*)"+",repeat('-',glob_line_len-1),"+ <-- INI"
+       end  if
+       call io_flush(stdout)
+
+    end if
+
+
     call wave_allocate(current_state%wfn,current_params%nbands)
-    call wave_initialise(current_state%wfn)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       start=walltime
+       if (current_params%iprint.gt.2)write(stdout,11) 'Allocating wavefunction',walltime
+    end if
+    call io_flush(stdout)
 
     ! potential
     call pot_allocate(current_state%tot_pot)
-    call pot_allocate(current_state%ext_pot)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       if (current_params%iprint.gt.2)write(stdout,11) 'Allocating total potential',walltime
+    end if
+    call io_flush(stdout)
 
+    call pot_allocate(current_state%ext_pot)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       if (current_params%iprint.gt.2)write(stdout,11) 'Allocating external potential',walltime
+    end if
+    call io_flush(stdout)
 
     call memory_allocate(current_state%occ,1,current_params%nbands,1,current_structure%num_kpoints,'G')
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       if (current_params%iprint.gt.2)write(stdout,11) 'Allocating occupation',walltime
+    end if
+    call io_flush(stdout)
 
     current_state%basis=current_basis
     current_state%struct=current_structure
     current_state%params=current_params
     call density_allocate(current_state%den)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       if (current_params%iprint.gt.2)write(stdout,11)  'Allocating density',walltime
+    end if
+    call io_flush(stdout)
+
+    ! Initialise the wavefunction
+    call wave_initialise(current_state%wfn)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       start=walltime
+       if (current_params%iprint.gt.2)write(stdout,11) 'Initialising wavefunction',walltime
+    end if
+    call io_flush(stdout)
+
 
     ! read the external potential
     call pot_external_pot(current_state%ext_pot)
+    if (on_root_node)then
+       walltime=comms_wall_time()
+       start=walltime
+       if (current_params%iprint.gt.2)write(stdout,11) 'Initialising external potential',walltime
+    end if
+    call io_flush(stdout)
+
+
+    ! Close out the state init footer
+    if (on_root_node .and. current_params%iprint.gt.1)then
+       if (current_params%iprint.gt.2)write(stdout,*)"+",repeat('-',glob_line_len-1),"+ <-- INI"
+       write(stdout,12) walltime-start
+       write(stdout,*)"+",repeat('=',glob_line_len-1),"+ <-- INI"
+    end if
+11  format(T2,"|",T4,a,T58,f8.2,1x,T69,"| <-- INI")
+12  format(T2,"| Total state initialisation",T58,f8.2,1x,'s',T69,"| <-- INI")
+13  format(T2,"| Action",T58,'Time (s)',T69,"| <-- INI")
 
 
 

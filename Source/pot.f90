@@ -17,6 +17,7 @@ module pot
      !     (21,22)
      logical                                  :: allocated=.false.
      logical                                  :: preset=.true.
+     logical                                  :: recip = .false.
    contains
      procedure pot_write
      procedure pot_read

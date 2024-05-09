@@ -168,8 +168,7 @@ contains
     complex(dp), dimension(:), intent(inout)    :: in_grid
     character(4),optional, intent(in)           :: grid
     integer, optional, intent(inout)            :: dir
-
-
+    
     call trace_entry("fft_3d")
 
     if (.not.present(dir))dir=1

@@ -511,6 +511,7 @@ contains
     allocate(array(l1:l2,l3:l4,l5:l6,l7:l8),stat=stat)
     if (stat.ne.0) call memory_errors("Error in memory_allocate_4d_complex: More memory required")
 
+
     select case(mem_type)
     case('I')
        io_memory=io_memory+sizeof(array)
@@ -529,7 +530,7 @@ contains
        call  memory_errors("Error in memory_allocate: Unknown array type")
     end select
     tot_memory=tot_memory+sizeof(array)
-
+    
     call memory_trace()
     call trace_exit('memory_allocate_4d_complex')
   end subroutine memory_allocate_4d_complex
@@ -1675,6 +1676,9 @@ contains
     integer :: stat
     logical :: opened
     mem_unit=345*rank+9103
+
+
+
 
     if (local_write_mem)then
        write(mem_name,'(a,".",i0.4,a)')trim(local_seed),rank,".mem"
