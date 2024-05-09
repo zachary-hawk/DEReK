@@ -2,7 +2,7 @@
 CC = mpicc
 
 # Compiler flags
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -Wno-coverage-mismatch -Wno-implicit -w
 
 # Executable name
 EXEC = mpi_version
@@ -15,6 +15,7 @@ OBJS = $(SRCS:.c=.o)
 
 # Target: mpi_version
 $(EXEC): $(OBJS)
+	@echo 'Building mpi_version'
 	@$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 # Rule for compiling .c files to .o files

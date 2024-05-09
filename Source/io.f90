@@ -12,7 +12,7 @@ module io
   implicit none
 
   logical,           public                :: file_exists
-  character(20),     public                :: seed
+  character(20),     public                :: seed=''
   integer,           public                :: stdout
   integer,           public,parameter      :: glob_line_len =67
   integer,parameter                        :: n_cats = 9
@@ -802,7 +802,7 @@ contains
   end subroutine io_freeform_read
 
 
-  subroutine io_errors(message)
+  subroutine io_errors(message,major_error)
     !==============================================================================!
     !                              I O _ E R R O R S                               !
     !==============================================================================!
@@ -817,17 +817,36 @@ contains
 
     implicit none
     character(*)       :: message
+    logical,optional   :: major_error
     character(100)     :: current_sub
     ! internal variable for rank processing
     character(len=40)  :: file_name
 
     call trace_current(current_sub)
+
+    if (trim(seed).eq.'')then
+       seed = 'derek'
+    end if
+
     write(file_name,'(A,".",I0.4,".err")') trim(seed),rank
 
     open(2,file=trim(file_name),RECL=8192,status="UNKNOWN")
-    write(*,*)"Error: called io_abort"
+    write(*,*)"Error: called io_errors"
     write(2,*) "Error in ",trim(current_sub),": ",message
 
+    if (present(major_error))then
+       if (major_error)then
+          ! In the event of a major error, we repeat the message on the terminal
+          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*)
+          write(*,*) "   ",io_case(message,.true.)
+          write(*,*)
+          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+
+       end if
+    end if
     call trace_stack(2,rank,seed=seed)
 
     stop
@@ -870,13 +889,26 @@ contains
 
     if (present(upper))then
        if (upper) then
-          do i = 1,len(string)
+          do i = 1, len(string)
              k = iachar(string(i:i))
-             if ( k >= iachar('a') .and. k <= iachar('z') ) then
-                k = k + iachar('A') - iachar('a')
+             if (k >= iachar('a') .and. k <= iachar('z')) then
+                k = k + iachar('A') - iachar('a')  ! Convert lowercase to uppercase
                 new(i:i) = achar(k)
+             elseif (k >= iachar('A') .and. k <= iachar('Z')) then
+                new(i:i) = achar(k)  ! Preserve uppercase letters
+             else
+                new(i:i) = string(i:i)  ! Preserve non-alphabetic characters
              end if
           end do
+
+
+!!$          do i = 1,len(string)
+!!$             k = iachar(string(i:i))
+!!$             if ( k >= iachar('a') .and. k <= iachar('z') ) then
+!!$                k = k + iachar('A') - iachar('a')
+!!$                new(i:i) = achar(k)
+!!$             end if
+!!$          end do
        end if
     end if
     !call trace_exit('io_case')
@@ -1327,7 +1359,7 @@ contains
     keys_description(27)='A random seed to initialise the random number generator'
     keys_description(28)='Write total potential to file in a human readable format.'
     keys_description(29)='Write the external potential to a file'
-    keys_description(30)='Write the density to a human readble file'
+    keys_description(30)='Write the density to a human readable file'
     keys_description(31)='Write the external potential to a human readable file'
     keys_description(32)='Level to set amount of output files written.'
     keys_description(33)='Real vector of externally applied electric field'
@@ -1557,6 +1589,8 @@ contains
     logical,optional,intent(in) :: comment
     character(1) :: comment_char
     character(100)::fmt
+    character(1) :: junk
+    integer :: maj,min,mic  ! The LIBXC version checking, i only want to work with one version 
     call trace_entry("io_sys_info")
     comment_char = ' '
     if (present(comment))then
@@ -1582,8 +1616,8 @@ contains
        write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
     end if
     write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
-    write(unit,fmt)trim(comment_char),"Physical Constant",trim(current_sys%consts)
-    write(unit,fmt)trim(comment_char),'Spell Check Safet',trim(current_sys%max_lev)
+    write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
+    write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
     write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
     write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
     write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
@@ -1592,8 +1626,12 @@ contains
     end if
     write(unit,*)
     !write(unit,fmt)trim(comment_char)
-
-
+    
+    ! doing a formatted read, not great but it is a fixed format
+    read(current_sys%libxc,'(i1,a,i1,a,i1)')maj,junk,min,junk,mic
+    if (maj.ne.6 .or. min.ne.2)then
+       call io_errors('Unsupported LIBXC version, must be 6.2.x',.true.)
+    end if
 
 !!$    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
 !!$    write(unit,*) "Compiled for system: ",trim(arch_string)
