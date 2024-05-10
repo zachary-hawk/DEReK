@@ -32,7 +32,7 @@ The first time you compile, you will be prompted to specify the locations of FFT
 
 Example usage:
 
-```make COMMS_ARCH=mpi BUILD=fast CODATA_YEAR=2018'''
+```make COMMS_ARCH=mpi BUILD=fast CODATA_YEAR=2018```
 
 This command will build the MPI version with fast compiler optimizations using CODATA 2018 physical constants.
 
