@@ -1,3 +1,18 @@
+!*******************************************************************************
+! Copyright 2024 Z. Hawkhead
+!
+! Licensed under the Apache License, Version 2.0 (the "License");
+! you may not use this file except in compliance with the License.
+! You may obtain a copy of the License at
+!
+!     http://www.apache.org/licenses/LICENSE-2.0
+!
+! Unless required by applicable law or agreed to in writing, software
+! distributed under the License is distributed on an "AS IS" BASIS,
+! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+! See the License for the specific language governing permissions and
+! limitations under the License.
+!*******************************************************************************
 module io
   !Impose strong typing
   use constants
@@ -30,7 +45,10 @@ module io
   character(100) :: version = "1.0.0"   ! Master version for all instances
   character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK (c) 2024 - Z. Hawkhead"
   logical        :: read_params
-
+  character(30),dimension(:),allocatable   :: authors_title
+  character(30),dimension(:),allocatable   :: authors_forename
+  character(30),dimension(:),allocatable   :: authors_surname
+  character(30),dimension(:),allocatable   :: authors_email
   integer                                  :: max_params=1
   logical, private :: cell_declared=.false.
 
@@ -1626,26 +1644,81 @@ contains
     end if
     write(unit,*)
     !write(unit,fmt)trim(comment_char)
-    
+
     ! doing a formatted read, not great but it is a fixed format
     read(current_sys%libxc,'(i1,a,i1,a,i1)')maj,junk,min,junk,mic
     if (maj.ne.6 .or. min.ne.2)then
        call io_errors('Unsupported LIBXC version, must be 6.2.x',.true.)
     end if
 
-!!$    write(unit,*) "Compiled with ",compiler," ",Trim(compile_version), " on ", __DATE__, " at ",__TIME__
-!!$    write(unit,*) "Compiled for system: ",trim(arch_string)
-!!$    write(unit,*) "Compiled for CPU: ",trim(cpuinfo)
-!!$    write(unit,*) "Communications architechture: ",comms_arch
-!!$    if (comms_arch.eq."MPI")then
-!!$       write(unit,*) "MPI Version: ",mpi_c_version(1:min_char+1)
-!!$    end if
-!!$    write(unit,*) "Optimisation Strategy: ",opt
-!!$    write(unit,*) const_version
+
 
     call trace_exit("io_sys_info")
   end subroutine io_sys_info
 
+
+  subroutine io_authors(unit)
+    integer,intent(in) :: unit
+
+    ! Local variables
+    character(100) :: line
+    integer :: i, current_len,start,j
+    logical :: new_line
+    integer :: line_len = 50
+    integer,dimension(:),allocatable :: line_nums
+    integer,dimension(:),allocatable :: lens
+    integer :: nlines
+    ! Initialize variables
+    current_len = 0
+    new_line = .true.
+
+    if (current_sys%nauth.gt.1)then 
+
+       allocate(lens(1:current_sys%nauth))
+
+       write(unit,*)"|    Contributors                                                  |"
+       write(unit,*)"|    ------------                                                  |"
+
+       do i = 1,current_sys%nauth
+          lens(i) = len_trim(current_sys%names(i))
+       end do
+
+       current_len = 0
+       start=2
+       do i=2,current_sys%nauth
+          if (current_len.eq.0)then
+             
+             if (i.gt.2) then
+                ! not the first name
+                ! we have a zero length so we write from start to i-1
+                
+                write(line,*) (trim(current_sys%names(j))//", " ,j=start,i-2),trim(current_sys%names(i-1))
+                ! write the line to the header
+                write(unit,67) line
+
+             end if
+             start = i
+
+          end if
+          if (current_len + lens(i)+2 .lt. line_len)then
+             ! We want to include this name
+             current_len = current_len + lens(i)+2
+          else
+             ! We dont want to include this line
+             current_len = 0
+          end if
+       end  do
+
+       ! Write out the final line
+       write(line,*) (trim(current_sys%names(j))//", " ,j=start,current_sys%nauth-1),trim(current_sys%names(current_sys%nauth))
+       write(unit,67) line
+67     format(1x,"|",2x,a,T69,"|")
+
+       write(unit,*) "+------------------------------------------------------------------+"
+
+    end if
+  end  subroutine io_authors
+  
   subroutine io_header()
     !==============================================================================!
     !                              I O _ H E A D E R                               !
@@ -1685,9 +1758,17 @@ contains
     write(stdout,*) "|    for teaching me the inner working of a planewave DFT code.    |"
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "|            Thesis: http://etheses.dur.ac.uk/14737/               |"
+    write(stdout,*) "|                                                                  |"
+    write(stdout,*) "|  This program is licensed under the Apache License, Version 2.0. |"
+    write(stdout,*) "|            You may obtain a copy of the License at:              |"
+    write(stdout,*) "|                                                                  |"
+    write(stdout,*) "|           http://www.apache.org/licenses/LICENSE-2.0             |"
+    write(stdout,*) "|                                                                  |"
+    write(stdout,*) "|                      Copyright (c) 2024                          |"
     write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                Author: Dr Z. Hawkhead (c) 2024                   |"
+    write(stdout,*) "|                   Author: Dr. Z. Hawkhead                        |"
     write(stdout,*) "+==================================================================+"
+    call io_authors(stdout)
     call io_sys_info(stdout)
     call io_flush(stdout)
     call trace_exit('io_header')
