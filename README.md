@@ -12,6 +12,7 @@ Prerequisites
 This program relies on some external libraries that neeed to be installed before you begin:
 1) FFTW3 - https://www.fftw.org
 2) OpenBLAS - https://www.openblas.net
+3) LIBXC - https://libxc.gitlab.io
 
 These libraries are required for fast fourier transforms and speedy maths operations. OpenBlas is the only maths library currently supported, but I hope to expand to include others at a later date.
 
