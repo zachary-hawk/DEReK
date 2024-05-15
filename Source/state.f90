@@ -20,13 +20,14 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module state
   use constants
-  use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec,comms_wall_time
+  use units
+  use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec
   use io,    only : current_structure,current_params,stdout,parameters,structure,seed,io_errors,seed,io_flush,io_section,&
        & glob_line_len
   use basis, only : current_basis,basis_dat
   use wave,  only : wavefunction,wave_allocate,wave_initialise
   use pot,   only : potential, pot_allocate,pot_external_pot,pot_writef
-  use trace, only : trace_entry,trace_exit
+  use trace, only : trace_entry,trace_exit,trace_wallclock
   use memory,only : memory_allocate,memory_deallocate
   use density,only : density_allocate,elec_den,density_writef
 
@@ -87,8 +88,8 @@ contains
 
 
     call wave_allocate(current_state%wfn,current_params%nbands)
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
        start=walltime
        if (current_params%iprint.gt.2)write(stdout,11) 'Allocating wavefunction',walltime
     end if
@@ -96,22 +97,25 @@ contains
 
     ! potential
     call pot_allocate(current_state%tot_pot)
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
+
        if (current_params%iprint.gt.2)write(stdout,11) 'Allocating total potential',walltime
     end if
     call io_flush(stdout)
 
     call pot_allocate(current_state%ext_pot)
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
+       walltime=trace_wallclock()
        if (current_params%iprint.gt.2)write(stdout,11) 'Allocating external potential',walltime
     end if
     call io_flush(stdout)
 
     call memory_allocate(current_state%occ,1,current_params%nbands,1,current_structure%num_kpoints,'G')
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
+       walltime=trace_wallclock()
        if (current_params%iprint.gt.2)write(stdout,11) 'Allocating occupation',walltime
     end if
     call io_flush(stdout)
@@ -120,17 +124,18 @@ contains
     current_state%struct=current_structure
     current_state%params=current_params
     call density_allocate(current_state%den)
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
+       walltime=trace_wallclock()
        if (current_params%iprint.gt.2)write(stdout,11)  'Allocating density',walltime
     end if
     call io_flush(stdout)
 
     ! Initialise the wavefunction
     call wave_initialise(current_state%wfn)
+    walltime=trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
-       start=walltime
+
        if (current_params%iprint.gt.2)write(stdout,11) 'Initialising wavefunction',walltime
     end if
     call io_flush(stdout)
@@ -138,15 +143,15 @@ contains
 
     ! read the external potential
     call pot_external_pot(current_state%ext_pot)
+    walltime = trace_wallclock()
     if (on_root_node)then
-       walltime=comms_wall_time()
-       start=walltime
        if (current_params%iprint.gt.2)write(stdout,11) 'Initialising external potential',walltime
     end if
     call io_flush(stdout)
 
 
     ! Close out the state init footer
+    walltime = trace_wallclock()
     if (on_root_node .and. current_params%iprint.gt.1)then
        if (current_params%iprint.gt.2)write(stdout,*)"+",repeat('-',glob_line_len-1),"+ <-- INI"
        write(stdout,12) walltime-start
@@ -217,7 +222,7 @@ contains
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )
 
 
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           write(pot_file)current_state%ext_pot
 
@@ -249,7 +254,7 @@ contains
        end if
        write_str = "Fmt. ext. potential to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           call pot_writef(current_state%ext_pot,pot_file)
 
@@ -272,7 +277,7 @@ contains
 
        write_str = "Total potential to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
 
           write(pot_file)current_state%tot_pot
@@ -293,7 +298,7 @@ contains
 
        write_str = "Fmt. potential to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           call pot_writef(current_state%tot_pot,pot_file)
           close(pot_file)
@@ -313,7 +318,7 @@ contains
 
        write_str = "Density to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           write(den_file)current_state%den
 
@@ -332,7 +337,7 @@ contains
        open(newunit=den_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
        write_str = "Fmt. density to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           call density_writef(current_state%den,den_file)
 
@@ -351,7 +356,7 @@ contains
 
        write_str = "Wavefunction to"
        loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
        if (on_root_node)then
           write(wfn_file)current_state%wfn
 

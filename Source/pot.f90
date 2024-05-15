@@ -19,6 +19,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module pot
   use constants
+  use units
   use trace, only : trace_entry, trace_exit
   use comms, only : rank, on_root_node, nprocs
   use io,    only : stdout,io_errors,current_params,current_structure,seed,io_out_file_header

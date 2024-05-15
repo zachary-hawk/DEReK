@@ -19,11 +19,12 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 program derek
   use constants
+  use units
   use comms
-  use trace, only: trace_entry,trace_exit,trace_init,trace_finalise
+  use trace, only: trace_entry,trace_exit,trace_init,trace_finalise,trace_wallclock
   use io   , only: io_initialise, io_errors,current_params,seed,stdout,&
        & io_check,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings,&
-       & io_from_atomic,io_to_atomic,io_conversion,io_mem_report
+       & io_mem_report
   use memory,only: memory_deallocate
   use basis, only: basis_init,current_basis
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
@@ -56,8 +57,8 @@ program derek
 
   call trace_init()           ! Set up trace
   call trace_entry("derek")
-  call constants_initialise()
   call comms_init()           ! Start the MPI
+  call units_initialise()
   call io_initialise()        ! Open up the files and read
 
 
@@ -85,15 +86,17 @@ program derek
 
 
   !current_state%ext_pot=1.0_dp*current_state%ext_pot
-  call io_write_params(current_basis%num_grid_points&
-       &, current_basis%num_fine_grid_points&
-       &, current_basis%ngx&
-       &, current_basis%ngy&
-       &, current_basis%ngz&
-       &, current_basis%fine_ngx&
-       &, current_basis%fine_ngy&
-       &, current_basis%fine_ngz)      ! Write out all the parameters, need to pass it the basis info 
-
+  
+  if (on_root_node)then
+     call io_write_params(current_basis%num_grid_points&
+          &, current_basis%num_fine_grid_points&
+          &, current_basis%ngx&
+          &, current_basis%ngy&
+          &, current_basis%ngz&
+          &, current_basis%fine_ngx&
+          &, current_basis%fine_ngy&
+          &, current_basis%fine_ngz)      ! Write out all the parameters, need to pass it the basis info 
+  end if
 
   ! Now check if its a dry run before going on
   if (current_params%check)then
@@ -112,7 +115,10 @@ program derek
 
 
   ! We have done all of the initialisation, this is the only print statements we will be using in the main derek file!
-  time=comms_wall_time()
+
+  time=trace_wallclock()
+
+
   if (on_root_node.and..not.current_params%check)then
      write(stdout,*)
      write(stdout,*)
@@ -127,12 +133,13 @@ program derek
 
      write(stdout,*)
      write(stdout,*)
-     write(stdout,*)
   end if
 
 
 
-  ! After the initialisation is finished, we move onto the electronic minimisation..
+  ! After the initialisation is finished, we move onto the electronic minimisation.
+
+
   ! Calculation starts here
   call electronic_minimise()
 
@@ -140,66 +147,66 @@ program derek
 
 
   ! doing some big testing here
-  call grids_real2recip(current_state%den,'FINE')
-  call grids_recip2real(current_state%den,'FINE')
-
-
-
-
-  call memory_allocate(test_fft,1,current_basis%ngx,'B')
-  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
-  call memory_allocate(test_fft_fine,1,current_basis%fine_ngx,'B')
-  call memory_allocate(test_fft_x_fine,1,current_basis%fine_ngx,'B')
-
-
-  ! define a function
-  test_fft_x =  [(twopi*1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
-  test_fft_x_fine =  [(twopi*1.0*(i-1)/(current_basis%fine_ngx-1), i=1,current_basis%fine_ngx)]
-
-  test_fft = exp(-0.5*((test_fft_x - pi*0.4)/0.5)**2) / (0.5 * sqrt(2.0 * pi)) + &
-       & exp(-0.5*((test_fft_x - pi*1.1)/0.35)**2) / (0.35 * sqrt(2.0 * pi)) - &
-       & exp(-0.5*((test_fft_x - pi*1.4)/0.2)**2) / (0.2 * sqrt(2.0 * pi))
-
-
-  !test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
-  !test_fft(43:63) = 1.0_dp
-  open(unit=120,file='real.txt',access='stream',form='FORMATTED')
-  do i = 1, current_basis%ngx
-     call utils_random_number(testvar)
-     test_fft(i) = testvar
-     write(120,*) test_fft_x(i),real(test_fft(i))
-  end do
-
-  i = 1
-  open(unit=121,file='fft.txt',access='stream',form='FORMATTED')
-  call fft_1d(test_fft,'STD',fft_forward)
-  do i = 1, current_basis%ngx
-     write(121,*) test_fft_x(i),real(test_fft(i))
-  end do
-
-
-
-  ! Zero the fine array
-  test_fft_fine(:) = cmplx_0
-
-  !print*,current_basis%ngx/2
-  test_fft_fine(1:current_basis%ngx/2) = test_fft(1:current_basis%ngx/2)
-  !print*,current_basis%fine_ngx-current_basis%ngx/2,current_basis%fine_ngx
-  test_fft_fine(current_basis%fine_ngx-current_basis%ngx/2:current_basis%fine_ngx) = &
-       & test_fft(current_basis%ngx/2:current_basis%ngx)
-
-  i=1
-  open(unit=122,file='fft_padded.txt',access='stream',form='FORMATTED')
-  do i = 1, current_basis%fine_ngx
-     write(122,*) test_fft_x_fine(i),real(test_fft_fine(i))
-  end do
-
-  call fft_1d(test_fft_fine,'FINE',fft_backward)
-  i=1
-  open(unit=123,file='real_padded.txt',access='stream',form='FORMATTED')
-  do i = 1, current_basis%fine_ngx
-     write(123,*) test_fft_x_fine(i),real(test_fft_fine(i)) 
-  end do
+!!$  call grids_real2recip(current_state%den,'FINE')
+!!$  call grids_recip2real(current_state%den,'FINE')
+!!$
+!!$
+!!$
+!!$
+!!$  call memory_allocate(test_fft,1,current_basis%ngx,'B')
+!!$  call memory_allocate(test_fft_x,1,current_basis%ngx,'B')
+!!$  call memory_allocate(test_fft_fine,1,current_basis%fine_ngx,'B')
+!!$  call memory_allocate(test_fft_x_fine,1,current_basis%fine_ngx,'B')
+!!$
+!!$
+!!$  ! define a function
+!!$  test_fft_x =  [(twopi*1.0*(i-1)/(current_basis%ngx-1), i=1,current_basis%ngx)]
+!!$  test_fft_x_fine =  [(twopi*1.0*(i-1)/(current_basis%fine_ngx-1), i=1,current_basis%fine_ngx)]
+!!$
+!!$  test_fft = exp(-0.5*((test_fft_x - pi*0.4)/0.5)**2) / (0.5 * sqrt(2.0 * pi)) + &
+!!$       & exp(-0.5*((test_fft_x - pi*1.1)/0.35)**2) / (0.35 * sqrt(2.0 * pi)) - &
+!!$       & exp(-0.5*((test_fft_x - pi*1.4)/0.2)**2) / (0.2 * sqrt(2.0 * pi))
+!!$
+!!$
+!!$  !test_fft = [(i*0.0_dp,i=1,current_basis%ngx)]
+!!$  !test_fft(43:63) = 1.0_dp
+!!$  open(unit=120,file='real.txt',access='stream',form='FORMATTED')
+!!$  do i = 1, current_basis%ngx
+!!$     call utils_random_number(testvar)
+!!$     test_fft(i) = testvar
+!!$     write(120,*) test_fft_x(i),real(test_fft(i))
+!!$  end do
+!!$
+!!$  i = 1
+!!$  open(unit=121,file='fft.txt',access='stream',form='FORMATTED')
+!!$  call fft_1d(test_fft,'STD',fft_forward)
+!!$  do i = 1, current_basis%ngx
+!!$     write(121,*) test_fft_x(i),real(test_fft(i))
+!!$  end do
+!!$
+!!$
+!!$
+!!$  ! Zero the fine array
+!!$  test_fft_fine(:) = cmplx_0
+!!$
+!!$  !print*,current_basis%ngx/2
+!!$  test_fft_fine(1:current_basis%ngx/2) = test_fft(1:current_basis%ngx/2)
+!!$  !print*,current_basis%fine_ngx-current_basis%ngx/2,current_basis%fine_ngx
+!!$  test_fft_fine(current_basis%fine_ngx-current_basis%ngx/2:current_basis%fine_ngx) = &
+!!$       & test_fft(current_basis%ngx/2:current_basis%ngx)
+!!$
+!!$  i=1
+!!$  open(unit=122,file='fft_padded.txt',access='stream',form='FORMATTED')
+!!$  do i = 1, current_basis%fine_ngx
+!!$     write(122,*) test_fft_x_fine(i),real(test_fft_fine(i))
+!!$  end do
+!!$
+!!$  call fft_1d(test_fft_fine,'FINE',fft_backward)
+!!$  i=1
+!!$  open(unit=123,file='real_padded.txt',access='stream',form='FORMATTED')
+!!$  do i = 1, current_basis%fine_ngx
+!!$     write(123,*) test_fft_x_fine(i),real(test_fft_fine(i)) 
+!!$  end do
 
 
 
@@ -226,7 +233,7 @@ program derek
 
   !call comms_reduce(global_time,1,"max")
 
-  time=comms_wall_time()
+  time=trace_wallclock()
 
 
   if (on_root_node)then

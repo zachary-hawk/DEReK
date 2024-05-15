@@ -56,7 +56,7 @@ endif
 endif
 endif
 
-FCFLAGS += -fPIC -fbackslash -lfftw3 -lopenblas -lxc -lxcf03  -L$(FFTWDIR) -L$(OPENBLASDIR) -L$(LIB_DIR) -I$(INCLUDE_DIR)
+FCFLAGS += -fPIC -fbackslash -lfftw3 -lopenblas -lxc  -lxcf03  -L'$(FFTWDIR)' -L'$(OPENBLASDIR)' -L$(LIB_DIR) -I$(INCLUDE_DIR)
 
 
 # Constants data

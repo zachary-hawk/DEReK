@@ -18,6 +18,7 @@
 module spec
   !Impose strong typing
   use constants
+  use units
   use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
        &,comms_library_version,comms_version

@@ -17,7 +17,8 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module memory
-  use constants 
+  use constants
+  use units 
   use trace, only : trace_entry, trace_exit
   use comms, only : rank,nprocs
 

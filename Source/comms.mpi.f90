@@ -18,24 +18,25 @@
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead
 !---- file documented by fortran documenter, z.hawkhead
-!=============================================================================!                                                                                                                         
-!                                  comms                                      !                                                                                                                         
-!=============================================================================!                                                                                                                         
-!              module handeling comminications: mpi                           !                                                                                                                         
-!-----------------------------------------------------------------------------!                                                                                                                         
-!                        author: z. hawkhead                                  !                                                                                                                         
-!=============================================================================!                                                                                                                         
+!=============================================================================!               
+!                                  comms                                      !               
+!=============================================================================!               
+!              module handeling comminications: mpi                           !               
+!-----------------------------------------------------------------------------!               
+!                        author: z. hawkhead                                  !               
+!=============================================================================!               
 module comms
-  !use mpi                                                                                                                                                                                              
+  !use mpi
   use constants
+  use units
   use trace
   implicit none
   include 'mpif.h'
   integer                              :: ierr
   integer,parameter                    :: max_version_length=mpi_max_library_version_string
   integer, dimension(mpi_status_size)  :: status1
-  !integer,parameter,private :: dp=real64                                                                                                                                                               
-  ! some of the stuff i'll need, gloabal                                                                                                                                                                
+  !integer,parameter,private :: dp=real64                                                     
+  ! some of the stuff i'll need, global                                                      
   integer,public,save                  :: rank
   integer,public,save                  :: nprocs
   logical,public,save                  :: on_root_node
@@ -460,6 +461,7 @@ contains
     real(dp),intent(inout) :: send_buff
     character(*) :: op
     call trace_entry("comms_reduce_real")
+
     select case(trim(op))
     case('max')
        call mpi_reduce(send_buff,recv_buff,count,mpi_double,mpi_max,0,mpi_comm_world,status1,ierr)
@@ -468,6 +470,7 @@ contains
     case('sum')
        call mpi_reduce(send_buff,recv_buff,count,mpi_double,mpi_sum,0,mpi_comm_world,status1,ierr)
     end select
+
     ! put it back in
     send_buff=recv_buff
 
@@ -1069,17 +1072,17 @@ contains
   end subroutine COMMS_BCAST_DOUBLE_ARRAY
 
   subroutine comms_bcast_logical(start_buff)
-!==============================================================================!
-!                    C O M M S _ B C A S T _ L O G I C A L                     !
-!==============================================================================!
-! Mpi wrapper for broacasting logical variable from rood node to all           !
-! childeren                                                                    !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           start_buff,        intent :: in                                    !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  31/03/2024                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                    C O M M S _ B C A S T _ L O G I C A L                     !
+    !==============================================================================!
+    ! Mpi wrapper for broacasting logical variable from rood node to all           !
+    ! childeren                                                                    !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           start_buff,        intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  31/03/2024                                            !
+    !==============================================================================!
     logical :: start_buff
     call trace_entry('comms_bcast_logical')
     call mpi_bcast(start_buff,1,MPI_LOGICAL,0,MPI_COMM_WORLD,status1,ierr)
@@ -1091,14 +1094,25 @@ contains
     real(dp) :: time
     call trace_entry('comms_wall_time')
     ! this is called on all nodes, it starts by setting the global time variable to 0
+
     call cpu_time(time)
     time = time - global_start
-    
-    call comms_reduce(global_time,1,"max")
 
+    
+    call comms_reduce(time,1,"max")
+    print*,rank,time
+    
     call trace_exit('comms_wall_time')
   end function comms_wall_time
 
+  subroutine comms_stop()
+    ! This is the routine to call whenever there is a stop statement in the code, it shouldnt be traced, there is no point
+
+    call comms_finalise()
+    stop
+    return
+    
+  end subroutine comms_stop
 
 
 

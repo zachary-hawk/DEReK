@@ -17,6 +17,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module wave
   use constants
+  use units
   use trace, only : trace_entry,trace_exit
   use comms, only : rank,on_root_node,nprocs
   use io,    only : current_params,current_structure,io_errors,seed

@@ -20,6 +20,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module density
   use constants
+  use units
   use trace, only: trace_entry,trace_exit
   use io,    only: stdout,io_errors,seed,io_out_file_header
   use wave,  only: wavefunction, wavefunction_slice

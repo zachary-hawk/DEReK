@@ -18,6 +18,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module utils
   use constants
+  use units
   use trace, only : trace_entry, trace_exit
   use memory, only : memory_allocate, memory_deallocate
   use io, only     : io_errors, io_present,current_params

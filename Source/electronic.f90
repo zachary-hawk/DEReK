@@ -14,14 +14,12 @@
 ! limitations under the License.
 !*******************************************************************************
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
+
 module electronic
   use constants
-  use trace, only : trace_entry,trace_exit,global_start
-  use io, only: stdout,current_params,glob_line_len,io_flush,io_warnings,io_section,io_from_atomic
+  use units
+  use trace, only : trace_entry,trace_exit,global_start,trace_wallclock
+  use io, only: stdout,current_params,glob_line_len,io_flush,io_warnings,io_section,units_from_atomic
   use state, only: current_state
   use comms
 
@@ -100,7 +98,7 @@ contains
     !counters
     integer :: iscf=0
 
-    ! Time (comms_wall_time must be called by each process)
+    ! Time (trace_wallclock must be called by each process)
     real(dp)   :: wall_time
     ! Energy stuff
     real(dp)   :: current_energy=-1456.256345234534, energy_hist= -1451.256345234534
@@ -112,7 +110,7 @@ contains
 
     ! First we report that we are starting the SCF Calculation
     ! Wall time for the initial step:
-    wall_time = comms_wall_time()
+    wall_time = trace_wallclock()
 
     if (on_root_node)then
        call io_flush(stdout)
@@ -124,7 +122,7 @@ contains
        call io_flush(stdout)
 
        ! To start we need to report the initial energy, there will be no change
-       write(stdout,11)iscf,io_from_atomic(current_energy,trim(current_params%out_energy_unit)),wall_time
+       write(stdout,11)iscf,units_from_atomic(current_energy,trim(current_params%out_energy_unit)),wall_time
     end if
 
     !print*,rank,'before loop'
@@ -134,12 +132,12 @@ contains
        !print*,rank,'inside the loop'
        ! at the end, write out the energy
 
-       wall_time = comms_wall_time()
+       wall_time = trace_wallclock()
 
 
        if (on_root_node)&
-            & write(stdout,12)iscf,io_from_atomic(current_energy,trim(current_params%out_energy_unit)),&
-            & io_from_atomic(current_energy - energy_hist,trim(current_params%out_energy_unit)),&
+            & write(stdout,12)iscf,units_from_atomic(current_energy,trim(current_params%out_energy_unit)),&
+            & units_from_atomic(current_energy - energy_hist,trim(current_params%out_energy_unit)),&
             & wall_time       
        !print*,'rank',rank
 
@@ -191,9 +189,9 @@ contains
 
           write(stdout,*)"|                 CONVERGED SUCCESSFULLY                   | <-- SCF"
           write(stdout,*)"+----------------------------------------------------------+ <-- SCF"
-          write(stdout,111)'Total energy',io_from_atomic(current_state%total_energy, &
+          write(stdout,111)'Total energy',units_from_atomic(current_state%total_energy, &
                & trim(current_params%out_energy_unit)),trim(current_params%out_energy_unit)
-          write(stdout,111)'Fermi energy',io_from_atomic(current_state%efermi,&
+          write(stdout,111)'Fermi energy',units_from_atomic(current_state%efermi,&
                & trim(current_params%out_energy_unit)),trim(current_params%out_energy_unit)
           write(stdout,111)'Total moment',current_state%tot_moment,   'hbar/2'
           write(stdout,112)'Total spin  ',current_state%total_spin(1),&

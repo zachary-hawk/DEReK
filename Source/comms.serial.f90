@@ -15,16 +15,17 @@
 !*******************************************************************************
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!=============================================================================!                                                                                                                         
-!                                  COMMS                                      !                                                                                                                         
-!=============================================================================!                                                                                                                         
-!              Module handeling comminications: MPI                           !                                                                                                                         
-!-----------------------------------------------------------------------------!                                                                                                                         
-!                        author: Z. Hawkhead                                  !                                                                                                                         
-!=============================================================================!                                                                                                                         
+!=============================================================================!                                                  
+!                                  COMMS                                      !                                                  
+!=============================================================================!                                                  
+!              Module handeling comminications: MPI                           !                                                  
+!-----------------------------------------------------------------------------!                                                  
+!                        author: Z. Hawkhead                                  !                                                  
+!=============================================================================!                                                  
 module COMMS
-  !use mpi                                                                                                                                                                                              
+  !use mpi
   use constants
+  use units
   use trace
   implicit none
   !include 'mpif.h'
@@ -32,8 +33,8 @@ module COMMS
   integer, parameter                   :: max_version_length = 0
   !integer,parameter                    :: max_version_length=MPI_MAX_LIBRARY_VERSION_STRING
   !integer, dimension(MPI_STATUS_SIZE)  :: status1
-  !integer,parameter,private :: dp=real64                                                                                                                                                               
-  ! Some of the stuff i'll need, gloabal                                                                                                                                                                
+  !integer,parameter,private :: dp=real64                 
+  ! Some of the stuff i'll need, gloabal                  
   integer,public,save                  :: rank
   integer,public,save                  :: nprocs
   logical,public,save                  :: on_root_node

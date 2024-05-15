@@ -18,6 +18,7 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module basis
   use constants
+  use units
   use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,dp
   use io,    only : stdout, current_params,current_structure
   use memory,only : memory_allocate,memory_deallocate

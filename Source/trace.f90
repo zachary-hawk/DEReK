@@ -98,7 +98,7 @@ contains
     implicit none
     integer   :: stat
     !call CPU_TIME(global_start)
-    global_start = TRACE_TIME()
+    global_start = TRACE_WALLCLOCK()
     ! Only one allocation for each of the entry and exit logs
     allocate(in_log(1:log_size),stat=stat)
     if (stat.ne.0) stop
@@ -136,7 +136,7 @@ contains
 
 
 
-    time  = TRACE_TIME()
+    time  = TRACE_WALLCLOCK()
 
     in_log(global_id)%name=trim(new_sub_name)
     in_log(global_id)%time=time
@@ -176,7 +176,7 @@ contains
     !print*,"exit start"
     new_sub_name=trace_string_to_lower(sub_name)
     !call CPU_TIME(time)
-    time=TRACE_TIME()
+    time=TRACE_WALLCLOCK()
     close_count=close_count+1
 
     ! check for comms
@@ -331,8 +331,8 @@ contains
     !print*,"finalise end"
 
     !call CPU_TIME(global_end)
-    global_end = TRACE_TIME()
-    global_time=global_end-global_start
+    global_end = TRACE_WALLCLOCK()
+    global_time=global_end!-global_start
     return 
   end subroutine trace_finalise
 
@@ -749,17 +749,17 @@ contains
 
 
 
-  function trace_time()
+  function trace_wallclock()
 
     use constants, only: dp
     implicit none
-    real(kind=dp)        :: trace_time   
+    real(kind=dp)        :: trace_wallclock   
     real                 :: tmp_cpu_time 
     call cpu_time(tmp_cpu_time)
-    trace_time = real(tmp_cpu_time,dp)
+    trace_wallclock = real(tmp_cpu_time,dp) - global_start
     return
 
-  end function trace_time
+  end function trace_wallclock
 
 
   subroutine trace_modules(module_list, module_times)

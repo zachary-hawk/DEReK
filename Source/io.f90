@@ -15,10 +15,11 @@
 !*******************************************************************************
 module io
   !Impose strong typing
-  use constants
-  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,warning_counter
+  use units
+  use trace, only : trace_entry, trace_exit,trace_stack,trace_finalise,warning_counter &
+       &, trace_wallclock
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
-       &,comms_library_version,comms_version,dist_kpt,dist_gvec
+       &,comms_library_version,comms_version,dist_kpt,dist_gvec,comms_stop
   use memory
   use sys, only : current_sys,sys_init
   use iso_fortran_env, only : compiler_version
@@ -55,9 +56,9 @@ module io
 
 
 
-  
-  
-  
+
+
+
   type  parameters
      ! %Begin: parameters
 
@@ -89,7 +90,7 @@ module io
      real(dp),dimension(1:3) :: finite_barrier_width =   (/0.5_dp,0.5_dp,0.5_dp/)
      integer,dimension(1:3)  :: periodic_pot_grid = (/1,1,1/)
      real(dp) :: periodic_pot_amp =    10.00_dp
-    integer :: random_seed =            0
+     integer :: random_seed =            0
      logical :: write_formatted_potential = .false.
      logical :: write_potex = .false.
      logical :: write_formatted_density = .false.
@@ -156,12 +157,12 @@ module io
   ! %End: keys
 
 
-  
+
 
   integer,parameter::max_keys=          43
   ! %End: max_param
 
-  
+
   type structure
      real(dp),dimension(1:3,1:3)         :: cell ! cell matrix
      real(dp),dimension(1:3,1:3)         :: inv_cell ! inverse cell matrix
@@ -226,6 +227,16 @@ contains
 
     call io_cl_parser() ! Read the commandline arguments
 
+    ! set up the error files, in case they need to be used elsewhere
+    if (trim(seed).eq.'')then
+       seed = 'derek'
+    end if
+
+    write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
+
+
+
+
     !call memory_init(seed)
 
     ! Get the length of the parameters file
@@ -252,7 +263,7 @@ contains
     open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
 
 
-    call io_flush(stdout)
+    !call io_flush(stdout)
     call io_header()
 
 
@@ -304,22 +315,22 @@ contains
     !==============================================================================!
     call trace_entry('io_convert_all')
 
-    current_params%energy_tol = io_to_atomic(current_params%energy_tol,current_params%unit_energy)
-    current_params%cut_off_energy = io_to_atomic(current_params%cut_off_energy,current_params%unit_energy)
-    current_params%electronic_temp =    io_to_atomic(current_params%electronic_temp,'K')
-    current_params%finite_barrier_height =    io_to_atomic(current_params%finite_barrier_height,current_params%unit_energy)
-    current_params%finite_barrier_width(1) =  io_to_atomic(current_params%finite_barrier_width(1),current_params%unit_length)
-    current_params%finite_barrier_width(2) =  io_to_atomic(current_params%finite_barrier_width(2),current_params%unit_length)
-    current_params%finite_barrier_width(3) =  io_to_atomic(current_params%finite_barrier_width(3),current_params%unit_length)
+    current_params%energy_tol = units_to_atomic(current_params%energy_tol,current_params%unit_energy)
+    current_params%cut_off_energy = units_to_atomic(current_params%cut_off_energy,current_params%unit_energy)
+    current_params%electronic_temp =    units_to_atomic(current_params%electronic_temp,'K')
+    current_params%finite_barrier_height =    units_to_atomic(current_params%finite_barrier_height,current_params%unit_energy)
+    current_params%finite_barrier_width(1) =  units_to_atomic(current_params%finite_barrier_width(1),current_params%unit_length)
+    current_params%finite_barrier_width(2) =  units_to_atomic(current_params%finite_barrier_width(2),current_params%unit_length)
+    current_params%finite_barrier_width(3) =  units_to_atomic(current_params%finite_barrier_width(3),current_params%unit_length)
 
-    current_params%periodic_pot_amp =io_to_atomic(current_params%periodic_pot_amp,current_params%unit_energy)
-    current_params%ext_efield(1) =io_to_atomic(current_params%ext_efield(1),current_params%unit_efield)
-    current_params%ext_efield(2) =io_to_atomic(current_params%ext_efield(2),current_params%unit_efield)
-    current_params%ext_efield(3) =io_to_atomic(current_params%ext_efield(3),current_params%unit_efield)
+    current_params%periodic_pot_amp =units_to_atomic(current_params%periodic_pot_amp,current_params%unit_energy)
+    current_params%ext_efield(1) =units_to_atomic(current_params%ext_efield(1),current_params%unit_efield)
+    current_params%ext_efield(2) =units_to_atomic(current_params%ext_efield(2),current_params%unit_efield)
+    current_params%ext_efield(3) =units_to_atomic(current_params%ext_efield(3),current_params%unit_efield)
 
-    current_params%ext_bfield(1) =io_to_atomic(current_params%ext_bfield(1),current_params%unit_bfield)
-    current_params%ext_bfield(2) =io_to_atomic(current_params%ext_bfield(2),current_params%unit_bfield)
-    current_params%ext_bfield(3) =io_to_atomic(current_params%ext_bfield(3),current_params%unit_bfield)
+    current_params%ext_bfield(1) =units_to_atomic(current_params%ext_bfield(1),current_params%unit_bfield)
+    current_params%ext_bfield(2) =units_to_atomic(current_params%ext_bfield(2),current_params%unit_bfield)
+    current_params%ext_bfield(3) =units_to_atomic(current_params%ext_bfield(3),current_params%unit_bfield)
 
 
 
@@ -837,20 +848,14 @@ contains
     character(*)       :: message
     logical,optional   :: major_error
     character(100)     :: current_sub
-    ! internal variable for rank processing
-    character(len=40)  :: file_name
+
 
     call trace_current(current_sub)
 
-    if (trim(seed).eq.'')then
-       seed = 'derek'
-    end if
 
-    write(file_name,'(A,".",I0.4,".err")') trim(seed),rank
-
-    open(2,file=trim(file_name),RECL=8192,status="UNKNOWN")
+    open(newunit=err_unit,file=trim(error_file),RECL=8192,status="UNKNOWN")
     write(*,*)"Error: called io_errors"
-    write(2,*) "Error in ",trim(current_sub),": ",message
+    write(err_unit,*) "Error in ",trim(current_sub),": ",message
 
     if (present(major_error))then
        if (major_error)then
@@ -867,7 +872,7 @@ contains
     end if
     call trace_stack(2,rank,seed=seed)
 
-    stop
+    call comms_stop()
     return
   end subroutine io_errors
 
@@ -996,7 +1001,7 @@ contains
              help=.true.
              if (arg_index.eq.nargs)then
                 call io_help()
-                stop
+                call comms_stop()
              end if
           case("-s","--search")
              write(*,*) trim(info)
@@ -1007,12 +1012,12 @@ contains
              search=.true.
              if (arg_index.eq.nargs)then
                 call io_help()
-                stop
+                call comms_stop()
              end if
           case("-v")
              call io_header()
              read_params=.false.
-             stop
+             call comms_stop()
           case("-c","--check")
              current_params%check=.true.
              if (nargs.lt.2)then
@@ -1035,24 +1040,24 @@ contains
                 write(*,*) trim(info)
                 write(*,*) trim(version)
                 call io_list_params(.true.)
-                stop
+                call comms_stop()
              end if
           case default
              if (help)then
                 call io_help(name)
                 help=.false.
-                stop
+                call comms_stop()
              elseif(search)then
                 call io_search(io_case(name))
                 search=.false.
-                stop
+                call comms_stop()
              else if(list)then
                 write(*,*) trim(info)
                 write(*,*) trim(version)
                 write(*,*)
                 call io_list_params(.true.,io_case(name))
                 list=.false.
-                stop
+                call comms_stop()
 
              else
                 seed=name
@@ -1132,7 +1137,7 @@ contains
        write(*,30) '    "    ', "-r,--restart <seed>","Run calculation continuing from a previous <seed>.state file"
     end if
 30  format(2x,A,4x,A,T40,":",3x,A)
-    stop
+    call comms_stop()
     return
   end subroutine io_help
 
@@ -1207,7 +1212,7 @@ contains
     allocate(keys_cat(1:max_keys))
 
 
-    
+
     ! assign the keys
     ! %Begin: assign_keys
 
@@ -1490,10 +1495,10 @@ contains
          & ' 0.0 5.0 0.0\n '//&
          & ' 0.0 0.0 5.0\n '//&
          & '$END lattice'
-    
+
     ! %End: assign_example
 
-    
+
 
     cats = (/'FUNDAMENTAL  '&
          &  ,'PLANEWAVES   '&
@@ -1561,7 +1566,7 @@ contains
        end do
        if (cat_index.eq.-1)then
           write(*,*) "Unknown category: ",trim(string)
-          stop
+          call comms_stop()
        end if
     end if
 
@@ -1687,11 +1692,11 @@ contains
        start=2
        do i=2,current_sys%nauth
           if (current_len.eq.0)then
-             
+
              if (i.gt.2) then
                 ! not the first name
                 ! we have a zero length so we write from start to i-1
-                
+
                 write(line,*) (trim(current_sys%names(j))//", " ,j=start,i-2),trim(current_sys%names(i-1))
                 ! write the line to the header
                 write(unit,67) line
@@ -1718,7 +1723,7 @@ contains
 
     end if
   end  subroutine io_authors
-  
+
   subroutine io_header()
     !==============================================================================!
     !                              I O _ H E A D E R                               !
@@ -1770,7 +1775,7 @@ contains
     write(stdout,*) "+==================================================================+"
     call io_authors(stdout)
     call io_sys_info(stdout)
-    call io_flush(stdout)
+    !call io_flush(stdout)
     call trace_exit('io_header')
   end subroutine io_header
 
@@ -1791,19 +1796,19 @@ contains
     call trace_entry("io_check")
     if (on_root_node)then
        write(stdout,*) " "
-       write(stdout,'(16x,A)') "****************************************"
-       write(stdout,'(16x,A)') "*                                      *"
-       write(stdout,'(16x,A)') "*         Check complete....           *"
-       write(stdout,'(16x,A)') "*          No errors found             *"
-       write(stdout,'(16x,A)') "*                                      *"
-       write(stdout,'(16x,A)') "****************************************"
+       write(stdout,'(16x,A)') "+======================================+"
+       write(stdout,'(16x,A)') "|                                      |"
+       write(stdout,'(16x,A)') "|         Check complete....           |"
+       write(stdout,'(16x,A)') "|          No errors found             |"
+       write(stdout,'(16x,A)') "|                                      |"
+       write(stdout,'(16x,A)') "+======================================+"
     end if
     call io_finalise()
     call trace_exit("io_check")
     call trace_exit("derek")
-    call COMMS_FINALISE()
+    !call COMMS_FINALISE()
     call trace_finalise(current_params%debugging,rank,seed=seed)
-    stop
+    call comms_stop()
 
   end subroutine io_check
 
@@ -1935,7 +1940,7 @@ contains
        ! convert to Bohr
        do i =1,3
           do j =1,3
-             current_structure%cell(i,j)=io_to_atomic(current_structure%cell(i,j),current_params%unit_length)
+             current_structure%cell(i,j)=units_to_atomic(current_structure%cell(i,j),current_params%unit_length)             
           end do
        end do
 
@@ -2084,7 +2089,7 @@ contains
     character(len=:), allocatable :: string
     character(10) :: out_invlen_unit
     character(10) :: out_vol_unit
-
+    
     call trace_entry("io_write_params")
     out_invlen_unit = trim(current_params%out_len_unit)//'-1'
     out_vol_unit = trim(current_params%out_len_unit)//'**3'
@@ -2114,41 +2119,41 @@ contains
        write(stdout,23) grp
        write(stdout,'(T2,"|",T14,"Lattice (",a,")",T44,"Inverse Lattice (1/",a,")",T69,"| <-- ",a)')&
             & trim(current_params%out_len_unit),trim(current_params%out_len_unit),grp
-       write(stdout,10) io_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%inv_cell(1,1),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(1,2),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(1,3),trim(out_invlen_unit)),&
+       write(stdout,10) units_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%inv_cell(1,1),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(1,2),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(1,3),trim(out_invlen_unit)),&
             & grp
 
-       write(stdout,10) io_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%inv_cell(2,1),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(2,2),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(2,3),trim(out_invlen_unit)),&
+       write(stdout,10) units_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%inv_cell(2,1),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(2,2),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(2,3),trim(out_invlen_unit)),&
             & grp
 
-       write(stdout,10) io_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
-            & io_from_atomic(current_structure%inv_cell(3,1),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(3,2),trim(out_invlen_unit)),&
-            & io_from_atomic(current_structure%inv_cell(3,3),trim(out_invlen_unit)),&
+       write(stdout,10) units_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
+            & units_from_atomic(current_structure%inv_cell(3,1),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(3,2),trim(out_invlen_unit)),&
+            & units_from_atomic(current_structure%inv_cell(3,3),trim(out_invlen_unit)),&
             & grp
 
 
        write(stdout,23) grp
-       write(stdout,12) "Cell Volume =", io_from_atomic(current_structure%volume,trim(out_vol_unit)),trim(out_vol_unit),grp
+       write(stdout,12) "Cell Volume =", units_from_atomic(current_structure%volume,trim(out_vol_unit)),trim(out_vol_unit),grp
 
        write(stdout,23) grp
        !write(stdout,*) "|                       Lattice Parameters (A)                     |"
        !write(stdout,*) "|                       ----------------------                     |"
        call io_heading(stdout,'Lattice Parameters ('//trim(current_params%out_len_unit)//')')
-       write(stdout,11) 'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit)),&
-            & 'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit)),&
-            & 'c =', io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit)),grp
+       write(stdout,11) 'a =',units_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit)),&
+            & 'b =',units_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit)),&
+            & 'c =', units_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit)),grp
        write(stdout,23) grp
        !write(stdout,*) "|                           Cell Angles (o)                        |"
        !write(stdout,*) "|                           ---------------                        |"
@@ -2198,12 +2203,12 @@ contains
           write(stdout,15)"External potential",adjustr('Finite Barrier'),grp
           write(stdout,22)"Frac. barrier widths",current_params%finite_barrier_width,grp
           write(stdout,17)"Barrier height ("//trim(current_params%out_energy_unit)//")",&
-               & io_from_atomic(current_params%finite_barrier_height,trim(current_params%out_energy_unit)),grp
+               & units_from_atomic(current_params%finite_barrier_height,trim(current_params%out_energy_unit)),grp
        case('periodic_pot')
           write(stdout,15)"External potential",adjustr('Periodic Potential'),grp
           write(stdout,21)"Periodic grid",current_params%periodic_pot_grid,grp
           write(stdout,17)"Potential amplitude  ("//trim(current_params%out_energy_unit)//")",&
-               & io_from_atomic(current_params%periodic_pot_amp,trim(current_params%out_energy_unit)),grp
+               & units_from_atomic(current_params%periodic_pot_amp,trim(current_params%out_energy_unit)),grp
        case default
           write(stdout,15)"External potential",adjustr('Custom Potential'),grp
           write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot)),grp
@@ -2217,7 +2222,7 @@ contains
        write(stdout,16)"Maximum SCF steps",current_params%max_scf,grp
        write(stdout,15)"SCF method",adjustr(trim(current_params%scf_method)),grp
        write(stdout,18)"SCF convergence tolerance ("//trim(current_params%out_energy_unit)//")",&
-            &io_from_atomic(current_params%energy_tol,trim(current_params%out_energy_unit)),grp
+            &units_from_atomic(current_params%energy_tol,trim(current_params%out_energy_unit)),grp
        write(stdout,23) grp
        !write(stdout,*)"|                           I/O Parameters                         |"
        !write(stdout,*)"|                           --------------                         |"
@@ -2251,15 +2256,15 @@ contains
        call io_heading(stdout,'Advanced Parameters')
        write(stdout,19)"Spin orbit coupling",io_print_logical(current_params%soc),grp
        write(stdout,22)"External E-field ("//trim(current_params%out_efield_unit)//')',&
-            & io_from_atomic(current_params%ext_Efield(1),current_params%unit_efield),&
-            & io_from_atomic(current_params%ext_Efield(2),current_params%unit_efield),&
-            & io_from_atomic(current_params%ext_Efield(3),current_params%unit_efield),&
+            & units_from_atomic(current_params%ext_Efield(1),current_params%unit_efield),&
+            & units_from_atomic(current_params%ext_Efield(2),current_params%unit_efield),&
+            & units_from_atomic(current_params%ext_Efield(3),current_params%unit_efield),&
             & grp
 
        write(stdout,22)"External B-field ("//trim(current_params%out_bfield_unit)//')',&
-            & io_from_atomic(current_params%ext_Bfield(1),current_params%unit_bfield),&
-            & io_from_atomic(current_params%ext_Bfield(2),current_params%unit_bfield),&
-            & io_from_atomic(current_params%ext_Bfield(3),current_params%unit_bfield),&
+            & units_from_atomic(current_params%ext_Bfield(1),current_params%unit_bfield),&
+            & units_from_atomic(current_params%ext_Bfield(2),current_params%unit_bfield),&
+            & units_from_atomic(current_params%ext_Bfield(3),current_params%unit_bfield),&
             & grp
        write(stdout,23) grp
 
@@ -2270,7 +2275,7 @@ contains
           grp = 'BAS'
           call io_heading(stdout,'Basis Set Parameters')
           write(stdout,17)"Plane wave cut off ("//trim(current_params%out_energy_unit)//")",&
-               io_from_atomic(current_params%cut_off_energy,trim(current_params%out_energy_unit)),grp
+               units_from_atomic(current_params%cut_off_energy,trim(current_params%out_energy_unit)),grp
           write(stdout,17)"G vector fine scale",current_params%g_fine_scale,grp
           write(stdout,16)"Number of standard grid points",num_grid_points,grp
           write(stdout,16)"Number of fine grid points",num_fine_grid_points,grp
@@ -2305,7 +2310,7 @@ contains
 
 
 
-       if (current_params%iprint.ge.2)then
+       if (current_params%iprint.ge.3)then
 
           !write(stdout,*)"+"//repeat("=",(width-30)/2)//"       K-POINT REPORT       "//repeat("=",(width-30)/2)//"+"
           call io_heading(stdout,'K-Point Report')
@@ -2324,9 +2329,9 @@ contains
        write(stdout,*)
 
 
-    
+
     end if
-    call io_flush(stdout)
+    !call io_flush(stdout)
 
 
 23  format(T2,'|',T69,'| <-- ',a)
@@ -2659,27 +2664,27 @@ contains
     write(unit,*)" LATTICE ("//trim(current_params%out_len_unit)//')'
 
 
-    write(unit,10) io_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
-         'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
+    write(unit,10) units_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(1,3),trim(current_params%out_len_unit)),&
+         'a =',units_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
 
-    write(unit,10) io_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
-         'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
+    write(unit,10) units_from_atomic(current_structure%cell(2,1),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(2,2),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(2,3),trim(current_params%out_len_unit)),&
+         'b =',units_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
 
-    write(unit,10) io_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
-         & io_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
-         'c =',io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
+    write(unit,10) units_from_atomic(current_structure%cell(3,1),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(3,2),trim(current_params%out_len_unit)),&
+         & units_from_atomic(current_structure%cell(3,3),trim(current_params%out_len_unit)),&
+         'c =',units_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
 
-!!$    write(unit,10) current_structure%cell(1,:)*bohr_to_angstrom, 'a =',io_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
-!!$    write(unit,10) current_structure%cell(2,:)*bohr_to_angstrom, 'b =',io_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
-!!$    write(unit,10) current_structure%cell(3,:)*bohr_to_angstrom, 'c =',io_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
+!!$    write(unit,10) current_structure%cell(1,:)*bohr_to_angstrom, 'a =',units_from_atomic(current_structure%lattice_a,trim(current_params%out_len_unit))
+!!$    write(unit,10) current_structure%cell(2,:)*bohr_to_angstrom, 'b =',units_from_atomic(current_structure%lattice_b,trim(current_params%out_len_unit))
+!!$    write(unit,10) current_structure%cell(3,:)*bohr_to_angstrom, 'c =',units_from_atomic(current_structure%lattice_c,trim(current_params%out_len_unit))
 10  format(1x, 3(f10.7,1x), 3x, a,f10.7,1x)
     write(unit,*)
-    
+
     call trace_exit('io_out_file_header')
 
   end subroutine io_out_file_header
@@ -2834,31 +2839,35 @@ contains
     integer :: i,new_len
     integer :: left_pad,right_pad
     ! write the new title
-    new_title = ''
-    do i=1,len(trim(title))
-       new_title(2*i-1:2*i-1) = io_case(title(i:i),.true.)
-    end do
-    new_len = len(trim(new_title))
-    left_pad = (glob_line_len-2 - new_len)/2
-    right_pad = (glob_line_len-2 - new_len)/2
-    if (left_pad+right_pad+new_len .lt. glob_line_len - 2)then
-       left_pad = left_pad+1
+    call trace_entry('io_section')
+    if (on_root_node)then
+       new_title = ''
+       do i=1,len(trim(title))
+          new_title(2*i-1:2*i-1) = io_case(title(i:i),.true.)
+       end do
+       new_len = len(trim(new_title))
+       left_pad = (glob_line_len-2 - new_len)/2
+       right_pad = (glob_line_len-2 - new_len)/2
+       if (left_pad+right_pad+new_len .lt. glob_line_len - 2)then
+          left_pad = left_pad+1
+       end if
+
+       write(line,'("|",a,a,a,T68,"|")')repeat(" ",left_pad),trim(new_title),repeat(" ",right_pad)
+
+       if (present(cat))then
+
+          write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
+          write(unit,*)trim(line),' <-- ',cat
+          write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
+       else
+          write(unit,*)'+',repeat('=',glob_line_len-1),'+'
+          write(unit,*)trim(line)
+          write(unit,*)'+',repeat('=',glob_line_len-1),'+'
+
+       end if
     end if
-
-    write(line,'("|",a,a,a,T68,"|")')repeat(" ",left_pad),trim(new_title),repeat(" ",right_pad)
-
-    if (present(cat))then
-
-       write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
-       write(unit,*)trim(line),' <-- ',cat
-       write(unit,*)'+',repeat('=',glob_line_len-1),'+ <-- ',cat
-    else
-       write(unit,*)'+',repeat('=',glob_line_len-1),'+'
-       write(unit,*)trim(line)
-       write(unit,*)'+',repeat('=',glob_line_len-1),'+'
-
-    end if
-    call io_flush(unit)
+    !call io_flush(unit)
+    call trace_exit('io_section')
   end subroutine io_section
 
   subroutine io_subsection(unit,title)
@@ -2882,20 +2891,22 @@ contains
     integer :: i,new_len
     integer :: left_pad,right_pad,pad = 3
     integer :: loc_line_len  = glob_line_len -1
+    call trace_entry('io_subsection')
+    if (on_root_node)then 
+       new_title = io_case(title,.true.)
+       new_len = len(trim(new_title)) + 2*pad
 
-    new_title = io_case(title,.true.)
-    new_len = len(trim(new_title)) + 2*pad
+       left_pad = (loc_line_len - new_len)/2
+       right_pad = (loc_line_len - new_len)/2
 
-    left_pad = (loc_line_len - new_len)/2
-    right_pad = (loc_line_len - new_len)/2
+       if (left_pad+right_pad+new_len .lt. loc_line_len)then
+          left_pad = left_pad+1
+       end if
 
-    if (left_pad+right_pad+new_len .lt. loc_line_len)then
-       left_pad = left_pad+1
+       write(unit,*)'+',repeat('=',left_pad),repeat(' ',pad),trim(new_title),repeat(' ',pad),repeat('=',right_pad) , '+ <-- ',grp
+       !call io_flush(unit)
     end if
-
-    write(unit,*)'+',repeat('=',left_pad),repeat(' ',pad),trim(new_title),repeat(' ',pad),repeat('=',right_pad) , '+ <-- ',grp
-    call io_flush(unit)
-
+    call trace_exit('io_subsection')
   end subroutine io_subsection
 
   subroutine io_heading(unit,title,override)
@@ -2908,25 +2919,29 @@ contains
     integer :: left_pad,right_pad,pad = 0
     integer :: loc_line_len  = glob_line_len -1
     integer,optional :: override
-    new_title = title
-    new_len = len(trim(new_title)) + 2*pad
+    call trace_entry('io_heading')
+    if (on_root_node)then 
+       new_title = title
+       new_len = len(trim(new_title)) + 2*pad
 
-    left_pad = (loc_line_len - new_len)/2
-    right_pad = (loc_line_len - new_len)/2
+       left_pad = (loc_line_len - new_len)/2
+       right_pad = (loc_line_len - new_len)/2
 
-    if (left_pad+right_pad+new_len .lt. loc_line_len)then
-       left_pad = left_pad+1
+       if (left_pad+right_pad+new_len .lt. loc_line_len)then
+          left_pad = left_pad+1
+       end if
+
+       if (present(override))then
+          right_pad=right_pad+override
+       end if
+
+       write(unit,*)'|',repeat(' ',left_pad+pad),trim(new_title),repeat(' ',right_pad+pad) , '| <-- ',grp
+       write(unit,*)'|',repeat(' ',left_pad+pad),repeat('-',new_len),repeat(' ',right_pad+pad) , '| <-- ',grp
+
+       !call io_flush(unit)
     end if
+    call trace_exit('io_heading')
     
-    if (present(override))then
-       right_pad=right_pad+override
-    end if
-    
-    write(unit,*)'|',repeat(' ',left_pad+pad),trim(new_title),repeat(' ',right_pad+pad) , '| <-- ',grp
-    write(unit,*)'|',repeat(' ',left_pad+pad),repeat('-',new_len),repeat(' ',right_pad+pad) , '| <-- ',grp
-
-    call io_flush(unit)
-
   end subroutine io_heading
   subroutine io_mem_report()
     !==============================================================================!
@@ -2951,18 +2966,24 @@ contains
     tot_max=tot_memory
     ! We will need a comms gather in here but I've not written it yet...
 
-
+    !print*,rank,'before comms io_mem'
     call comms_reduce(io_memory,1,"sum")
+
     call comms_reduce(basis_memory,1,"sum")
+
     call comms_reduce(pot_memory,1,"sum")
+
     call comms_reduce(wave_memory,1,"sum")
+
     call comms_reduce(den_memory,1,"sum")
+
     call comms_reduce(gen_memory,1,"sum")
+
     call comms_reduce(tot_memory,1,"sum")
 
     call comms_reduce(tot_max,1,'max')
 
-    
+
     if (on_root_node)then
 
        !write(stdout,*)"        +-----------------------------------------------+ <-- MEM"
@@ -3088,63 +3109,12 @@ contains
 11  format(T2'|',10x,3(a7,1x,f7.4,1x),T69,'| <-- ',a)
 10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'| <-- ',a)
 31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
-    call io_flush(stdout)
+    !call io_flush(stdout)
     call trace_exit("io_mem_report")
 
   end subroutine io_mem_report
 
 
-  function io_to_atomic(quant,unit) result(quant_atom)
-
-    real(dp)      ,intent(in)    :: quant
-    character(*)  ,intent(in)    :: unit
-
-    real(dp)                     :: quant_atom
-    call trace_entry('io_to_atomic')
-
-    if(count(conv_units.eq.unit).eq.0) call io_errors("Unknown unit: "//unit)
-    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
-
-    quant_atom = sum(quant*conv_values,MASK=conv_units.eq.unit)
-    
-    call trace_exit('io_to_atomic')
-  end function io_to_atomic
-
-  function io_from_atomic(quant,unit) result(quant_si)
-
-    real(dp)      ,intent(in)    :: quant
-    character(*)  ,intent(in)    :: unit
-
-    real(dp)                     :: quant_si
-    call trace_entry('io_from_atomic')
-
-    if(count(conv_units.eq.unit).eq.0) call io_errors("Unknown unit: "//unit)
-    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
-    quant_si = sum(quant/conv_values,MASK=conv_units.eq.unit)
-
-    call trace_exit('io_from_atomic')
-  end function io_from_atomic
-
-  function io_conversion(quant,unit1,unit2) result(quant_new)
-
-    real(dp)      ,intent(in)    :: quant
-    character(*)  ,intent(in)    :: unit1,unit2
-
-    real(dp)                     :: quant_new
-    call trace_entry('io_conversion')
-
-    if(count(conv_units.eq.unit1).eq.0) call io_errors("Unknown first unit: "//unit1)
-    if(count(conv_units.eq.unit1).eq.0) call io_errors("Unknown second unit: "//unit2)
-    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
-
-    ! First convert it to atomic
-    quant_new =  io_to_atomic(quant, unit1)
-
-    ! Second convert back to SI in the new unit
-    quant_new = io_from_atomic(quant_new,unit2)
-
-    call trace_exit('io_conversion')
-  end function io_conversion
 
 
 end module io

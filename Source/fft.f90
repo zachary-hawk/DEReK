@@ -16,8 +16,9 @@
 !---- File documented by Fortran Documenter, Z.Hawkhead
 !---- File documented by Fortran Documenter, Z.Hawkhead
 module fft
-  use, intrinsic :: iso_c_binding
   use constants
+  use, intrinsic :: iso_c_binding
+  use units
   use trace, only : trace_entry, trace_exit
   use memory, only : memory_allocate, memory_deallocate
   use io, only : io_errors
@@ -35,7 +36,7 @@ module fft
   type (c_ptr) :: plan_fine_fwd_1d
   type (c_ptr) :: plan_fine_bwd_1d
 
-  ! Define some FFT constants
+  ! Define some FFT units
   integer(C_INT), parameter :: FFTW_FORWARD = -1
   integer(C_INT), parameter :: FFTW_BACKWARD = +1
   integer(C_INT), parameter :: FFTW_ESTIMATE = 64

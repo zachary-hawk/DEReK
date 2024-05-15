@@ -15,6 +15,7 @@
 !*******************************************************************************
 module grids
   use constants
+  use units
   use trace
   use io,    only : io_errors
   use basis, only : current_basis
