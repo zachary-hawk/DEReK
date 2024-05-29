@@ -117,4 +117,4 @@ for file_path in ordered_files:
     if file_name=="comms.f90":
         file_name='comms.'+comms_arch+'.f90'
     name_list.append(file_name)
-print(' '.join(name_list))
+print('SOURCE:='+' '.join(name_list))

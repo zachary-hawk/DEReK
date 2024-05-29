@@ -13,3 +13,8 @@ Source/sys.f90
 make_all
 */.#*
 .#*
+configure.ac
+config.log
+buildinfo.mk
+config.status
+autom4te.cache

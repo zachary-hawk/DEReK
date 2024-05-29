@@ -31,7 +31,7 @@ module io
   character(20),     public                :: seed=''
   integer,           public                :: stdout
   integer,           public,parameter      :: glob_line_len =67
-  integer,parameter                        :: n_cats = 9
+  integer,parameter                        :: n_cats = 10
   character(3)                             :: grp ! group for printing the parameters
 
   character(100),dimension(:),allocatable  :: present_array
@@ -107,6 +107,7 @@ module io
      character(len=30) :: out_len_unit = 'A'
      character(len=30) :: out_efield_unit = 'eV/A/e'
      character(len=30) :: out_bfield_unit = 'G'
+     integer,dimension(1:3) :: dos_kpt_mp_grid =  (/11,11,11/)
      ! %End: parameters
   end type parameters
 
@@ -154,12 +155,13 @@ module io
   character(len=30),parameter,public ::key_out_len_unit   = 'unit_length_out'
   character(len=30),parameter,public ::key_out_efield_unit   = 'unit_efield_out'
   character(len=30),parameter,public ::key_out_bfield_unit   = 'unit_bfield_out'
+  character(len=30),parameter,public ::key_dos_kpt_mp_grid   = 'dos_kpt_mp_grid'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          43
+  integer,parameter::max_keys=          44
   ! %End: max_param
 
 
@@ -693,6 +695,10 @@ contains
              case default
                 call io_errors('Invalid out magnetic field unit')
              end select
+          case(key_dos_kpt_mp_grid)
+             read(param,*,iostat=stat) dummy_params%dos_kpt_mp_grid
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
              ! %End: case_read
           case default
              call io_errors(" Error parsing keyword: "//key)
@@ -1260,6 +1266,7 @@ contains
     keys_array(41)=trim(key_out_efield_unit)
     keys_array(42)=trim(key_out_bfield_unit)
     keys_array(43)='lattice'      ! Special case for block type, needs a help section, but doesnt need to be a key
+    keys_array(44)=trim(key_dos_kpt_mp_grid)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -1350,6 +1357,8 @@ contains
     keys_default(42)=trim(adjustl(junk))
     keys_default(43)=trim(adjustl('None'))  !! Special case for block data, no default, must be specified
 
+    write(junk,*)current_params%dos_kpt_mp_grid
+    keys_default(44)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1387,15 +1396,16 @@ contains
     keys_description(32)='Level to set amount of output files written.'
     keys_description(33)='Real vector of externally applied electric field'
     keys_description(34)='Vector of externally applied magnetic field in Tesla'
-    keys_description(35)='Unit of energy to be used to parse all energy terms in the .info file'                
-    keys_description(36)='Unit of length to be used to parse all length terms in the .info file'                
+    keys_description(35)='Unit of energy to be used to parse all energy terms in the .info file'
+    keys_description(36)='Unit of length to be used to parse all length terms in the .info file'
     keys_description(37)='Unit of electric field to be used to parse all electric field terms in the .info file'
     keys_description(38)='Unit of magnetic field to be used to parse all magnetic field terms in the .info file'
-    keys_description(39)='Unit of energy to be used to output all energy terms in the .derek file'                
-    keys_description(40)='Unit of length to be used to output all length terms in the .derek file'                
+    keys_description(39)='Unit of energy to be used to output all energy terms in the .derek file'
+    keys_description(40)='Unit of length to be used to output all length terms in the .derek file'
     keys_description(41)='Unit of electric field to be output to parse all electric field terms in the .derek file'
     keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .derek file'
     keys_description(43)='Block type data to define lattice vectors of unit cell '
+    keys_description(44)='Monkorst-Pack grid used for calculating the Density of States'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1443,6 +1453,7 @@ contains
     keys_allowed(41)='eV/A/e Ha/Bohr/e N/C'
     keys_allowed(42)='T G agr'
     keys_allowed(43)='3x3 matrix of lattice vectors'
+    keys_allowed(44)='any vector'
     ! %End: assign_allowed
 
 
@@ -1496,6 +1507,7 @@ contains
          & ' 0.0 0.0 5.0\n '//&
          & '$END lattice'
 
+    keys_example(44)='dos_kpt_mp_grid : 25 25 25'
     ! %End: assign_example
 
 
@@ -1508,7 +1520,8 @@ contains
          &  ,'I/O          '&
          &  ,'MISCELLANEOUS'&
          &  ,'ADVANCED     '&
-         &  ,'BLOCK        '/)
+         &  ,'BLOCK        '&
+         &  ,'SPECTRAL     '/)
     !  %Begin: assign_cats
     keys_cat(1) =7
     keys_cat(2) =7
@@ -1553,6 +1566,7 @@ contains
     keys_cat(41)=6
     keys_cat(42)=6
     keys_cat(43)=9
+    keys_cat(44)=          10
     ! %End: assign_cats
     call io_alphabetise(keys_array,max_keys,mapping)
 
@@ -1613,11 +1627,11 @@ contains
     character(1) :: comment_char
     character(100)::fmt
     character(1) :: junk
-    integer :: maj,min,mic  ! The LIBXC version checking, i only want to work with one version 
+    integer :: maj,min,mic  ! The LIBXC version checking, i only want to work with one version
     call trace_entry("io_sys_info")
     comment_char = ' '
     if (present(comment))then
-       if (comment)comment_char='#'       
+       if (comment)comment_char='#'
        fmt='(1x,a,1x,a,T22,":",1x,a)'
     else
        fmt='(1x,"|",1x,a,a,T22,":",1x,a,T69,"|")'
@@ -1629,21 +1643,30 @@ contains
        write(unit,*)"|                       SYSTEM INFORMATION                         |"
        write(unit,*)"+==================================================================+"
     end if
-    write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
-    write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
-    write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
     write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
     write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
+    write(unit,fmt)trim(comment_char),"Physical Cores   ",trim(current_sys%phys_cores)
+    write(unit,fmt)trim(comment_char),"Logical Cores    ",trim(current_sys%logi_cores)
+    write(unit,fmt)trim(comment_char),"System Memory(GB)",trim(current_sys%tot_mem)
+
+
+
+    write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
+    write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
+    write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
+    write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
+
+
     write(unit,fmt)trim(comment_char),"Parallelisation  ",trim(current_sys%comms)
     if (comms_arch.eq."MPI")then
        write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
     end if
-    write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
-    write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
-    write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
     write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
     write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
     write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
+    write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
+    write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
+
     if (.not.present(comment))then
        write(unit,*)"+==================================================================+"
     end if
@@ -1677,7 +1700,7 @@ contains
     current_len = 0
     new_line = .true.
 
-    if (current_sys%nauth.gt.1)then 
+    if (current_sys%nauth.gt.1)then
 
        allocate(lens(1:current_sys%nauth))
 
@@ -1940,7 +1963,7 @@ contains
        ! convert to Bohr
        do i =1,3
           do j =1,3
-             current_structure%cell(i,j)=units_to_atomic(current_structure%cell(i,j),current_params%unit_length)             
+             current_structure%cell(i,j)=units_to_atomic(current_structure%cell(i,j),current_params%unit_length)
           end do
        end do
 
@@ -2089,7 +2112,7 @@ contains
     character(len=:), allocatable :: string
     character(10) :: out_invlen_unit
     character(10) :: out_vol_unit
-    
+
     call trace_entry("io_write_params")
     out_invlen_unit = trim(current_params%out_len_unit)//'-1'
     out_vol_unit = trim(current_params%out_len_unit)//'**3'
@@ -2892,7 +2915,7 @@ contains
     integer :: left_pad,right_pad,pad = 3
     integer :: loc_line_len  = glob_line_len -1
     call trace_entry('io_subsection')
-    if (on_root_node)then 
+    if (on_root_node)then
        new_title = io_case(title,.true.)
        new_len = len(trim(new_title)) + 2*pad
 
@@ -2920,7 +2943,7 @@ contains
     integer :: loc_line_len  = glob_line_len -1
     integer,optional :: override
     call trace_entry('io_heading')
-    if (on_root_node)then 
+    if (on_root_node)then
        new_title = title
        new_len = len(trim(new_title)) + 2*pad
 
@@ -2941,7 +2964,7 @@ contains
        !call io_flush(unit)
     end if
     call trace_exit('io_heading')
-    
+
   end subroutine io_heading
   subroutine io_mem_report()
     !==============================================================================!
@@ -3118,11 +3141,12 @@ contains
 
 
 end module io
- 
- 
- 
- 
- 
- 
- 
- 
+
+
+
+
+
+
+
+
+

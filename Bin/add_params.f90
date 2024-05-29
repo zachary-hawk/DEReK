@@ -57,7 +57,8 @@ program add_params
   write(*,*) "Type allowed values:"
   read(*,'(A)') allowed
 
-  write(*,*) "Type data category (1=Fundamental,2=Planewaves,3=Minimisation,4=Potential,5=Wavefunction,6=I/O,7=Misc,8=Advanced)"
+  write(*,*) "Type data category (1=Fundamental,2=Planewaves,3=Minimisation,4= &
+       & Potential,5=Wavefunction,6=I/O,7=Misc,8=Advanced,9=Block,10=Spectral)"
   read(*,*) data_cat
 
 

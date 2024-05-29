@@ -103,8 +103,11 @@ contains
     ! Energy stuff
     real(dp)   :: current_energy=-1456.256345234534, energy_hist= -1451.256345234534
 
-    call trace_entry('electronic_scf')
+    character(2) :: unit
 
+    call trace_entry('electronic_scf')
+    unit = trim(current_params%out_energy_unit)
+    
     current_state%total_modspin = 0e-9
     current_state%total_spin = 0e-9
 
@@ -117,12 +120,13 @@ contains
 
        write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
        write(stdout,*)"|  SCF   |      Energy       |   Energy Change   |  Time   | <-- SCF"
-       write(stdout,*)"|  Step  |       (eV)        |        (eV)       |   (s)   | <-- SCF"
+       !write(stdout,*)"|  Step  |       (eV)        |        (eV)       |   (s)   | <-- SCF"
+       write(stdout,14) unit,unit
        write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
        call io_flush(stdout)
 
        ! To start we need to report the initial energy, there will be no change
-       write(stdout,11)iscf,units_from_atomic(current_energy,trim(current_params%out_energy_unit)),wall_time
+       write(stdout,11)iscf,units_from_atomic(current_energy,unit),wall_time
     end if
 
     !print*,rank,'before loop'
@@ -136,8 +140,8 @@ contains
 
 
        if (on_root_node)&
-            & write(stdout,12)iscf,units_from_atomic(current_energy,trim(current_params%out_energy_unit)),&
-            & units_from_atomic(current_energy - energy_hist,trim(current_params%out_energy_unit)),&
+            & write(stdout,12)iscf,units_from_atomic(current_energy,unit),&
+            & units_from_atomic(current_energy - energy_hist,unit),&
             & wall_time       
        !print*,'rank',rank
 
@@ -163,7 +167,7 @@ contains
 
     if (on_root_node)&
          & write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
-
+14  format(T2,"|  Step  |       (",a2,")        |        (",a2,")       |   (s)   | <-- SCF")
 11  format(1x,'|',T6,I05,T11,"|",T15,ES16.8E3,T31,"|",T51,'|',T53,f8.2,T61,'| <-- SCF')
 12  format(1x,'|',T6,I05,T11,"|",T15,ES16.8E3,T31,"|",T35,ES16.8E3,T51,'|',T53,f8.2,T61,'| <-- SCF')
     call trace_exit('electronic_scf')

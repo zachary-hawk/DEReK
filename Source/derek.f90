@@ -51,10 +51,10 @@ program derek
   real(kind=dp) , allocatable,dimension(:)    :: test_fft_x
   complex(kind=dp) , allocatable,dimension(:) :: test_fft_fine
   real(kind=dp) , allocatable,dimension(:)    :: test_fft_x_fine
-
+  
   real(dp) :: testvar
 
-
+ 
   call trace_init()           ! Set up trace
   call trace_entry("derek")
   call comms_init()           ! Start the MPI
@@ -83,7 +83,7 @@ program derek
        & current_basis%num_fine_node)
 
 
-
+  
 
   !current_state%ext_pot=1.0_dp*current_state%ext_pot
   
@@ -112,7 +112,8 @@ program derek
   ! report the memory usage, probably won't need much more memory stuff after this 
   !call memory_report(stdout,current_params%iprint,current_params%calc_memory)
 
-
+  testvar = 2 ! Ha
+  testvar =  units_from_atomic(testvar,'Ha')
 
   ! We have done all of the initialisation, this is the only print statements we will be using in the main derek file!
 

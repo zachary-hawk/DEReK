@@ -12,7 +12,6 @@ Prerequisites
 This program relies on some external libraries that neeed to be installed before you begin:
 1) FFTW3 - https://www.fftw.org
 2) OpenBLAS - https://www.openblas.net
-3) LIBXC - https://libxc.gitlab.io
 
 These libraries are required for fast fourier transforms and speedy maths operations. OpenBlas is the only maths library currently supported, but I hope to expand to include others at a later date.
 
@@ -26,7 +25,7 @@ Installation
 With all of the prerequisites dealt with, we turn to installation, which is straight forward. 
 
 To build with the default settings, simply type: 
-```gmake```
+```./configure && gmake```
 GNU make is recommended. On first compile, you will be asked to specify the location of the FFTW and OpenBLAS libraries. Note that the default Makefile compiles the MPI version. 
 
 There are a three main flags that can be used for customising the build: 

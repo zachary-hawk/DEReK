@@ -8,8 +8,6 @@ Before installing DEReK, make sure you have the following prerequisites installe
 
 2. **OpenBLAS** - Optimized Basic Linear Algebra Subprograms library. Download it from [here](https://www.openblas.net).
 
-3. **LIBXC** - Library of exchange-correlation functionals for density-functional theory. Get it from [here](https://libxc.gitlab.io).
-
 Make sure these libraries are installed and their paths are accessible.
 
 Additionally, if you want to compile DEReK with MPI support for parallel execution, ensure you have a working MPI library linked to your Fortran compiler.
@@ -32,7 +30,7 @@ The first time you compile, you will be prompted to specify the locations of FFT
 
 Example usage:
 
-```make COMMS_ARCH=mpi BUILD=fast CODATA_YEAR=2018```
+```./configure && make COMMS_ARCH=mpi BUILD=fast CODATA_YEAR=2018```
 
 This command will build the MPI version with fast compiler optimizations using CODATA 2018 physical constants.
 

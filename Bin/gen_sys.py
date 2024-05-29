@@ -71,6 +71,9 @@ module sys
      character(100) :: opt
      character(100) :: consts
      character(100) :: max_lev
+     character(100) :: phys_cores
+     character(100) :: logi_cores
+     character(100) :: tot_mem
      ! On the fly parameters
      character(100) :: date
      character(100) :: compiler
@@ -123,6 +126,9 @@ contains
     current_sys%consts= trim(adjustl('$5'))
     current_sys%max_lev=trim(adjustl('$6'))
     current_sys%comms_version = trim(adjustl('$7'))
+    current_sys%phys_cores = trim(adjustl('$8'))
+    current_sys%logi_cores = trim(adjustl('$9'))
+    current_sys%tot_mem = trim(adjustl('$0'))
     !***
 
 
@@ -209,6 +215,9 @@ def main():
                                           .replace('$5', sys.argv[5]) \
                                           .replace('$6', sys.argv[6]) \
                                           .replace('$7', sys.argv[7]) \
+                                          .replace('$8', sys.argv[8]) \
+                                          .replace('$9', sys.argv[9]) \
+                                          .replace('$0', sys.argv[10]) \
                                           .replace('$nauth',str(nauth))\
                                           .replace('$auth',fortran_output)
 
