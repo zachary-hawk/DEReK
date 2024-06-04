@@ -19,6 +19,8 @@ There is also the option to compile DEReK with MPI (Message Passing Interface) s
 
 Not to state the obvious, but you will also need working Fortran and C compilers to use DEReK. Theoretically this will work with any compiler, however testing has been done with the GCC compilers.
 
+DEReK relies on the use of the external library for XC-functionals, LibXC. This is packaged within DEReK and doesn't need to be spereately compiled. 
+
 Installation
 ------------
 
