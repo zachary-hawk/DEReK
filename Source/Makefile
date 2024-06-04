@@ -1,10 +1,4 @@
 # Set the files with the directories for the libraries
-#FFTWDIR=$(shell cat $(BUILD_DIR)/fftw.dir)
-#OPENBLASDIR=$(shell cat $(BUILD_DIR)/openblas.dir)
-
-
-
-
 
 # Find the system
 VAR := $(shell . ./../Bin/arch_finder)
@@ -44,10 +38,6 @@ ifeq ($(BUILD),debug)
     FCFLAGS=  -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -w -fallow-argument-mismatch -ffree-line-length-512
 endif
 
-FCFLAGS += -fPIC -fbackslash 
-
-LDFLAGS =  $(FFTW_LIBS) -lxc  -lxcf03   -L$(LIBXC_LIB) -I$(LIBXC_INC) $(BLAS_LIBS)
-
 # Constants data
 ifeq ($(CODATA_YEAR),2018)
 DATFLAGS = -DCODATA2018
@@ -57,29 +47,18 @@ DATFLAGS = -DCODATA2014
 endif
 
 
-# Start by calculating the dependencies
+FCFLAGS += -fPIC -fbackslash -cpp $(DATFLAGS) 
 
-#ECHO_SYS:=$(shell echo "Building system details...")
+LDFLAGS =  $(FFTW_LIBS) -lxc  -lxcf03   -L$(LIBXC_LIB) -I$(LIBXC_INC) $(BLAS_LIBS)
+
 SYS_INFO:=$(shell ../Bin/gen_sys.py "$(GIT_VERSION)" "$(VAR)" "$(CPU)" "$(OPT)" "$(CODATA_YEAR)" "$(SAFETY)" '$(MPI_VERSION)' '$(PHYSICAL_CORES)' '$(LOGICAL_CORES)' '$(TOTAL_MEMORY_GB)')
-#DEP:=$(shell echo "Building dependencies...")
-$(shell ../Bin/dependencies.py $(COMMS_ARCH) > include_dependencies.mk)
-#SOURCE=$(shell cat include_dependencies.mk)
-include include_dependencies.mk
 
-# Calculate the object files
-OBJ = $(patsubst %.f90,$(BUILD_DIR)/%.o,$(patsubst %.mpi.f90,$(BUILD_DIR)/%.o,$(SOURCE)))
-
-# .mod files
 FCFLAGS += -I$(BUILD_DIR) -J$(BUILD_DIR) 
 
-OBJ+=$(BUILD_DIR)/fftw3_version.o
-
-
 # Set up the C compile steps for the fftw version numbers
-
 CCFLAGS= -w 
 
-#$(BUILD_DIR)/io.o: FCFLAGS += -cpp -D arch=$(VAR) -D cpu=$(CPU) -D gitversion=$(GIT_VERSION)
+
 $(BUILD_DIR)/constants.o: FCFLAGS += -cpp $(DATFLAGS) 
 
 $(BUILD_DIR)/sys.o: FCFLAGS += -cpp 
@@ -89,22 +68,32 @@ $(BUILD_DIR)/%.o: %.c
 	@echo "Compiling fftw3 version"
 	@$(CC) $(CCFLAGS) -o $@ -c $< 
 
-$(BUILD_DIR)/%.o: %.f90
-	@mkdir -p $(BUILD_DIR)
-	@echo "Compiling object file" $@ "from"  $< 
-	@$(MPIC)  $(FCFLAGS) $(LDFLAGS)  -o $@ -c $<
+# Explicitly include fftw3_version.o
 
-$(BUILD_DIR)/%.o: %.$(COMMS_ARCH).f90
-	@mkdir -p $(BUILD_DIR)
-	@echo "Compiling object file" $@ "from"  $< 
-	@$(MPIC)  $(FCFLAGS) $(LDFLAGS)   -o $@ -c $<
-
-$(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
-	@mkdir -p $(BUILD_DIR)
-	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
-	@$(MPIC) $(FCFLAGS) $(LDFLAGS)  -o $@ $(OBJ) 
+FOBJ = fftw3_version.o
 
 
-.PHONY: print_obj_files
-print_obj_files:
-	@echo $(OBJ)
+ifeq ($(COMMS_ARCH),serial) 
+include ../Bin/dependencies_serial.mk
+else
+include ../Bin/dependencies_mpi.mk
+endif
+
+
+#$(BUILD_DIR)/%.o: %.f90
+#	@mkdir -p $(BUILD_DIR)
+#	@echo "Compiling object file" $@ "from"  $< 
+#	@$(MPIC)  $(FCFLAGS)  $(LDFLAGS) -MD  -o $@ -c $<
+#
+#
+#$(BUILD_DIR)/%.o: %.$(COMMS_ARCH).f90
+#	@mkdir -p $(BUILD_DIR)
+#	@echo "Compiling object file" $@ "from"  $< 
+#	@$(MPIC)  $(FCFLAGS)  $(LDFLAGS) -MD  -o $@ -c $<
+
+#-include $(DEP_FILES)
+
+#$(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
+#	@mkdir -p $(BUILD_DIR)
+#	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
+#	@$(MPIC) $(FCFLAGS)  $(LDFLAGS)  -o $@ $(OBJ)  

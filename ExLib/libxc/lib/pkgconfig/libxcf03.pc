@@ -1,0 +1,12 @@
+prefix=/Users/sgkz83/Documents/CodingProjects/DEV_MAND/DEReK/Build/DEReK1.0.0_Darwin_23.3.0_gfortran_Zacharys-MacBook-Pro_debug_mpi/LibXC
+exec_prefix=${prefix}
+libdir=/Users/sgkz83/Documents/CodingProjects/DEV_MAND/DEReK/ExLib/libxc/lib
+includedir=${prefix}/include
+
+Name: libxcf03
+Description: Fortran 2003 interface for library of exchange and correlation functionals to be used in DFT codes
+Requires:
+Requires.private: libxc = 6.2.2
+Version: 6.2.2
+Libs: -L${libdir} -lxcf03
+Cflags: -I${includedir}

@@ -122,6 +122,7 @@ $(LIBXC_BUILD)/Makefile:
 subsystem:
 	$(MAKE) -C $(BIN_DIR)
 	$(MAKE) -C $(SOURCE_DIR)
+	@rm -f $(BUILD_DIR)/sys.mod
 	@rm -f $(BIN_DIR)/*.o $(BIN_DIR)/mpi_version
 
 

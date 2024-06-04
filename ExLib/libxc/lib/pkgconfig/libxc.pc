@@ -1,0 +1,11 @@
+prefix=/Users/sgkz83/Documents/CodingProjects/DEV_MAND/DEReK/Build/DEReK1.0.0_Darwin_23.3.0_gfortran_Zacharys-MacBook-Pro_debug_mpi/LibXC
+exec_prefix=${prefix}
+libdir=/Users/sgkz83/Documents/CodingProjects/DEV_MAND/DEReK/ExLib/libxc/lib
+includedir=${prefix}/include
+
+Name: libxc
+Description: Library of exchange and correlation functionals to be used in DFT codes
+Requires: 
+Version: 6.2.2
+Libs: -L${libdir} -lxc
+Cflags: -I${includedir}

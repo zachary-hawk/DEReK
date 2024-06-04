@@ -9,7 +9,10 @@ def parse_author_line(line):
     title = ''.join([components[0],"."])
     initials = ''.join([char + '.' for char in components[1]])  
     surname = components[2]
-    email = components[3]
+    try:
+        email = components[3]
+    except:
+        email='Null'
     print(initials)
     print(title)
     return title, initials, surname, email
@@ -102,7 +105,8 @@ module sys
 contains
 
 
-  subroutine sys_init
+  subroutine sys_init()
+
     character(100)                 :: compile_buff
     character(100)                 :: compile_version
     character(100)                 :: mpi_version_num
@@ -169,7 +173,7 @@ contains
 
     !! AUTHORS
     $auth
-
+    stat=1
     call trace_exit('sys_init')    
   end subroutine sys_init
 

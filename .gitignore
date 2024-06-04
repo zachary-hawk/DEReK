@@ -5,7 +5,6 @@ Source_backup
 *~
 .DS_Store
 Bin/add_params
-*/*.mod
 Logos/*.svg
 Logos/*.pptx
 Logos/*.ipynb

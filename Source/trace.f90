@@ -202,7 +202,7 @@ contains
     !print*,"exit end"
   end subroutine trace_exit
 
-  subroutine trace_finalise(debug,rank,check_stack,seed)
+  subroutine trace_finalise(debug_flag,rank,check_stack,seed)
     !==============================================================================!
     !                         T R A C E _ F I N A L I S E                          !
     !==============================================================================!
@@ -211,13 +211,13 @@ contains
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
     !           rank,              intent :: inout                                 !
-    !           debug,             intent :: in                                    !
+    !           debug_flag,             intent :: in                                    !
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  26/08/2019                                            !
     !==============================================================================!
 
     integer                          :: i,k,stat
-    logical,intent(in)               :: debug
+    logical,intent(in)               :: debug_flag
     real(dp),dimension(:),allocatable    :: start_time_sum
     real(dp),dimension(:),allocatable    :: end_time_sum
     real(dp),dimension(:),allocatable    :: sub_times
@@ -320,7 +320,7 @@ contains
     call trace_modules(modules,mod_times)
 
 
-    if(debug)call trace_io(rank,unique_subs_trimmed,sub_times,call_count,seed)
+    if(debug_flag)call trace_io(rank,unique_subs_trimmed,sub_times,call_count,seed)
 
     !deallocate(unique_subs_trimmed)
 

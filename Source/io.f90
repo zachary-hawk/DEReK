@@ -21,7 +21,7 @@ module io
   use comms,only : rank, nprocs,comms_arch,on_root_node,max_version_length,COMMS_FINALISE&
        &,comms_library_version,comms_version,dist_kpt,dist_gvec,comms_stop
   use memory
-  use sys, only : current_sys,sys_init
+
   use iso_fortran_env, only : compiler_version
   use iso_c_binding
 
@@ -52,7 +52,7 @@ module io
   character(30),dimension(:),allocatable   :: authors_email
   integer                                  :: max_params=1
   logical, private :: cell_declared=.false.
-
+  logical, public :: version_only  = .false.
 
 
 
@@ -201,9 +201,30 @@ module io
 
 contains
 
+  subroutine io_open_std()
 
+    call trace_entry('io_open_std')
 
-  subroutine io_initialise()
+    call io_cl_parser() ! Read the commandline arguments
+
+    if (.not.version_only)then
+       ! We only do all of this if the user hasnt asked for version info
+       ! set up the error files, in case they need to be used elsewhere
+       if (trim(seed).eq.'')then
+          seed = 'derek'
+       end if
+
+       write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
+
+       ! Open up the main file for the output
+       open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
+
+    end if
+
+    call trace_exit('io_open_std')
+  end subroutine io_open_std
+
+  subroutine io_initialise(safety)
     !==============================================================================!
     !                          I O _ I N I T I A L I S E                           !
     !==============================================================================!
@@ -216,7 +237,7 @@ contains
     !==============================================================================!
     ! Should be called in top level file
     implicit none
-
+    character(*),intent(in) :: safety
     integer :: i ! counters
     character(10) :: line
     integer :: stat
@@ -225,22 +246,7 @@ contains
 
 
     call trace_entry("io_initialise")
-    call sys_init()
-
-    call io_cl_parser() ! Read the commandline arguments
-
-    ! set up the error files, in case they need to be used elsewhere
-    if (trim(seed).eq.'')then
-       seed = 'derek'
-    end if
-
-    write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
-
-
-
-
-    !call memory_init(seed)
-
+    
     ! Get the length of the parameters file
     inquire(file=trim(seed)//'.info',exist=file_exists)
 
@@ -254,30 +260,18 @@ contains
     else
        call io_errors(" file '"//trim(seed)//".info' does not exist.")
     end if
+
     max_params=max_params+1
     ! Allocate space for the params array
     allocate(present_array(1:max_params))
     do i=1,max_params
        write(present_array(i),*)i
     end do
-
-    ! Open up the main file for the output
-    open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
-
-
-    !call io_flush(stdout)
-    call io_header()
-
-
-
-
-
-
     ! Fist things first, try to read paramteters
     call io_list_params(.false.)
 
 
-    if (read_params) call io_read_param(current_params)
+    if (read_params) call io_read_param(current_params,safety)
     if (.not.cell_declared) call io_errors(" No lattice provided")
     call memory_init(seed,current_params%write_memory)
     call io_kpoint_grid()
@@ -339,7 +333,7 @@ contains
     call trace_exit('io_convert_all')
   end subroutine io_convert_all
 
-  subroutine io_read_param(dummy_params)
+  subroutine io_read_param(dummy_params,safety)
     !==============================================================================!
     !                          I O _ R E A D _ P A R A M                           !
     !==============================================================================!
@@ -354,8 +348,8 @@ contains
     implicit none
     !The inout stuff
     type(parameters),intent(inout)  :: dummy_params
-
-
+    character(*), intent(in) :: safety
+    
     !The boring stuff to make the whole shebang work
     integer           :: stat
     integer           :: read_stat=0
@@ -376,7 +370,7 @@ contains
     call trace_entry("io_read_param")
 
     ! Do parameter safety
-    select case(current_sys%max_lev)
+    select case(safety)
     case('safe')
        max_lev = 0
     case('normal')
@@ -1021,9 +1015,9 @@ contains
                 call comms_stop()
              end if
           case("-v")
-             call io_header()
-             read_params=.false.
-             call comms_stop()
+             ! This is now a bit of a mess. This should be called in the main derek file before opening anything. All to avoid cascade.
+             version_only = .true.
+             read_params=.false.            
           case("-c","--check")
              current_params%check=.true.
              if (nargs.lt.2)then
@@ -1607,200 +1601,8 @@ contains
     return
   end subroutine io_list_params
 
-  subroutine io_sys_info(unit,comment)
-    !==============================================================================!
-    !                            I O _ S Y S _ I N F O                             !
-    !==============================================================================!
-    ! Subroutine for printing the system details, including compiler               !
-    ! information, system architechture and CPU. Also includes date and time of    !
-    ! compilation.                                                                 !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           unit,              intent :: in                                    !
-    !           comment,           intent :: in                                    !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    integer,intent(in) :: unit
-    integer::file
-    logical,optional,intent(in) :: comment
-    character(1) :: comment_char
-    character(100)::fmt
-    character(1) :: junk
-    integer :: maj,min,mic  ! The LIBXC version checking, i only want to work with one version
-    call trace_entry("io_sys_info")
-    comment_char = ' '
-    if (present(comment))then
-       if (comment)comment_char='#'
-       fmt='(1x,a,1x,a,T22,":",1x,a)'
-    else
-       fmt='(1x,"|",1x,a,a,T22,":",1x,a,T69,"|")'
-    end if
 
 
-    if (.not.present(comment))then
-
-       write(unit,*)"|                       SYSTEM INFORMATION                         |"
-       write(unit,*)"+==================================================================+"
-    end if
-    write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
-    write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
-    write(unit,fmt)trim(comment_char),"Physical Cores   ",trim(current_sys%phys_cores)
-    write(unit,fmt)trim(comment_char),"Logical Cores    ",trim(current_sys%logi_cores)
-    write(unit,fmt)trim(comment_char),"System Memory(GB)",trim(current_sys%tot_mem)
-
-
-
-    write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
-    write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
-    write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
-    write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
-
-
-    write(unit,fmt)trim(comment_char),"Parallelisation  ",trim(current_sys%comms)
-    if (comms_arch.eq."MPI")then
-       write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
-    end if
-    write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
-    write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
-    write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
-    write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
-    write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
-
-    if (.not.present(comment))then
-       write(unit,*)"+==================================================================+"
-    end if
-    write(unit,*)
-    !write(unit,fmt)trim(comment_char)
-
-    ! doing a formatted read, not great but it is a fixed format
-    read(current_sys%libxc,'(i1,a,i1,a,i1)')maj,junk,min,junk,mic
-    if (maj.ne.6 .or. min.ne.2)then
-       call io_errors('Unsupported LIBXC version, must be 6.2.x',.true.)
-    end if
-
-
-
-    call trace_exit("io_sys_info")
-  end subroutine io_sys_info
-
-
-  subroutine io_authors(unit)
-    integer,intent(in) :: unit
-
-    ! Local variables
-    character(100) :: line
-    integer :: i, current_len,start,j
-    logical :: new_line
-    integer :: line_len = 50
-    integer,dimension(:),allocatable :: line_nums
-    integer,dimension(:),allocatable :: lens
-    integer :: nlines
-    ! Initialize variables
-    current_len = 0
-    new_line = .true.
-
-    if (current_sys%nauth.gt.1)then
-
-       allocate(lens(1:current_sys%nauth))
-
-       write(unit,*)"|    Contributors                                                  |"
-       write(unit,*)"|    ------------                                                  |"
-
-       do i = 1,current_sys%nauth
-          lens(i) = len_trim(current_sys%names(i))
-       end do
-
-       current_len = 0
-       start=2
-       do i=2,current_sys%nauth
-          if (current_len.eq.0)then
-
-             if (i.gt.2) then
-                ! not the first name
-                ! we have a zero length so we write from start to i-1
-
-                write(line,*) (trim(current_sys%names(j))//", " ,j=start,i-2),trim(current_sys%names(i-1))
-                ! write the line to the header
-                write(unit,67) line
-
-             end if
-             start = i
-
-          end if
-          if (current_len + lens(i)+2 .lt. line_len)then
-             ! We want to include this name
-             current_len = current_len + lens(i)+2
-          else
-             ! We dont want to include this line
-             current_len = 0
-          end if
-       end  do
-
-       ! Write out the final line
-       write(line,*) (trim(current_sys%names(j))//", " ,j=start,current_sys%nauth-1),trim(current_sys%names(current_sys%nauth))
-       write(unit,67) line
-67     format(1x,"|",2x,a,T69,"|")
-
-       write(unit,*) "+------------------------------------------------------------------+"
-
-    end if
-  end  subroutine io_authors
-
-  subroutine io_header()
-    !==============================================================================!
-    !                              I O _ H E A D E R                               !
-    !==============================================================================!
-    ! Subroutine for writing out the DEREK header to whatever file is given        !
-    !------------------------------------------------------------------------------!
-    ! Arguments:                                                                   !
-    !           None                                                               !
-    !------------------------------------------------------------------------------!
-    ! Author:   Z. Hawkhead  08/11/2023                                            !
-    !==============================================================================!
-    call trace_entry('io_header')
-    write(stdout,*) "+==================================================================+"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|  oooooooooo.   oooooooooooo ooooooooo.             oooo    oooo  |"
-    write(stdout,*) "|  `888'   `Y8b  `888'     `8 `888   `Y88.           `888   .8P'   |"
-    write(stdout,*) "|   888      888  888          888   .d88'  .ooooo.   888  d8'     |"
-    write(stdout,*) "|   888      888  888oooo8     888ooo88P'  d88' `88b  88888[       |"
-    write(stdout,*) '|   888      888  888    "     888`88b.    888ooo888  888`88b.     |'
-    write(stdout,*) "|   888     d88'  888       o  888  `88b.  888    .o  888  `88b.   |"
-    write(stdout,*) "|  o888bood8P'   o888ooooood8 o888o  o888o `Y8bod8P' o888o  o888o  |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,'(T2,"|",T28,A, 1x, A,T69 ,"|")') 'Version', trim(version)
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|     Salutations! Welcome to the Durham Electronic RElaxation     |"
-    write(stdout,*) "|     (K)Code, DEReK for short! A planewave Ab Initio DFT code     |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|      This is simply a toy project and no guarantees are made     |"
-    write(stdout,*) "|        about the results obtained, for reliable electronic       |"
-    write(stdout,*) "|              properties the author recommends CASTEP:            |"
-    write(stdout,*) "|                      http://www.castep.org                       |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|    Acknowledgements go to my PhD supervisor Prof. S. J. Clark    |"
-    write(stdout,*) "|    for teaching me the inner working of a planewave DFT code.    |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|            Thesis: http://etheses.dur.ac.uk/14737/               |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|  This program is licensed under the Apache License, Version 2.0. |"
-    write(stdout,*) "|            You may obtain a copy of the License at:              |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|           http://www.apache.org/licenses/LICENSE-2.0             |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|                      Copyright (c) 2024                          |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                   Author: Dr. Z. Hawkhead                        |"
-    write(stdout,*) "+==================================================================+"
-    call io_authors(stdout)
-    call io_sys_info(stdout)
-    !call io_flush(stdout)
-    call trace_exit('io_header')
-  end subroutine io_header
 
 
   subroutine io_check()
@@ -2671,7 +2473,7 @@ contains
     write(unit,*)"# |        Author: Dr Z. Hawkhead (c) 2023         |"
     write(unit,*)"# +================================================+"
 
-    call io_sys_info(unit,.true.)
+    !call io_sys_info(unit,.true.)
 
 
     call date_and_time(b(1), b(2), b(3), d_t)

@@ -14,17 +14,15 @@
 ! limitations under the License.
 !*******************************************************************************
 !---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
-!---- File documented by Fortran Documenter, Z.Hawkhead
 program derek
   use constants
   use units
+  use license
   use comms
   use trace, only: trace_entry,trace_exit,trace_init,trace_finalise,trace_wallclock
   use io   , only: io_initialise, io_errors,current_params,seed,stdout,&
        & io_check,current_structure,io_dist_kpt,io_finalise, io_write_params,io_warnings,&
-       & io_mem_report
+       & io_mem_report,io_open_std,version,version_only
   use memory,only: memory_deallocate
   use basis, only: basis_init,current_basis
   use wave,  only: wave_allocate,wavefunction_slice,wavefunction,operator (+),operator(-),operator(*)
@@ -59,7 +57,13 @@ program derek
   call trace_entry("derek")
   call comms_init()           ! Start the MPI
   call units_initialise()
-  call io_initialise()        ! Open up the files and read
+  call io_open_std()          ! Open the derek file
+  call license_header(stdout,version)       !
+  if (version_only)then
+     call comms_stop()
+  end if
+
+  call io_initialise(safety=current_sys%max_lev)        ! Open up the files and read
 
 
   if (current_params%restart) then
