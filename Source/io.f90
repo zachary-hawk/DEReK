@@ -371,11 +371,11 @@ contains
 
     ! Do parameter safety
     select case(safety)
-    case('safe')
+    case('Safe')
        max_lev = 0
-    case('normal')
+    case('Normal')
        max_lev = 3
-    case('risky')
+    case('Risky')
        max_lev = 5
     case default
        call io_errors('Unknown maximum spell check safety')
@@ -870,7 +870,7 @@ contains
 
        end if
     end if
-    call trace_stack(2,rank,seed=seed)
+    call trace_stack(err_unit,rank,seed=seed)
 
     call comms_stop()
     return

@@ -18,7 +18,18 @@ contains
     !==============================================================================!
     integer     , intent(in) :: stdout
     character(*), intent(in) :: version
+    integer :: llen,aulen
+       
     call trace_entry('license_header')
+    ! call to sys init
+    call sys_init()
+
+    aulen = len_trim(current_sys%names(1)) + 8
+    llen = (65-aulen) /2
+
+
+    
+    
     write(stdout,*) "+==================================================================+"
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "|  oooooooooo.   oooooooooooo ooooooooo.             oooo    oooo  |"
@@ -54,10 +65,10 @@ contains
     write(stdout,*) "|                                                                  |"
     write(stdout,*) "|                      Copyright (c) 2024                          |"
     write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                   Author: Dr. Z. Hawkhead                        |"
+    write(stdout,'(T2,"|",a,a,T69,"|")') repeat(' ',llen),'Author: '//trim(current_sys%names(1)) 
     write(stdout,*) "+==================================================================+"
-    ! call to sys init
-    call sys_init()
+
+
     call license_authors(stdout)
     call license_sys_info(stdout)
     !call license_flush(stdout)
@@ -108,15 +119,16 @@ contains
              start = i
 
           end if
-          if (current_len + lens(i)+2 .lt. line_len)then
+          if (current_len + lens(i)+2 .le. line_len-2)then
              ! We want to include this name
              current_len = current_len + lens(i)+2
           else
              ! We dont want to include this line
              current_len = 0
           end if
-       end  do
 
+       end  do
+       
        ! Write out the final line
        write(line,*) (trim(current_sys%names(j))//", " ,j=start,current_sys%nauth-1),trim(current_sys%names(current_sys%nauth))
        write(unit,67) line
@@ -156,43 +168,54 @@ contains
        fmt='(1x,"|",1x,a,a,T22,":",1x,a,T69,"|")'
     end if
 
+    ! Do some handling of spell check
+    select case(trim(current_sys%max_lev))
+    case('normal')
+       current_sys%max_lev='Normal'
+    case('risky')
+       current_sys%max_lev='Risky'
+    case('safe')
+       current_sys%max_lev='Safe'
+    case default
+       current_sys%max_lev = 'UNKNOWN'
+    end select
+    
+       if (.not.present(comment))then
 
-    if (.not.present(comment))then
-
-       write(unit,*)"|                       SYSTEM INFORMATION                         |"
-       write(unit,*)"+==================================================================+"
-    end if
-    write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
-    write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
-    write(unit,fmt)trim(comment_char),"Physical Cores   ",trim(current_sys%phys_cores)
-    write(unit,fmt)trim(comment_char),"Logical Cores    ",trim(current_sys%logi_cores)
-    write(unit,fmt)trim(comment_char),"System Memory(GB)",trim(current_sys%tot_mem)
+          write(unit,*)"|                       SYSTEM INFORMATION                         |"
+          write(unit,*)"+==================================================================+"
+       end if
+       write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
+       write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
+       write(unit,fmt)trim(comment_char),"Physical Cores   ",trim(current_sys%phys_cores)
+       write(unit,fmt)trim(comment_char),"Logical Cores    ",trim(current_sys%logi_cores)
+       write(unit,fmt)trim(comment_char),"System Memory(GB)",trim(current_sys%tot_mem)
 
 
 
-    write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
-    write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
-    write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
-    write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
+       write(unit,fmt)trim(comment_char),"Compiler         ",trim(current_sys%compiler)
+       write(unit,fmt)trim(comment_char),"Compile Date     ",trim(current_sys%date)
+       write(unit,fmt)trim(comment_char),"Code Version     ",trim(current_sys%git)
+       write(unit,fmt)trim(comment_char),"Optimisation     ",trim(current_sys%opt)
 
 
-    write(unit,fmt)trim(comment_char),"Parallelisation  ",trim(current_sys%comms)
-    if (comms_arch.eq."MPI")then
-       write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
-    end if
-    write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
-    write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
-    write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
-    write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
-    write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
+       write(unit,fmt)trim(comment_char),"Parallelisation  ",trim(current_sys%comms)
+       if (comms_arch.eq."MPI")then
+          write(unit,fmt)trim(comment_char),"MPI Version    ",trim(current_sys%comms_version)
+       end if
+       write(unit,fmt)trim(comment_char),"FFTW3 Version    ",trim(current_sys%ffts)
+       write(unit,fmt)trim(comment_char),"OpenBLAS Version ",trim(current_sys%openblas)
+       write(unit,fmt)trim(comment_char),"LibXC Version    ",trim(current_sys%libxc)
+       write(unit,fmt)trim(comment_char),"CODATA Year      ",trim(current_sys%consts)
+       write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
 
-    if (.not.present(comment))then
-       write(unit,*)"+==================================================================+"
-    end if
-    write(unit,*)
-    !write(unit,fmt)trim(comment_char)
+       if (.not.present(comment))then
+          write(unit,*)"+==================================================================+"
+       end if
+       write(unit,*)
+       !write(unit,fmt)trim(comment_char)
 
-    ! doing a formatted read, not great but it is a fixed format
+       ! doing a formatted read, not great but it is a fixed format
 !!$    read(current_sys%libxc,'(i1,a,i1,a,i1)')maj,junk,min,junk,mic
 !!$    if (maj.ne.6 .or. min.ne.2)then
 !!$       call license_errors('Unsupported LIBXC version, must be 6.2.x',.true.)
@@ -200,7 +223,7 @@ contains
 
 
 
-    call trace_exit("license_sys_info")
-  end subroutine license_sys_info
+       call trace_exit("license_sys_info")
+     end subroutine license_sys_info
 
 end module license
