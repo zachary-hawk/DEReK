@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !*******************************************************************************
 ! Copyright 2024 Z. Hawkhead
 !
@@ -55,6 +56,25 @@ module fft
   complex(dp), dimension(:), allocatable :: outdata_fine_1d
   interface
      type(C_PTR) function fftw_plan_dft_3d(n0,n1,n2,in,out,sign,flags) bind(C, name='fftw_plan_dft_3d')
+!==============================================================================!
+!                       F F T W _ P L A N _ D F T _ 3 D                        !
+!==============================================================================!
+! Wrapper routine for creating an FFTW3 DFT plan for a 3D grid.                !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           n0,                intent :: in                                    !
+!           n1,                intent :: in                                    !
+!           n2,                intent :: in                                    !
+!           in,                intent :: out                                   !
+!           out,               intent :: out                                   !
+!           sign,              intent :: in                                    !
+!           flags,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Result:                                                                      !
+!           C                                                                  !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
        import
        integer(C_INT), value :: n0
        integer(C_INT), value :: n1
@@ -66,6 +86,23 @@ module fft
      end function fftw_plan_dft_3d
 
      type(C_PTR) function fftw_plan_dft_1d(n,in,out,sign,flags) bind(C, name='fftw_plan_dft_1d')
+!==============================================================================!
+!                       F F T W _ P L A N _ D F T _ 1 D                        !
+!==============================================================================!
+! Wrapper routine for creating an FFTW3 DFT plan for a 1D grid.                !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           n,                 intent :: in                                    !
+!           in,                intent :: out                                   !
+!           out,               intent :: out                                   !
+!           sign,              intent :: in                                    !
+!           flags,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Result:                                                                      !
+!           C                                                                  !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
        import
        integer(C_INT), value :: n
        complex(C_DOUBLE_COMPLEX), dimension(*), intent(out) :: in
@@ -74,6 +111,18 @@ module fft
        integer(C_INT), value :: flags
      end function fftw_plan_dft_1d
      subroutine fftw_execute_dft(p,in,out) bind(C, name='fftw_execute_dft')
+!==============================================================================!
+!                       F F T W _ E X E C U T E _ D F T                        !
+!==============================================================================!
+! A wrapper for the fftw3 routine for executing a FFT on a grid.               !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           p,                 intent :: in                                    !
+!           in,                intent :: inout                                 !
+!           ou,                intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
        import
        type(C_PTR), value :: p
        complex(C_DOUBLE_COMPLEX), dimension(*), intent(inout) :: in

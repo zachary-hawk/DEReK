@@ -1,6 +1,7 @@
 module license
   use trace, only : trace_entry, trace_exit
   use sys, only : current_sys,sys_init
+  use io,  only : io_errors
   use comms
 contains
 
@@ -24,6 +25,8 @@ contains
     ! call to sys init
     call sys_init()
 
+    if (current_sys%err.ne.0)call io_errors('Error in License: Authors file corrupted',.true.)
+    
     aulen = len_trim(current_sys%names(1)) + 8
     llen = (65-aulen) /2
 
@@ -92,9 +95,7 @@ contains
     new_line = .true.
 
     if (current_sys%nauth.gt.1)then
-
        allocate(lens(1:current_sys%nauth))
-
        write(unit,*)"|    Contributors                                                  |"
        write(unit,*)"|    ------------                                                  |"
 

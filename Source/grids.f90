@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !*******************************************************************************
 ! Copyright 2024 Z. Hawkhead
 !
@@ -192,6 +193,18 @@ contains
 
 
   subroutine grids_recip2real_pot(pot,gtype)
+!==============================================================================!
+!                   G R I D S _ R E C I P 2 R E A L _ P O T                    !
+!==============================================================================!
+! Grids subroutine for translating a potential from reciprocal space to real   !
+! space using the FFTW3 DFT routines.                                          !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           pot,               intent :: in                                    !
+!           gtype,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
     type(potential)            :: pot 
     character(4), intent(in)   :: gtype
     ! Backwards transform so dir = -1
@@ -216,6 +229,18 @@ contains
 
 
     subroutine grids_real2recip_den(den,gtype)
+!==============================================================================!
+!                   G R I D S _ R E A L 2 R E C I P _ D E N                    !
+!==============================================================================!
+! Grids subroutine for transforming a density on a grid from direct space to   !
+! reciprocal space using the FFTW3 DFT routines.                               !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           den,               intent :: in                                    !
+!           gtype,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
     type(elec_den)             :: den 
     character(4), intent(in)   :: gtype
     ! Backwards transform so dir = +1
@@ -243,6 +268,18 @@ contains
 
 
   subroutine grids_recip2real_den(den,gtype)
+!==============================================================================!
+!                   G R I D S _ R E C I P 2 R E A L _ D E N                    !
+!==============================================================================!
+! Grids subroutine for transforming a density on a grid from reciprocal        !
+! space to direct space using the FFTE3 DFT routines.                          !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           den,               intent :: in                                    !
+!           gtype,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
     type(elec_den)            :: den 
     character(4), intent(in)   :: gtype
     ! Backwards transform so dir = -1
@@ -273,6 +310,18 @@ contains
 !!$
 !!$  
 !!$  subroutine grids_real2recip_wave(wave,gtype)
+!==============================================================================!
+!                  G R I D S _ R E A L 2 R E C I P _ W A V E                   !
+!==============================================================================!
+! Grids routine for transforming a wavefunction on a grid from direct space    !
+! to reciprocal space using the FFTW3 DFT routines.                            !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wave,              intent :: in                                    !
+!           gtype,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
 !!$    type(elec_wave)             :: wave 
 !!$    character(4), intent(in)   :: gtype
 !!$    ! Backwards transform so dir = +1
@@ -300,6 +349,18 @@ contains
 !!$
 !!$
 !!$  subroutine grids_recip2real_wave(wave,gtype)
+!==============================================================================!
+!                  G R I D S _ R E C I P 2 R E A L _ W A V E                   !
+!==============================================================================!
+! Grids routine for transforming a wavefunction on a grid from reciprocal      !
+! space into direct space uning the FFTW3 DFT routines.                        !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           wave,              intent :: in                                    !
+!           gtype,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
 !!$    type(elec_wave)            :: wave 
 !!$    character(4), intent(in)   :: gtype
 !!$    ! Backwards transform so dir = -1

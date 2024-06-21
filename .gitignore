@@ -17,3 +17,6 @@ config.log
 buildinfo.mk
 config.status
 autom4te.cache
+DevTools/
+Docs/
+Source/*.o

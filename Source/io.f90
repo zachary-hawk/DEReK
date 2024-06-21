@@ -202,20 +202,32 @@ module io
 contains
 
   subroutine io_open_std()
+!==============================================================================!
+!                            I O _ O P E N _ S T D                             !
+!==============================================================================!
+! I/O routine for opening up the main DEReK files. Can be called earlier       !
+! than previous routines meaning more modules have access to the I/O           !
+! routines.                                                                    !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           None                                                               !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
 
     call trace_entry('io_open_std')
 
     call io_cl_parser() ! Read the commandline arguments
 
+    ! 
+    ! We only do all of this if the user hasnt asked for version info
+    ! set up the error files, in case they need to be used elsewhere
+    if (trim(seed).eq.'')then
+       seed = 'derek'
+    end if
+
+    write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
     if (.not.version_only)then
-       ! We only do all of this if the user hasnt asked for version info
-       ! set up the error files, in case they need to be used elsewhere
-       if (trim(seed).eq.'')then
-          seed = 'derek'
-       end if
-
-       write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
-
        ! Open up the main file for the output
        open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
 

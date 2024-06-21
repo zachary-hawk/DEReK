@@ -27,16 +27,8 @@ LOGICAL_CORES=$(shell if [ "$$(uname)" = "Linux" ]; then grep -c '^processor' /p
 TOTAL_MEMORY=$(shell if [ "$$(uname)" = "Linux" ]; then awk '/MemTotal/ {print $$2}' /proc/meminfo; elif [ "$$(uname)" = "Darwin" ]; then sysctl -n hw.memsize; fi)
 TOTAL_MEMORY_GB=$(shell echo "scale=2; $$(echo $$(if [ "$$(uname)" = "Linux" ]; then awk '/MemTotal/ {print $$2}' /proc/meminfo; elif [ "$$(uname)" = "Darwin" ]; then sysctl -n hw.memsize; fi)) / 1024 / 1024 / 1024" | bc)
 
-# Set up the compiler options, for compiler type and build speed
-ifeq ($(BUILD),fast)
-    OPT= FAST
-    FCFLAGS=  -fconvert=big-endian -fno-realloc-lhs -fopenmp -O3 -funroll-loops -fno-signed-zeros -g -fbacktrace -march=native -mno-avx -w -fallow-argument-mismatch -ffree-line-length-512
-endif
 
-ifeq ($(BUILD),debug)
-    OPT= DEBUG
-    FCFLAGS=  -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -w -fallow-argument-mismatch -ffree-line-length-512
-endif
+
 
 # Constants data
 ifeq ($(CODATA_YEAR),2018)

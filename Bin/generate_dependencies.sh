@@ -9,7 +9,7 @@ SERIAL_DEP_FILE="dependencies_serial.mk"
 
 # List of all Fortran source files in the directory
 #SRC_FILES=$(find "$SRC_DIR" -name '*.f90' ! -name 'comms.mpi.f90' ! -name 'comms.serial.f90')
-SRC_FILES=$( find $SRC_DIR -type f -name "*.f90" ! -name "*comms*")
+SRC_FILES=$( find $SRC_DIR -type d -name DevTools -prune -o -type f -name "*.f90" ! -name "*comms*" -print)
 # Function to generate the list of existing Fortran source files excluding specific files
 
 

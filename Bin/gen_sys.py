@@ -16,7 +16,7 @@ def parse_author_line(line):
     print(initials)
     print(title)
     return title, initials, surname, email
-
+'''
 def read_authors_file(filename):
     # Initialize arrays
     titles = []
@@ -35,7 +35,7 @@ def read_authors_file(filename):
             emails.append(email)
 
     return titles, initials, surnames, emails
-
+'''
 
 def format_as_f90_arrays(titles, initials, surnames, emails):
     # Initialize the output string
@@ -86,11 +86,9 @@ module sys
      character(100) :: openblas
      character(100) :: libxc
      ! Author details, not useful now but future proofing
-     character(50),dimension(:),allocatable :: title
-     character(50),dimension(:),allocatable :: initials
-     character(50),dimension(:),allocatable :: surname
      character(50),dimension(:),allocatable :: names
      integer                           :: nauth
+     integer                           :: err
   end type sys_info
   interface
      function fftw_version_ptr_c()bind (c,name='padded_fftw_version')
@@ -171,8 +169,8 @@ contains
     !write(current_sys%libxc,'(I1,".",I1,".",I1)') vmajor, vminor, vmicro
 
     !! AUTHORS
-call sys_read_authors('../Bin/AUTHORS',current_sys%title,current_sys%initials,current_sys%surname,current_sys%names,current_sys%nauth)
-
+    !call sys_read_authors('../Bin/AUTHORS',current_sys%title,current_sys%initials,current_sys%surname,current_sys%names,current_sys%nauth)
+     call sys_read_authors()
     call trace_exit('sys_init')    
   end subroutine sys_init
 
@@ -194,96 +192,48 @@ call sys_read_authors('../Bin/AUTHORS',current_sys%title,current_sys%initials,cu
     return
   end function sys_fftw_version
 
-subroutine sys_read_authors(filename, title, initials, surname, names, nauth)
-    implicit none
-    character(len=*), intent(in) :: filename
-    character(len=50), dimension(:), allocatable, intent(out) :: title
-    character(len=50), dimension(:), allocatable, intent(out) :: initials
-    character(len=50), dimension(:), allocatable, intent(out) :: surname
-    character(len=50), dimension(:), allocatable, intent(out) :: names
-    integer, intent(out) :: nauth
+subroutine sys_read_authors()
+integer :: ios=0,i
+integer :: nauth
+character(50) :: t,ins,s
 
-    integer :: unit, ios, i, count
-    character(len=200) :: line
-    character(len=50) :: t, ini, sur
-    character(len=200) :: n
-    character(len=50), dimension(:), allocatable :: t_arr, ini_arr, sur_arr, n_arr
+OPEN(UNIT=10, FILE='../Bin/AUTHORS', STATUS='old', ACCESS='SEQUENTIAL', FORM='UNFORMATTED',action='read',iostat=ios)
+current_sys%err = ios
+!open(unit=10, file='../Bin/AUTHORS', status='old', action='read',form="UNFORMATTED",iostat=ios,RECL=8192,access='direct')
 
-    ! Open the file for reading
-    open(unit=10, file=filename, status='old', action='read', iostat=ios)
-    if (ios /= 0) then
-        print *, 'Error: Could not open AUTHORS file for reading.'
-        nauth = 0
-        return
-    end if
+!if (ios.ne.0)return
 
-    ! Initialize author count
-    count = 0
+read(10,iostat=ios)nauth
 
-    ! First, count the number of lines (authors) in the file
-    do
-        read(10, '(A)', iostat=ios) line
-        if (ios /= 0) exit
-        count = count + 1
-    end do
+current_sys%nauth=nauth
 
-    ! Allocate arrays based on the number of authors
-    allocate(t_arr(count))
-    allocate(ini_arr(count))
-    allocate(sur_arr(count))
-    allocate(n_arr(count))
+current_sys%err = current_sys%err+ios
+!if (ios.ne.0  .or. nauth.eq.0)return
+allocate(current_sys%names(1:nauth))
 
-    ! Rewind the file to read the contents again
-    rewind(10)
 
-    ! Read and parse each line
-    i = 0
-    do
-        read(10, '(A)', iostat=ios) line
-        if (ios /= 0) exit
-        i = i + 1
-        read(line, *) t, ini, sur
-        t = trim(adjustl(t)) // '.'
-        ini = sys_adjust_initials(trim(adjustl(ini)))
-        
+do i=1,nauth
 
-        sur = trim(adjustl(sur))
-        n = trim(t) // ' ' // trim(ini) // ' ' // trim(sur)
-print*,n
-        t_arr(i) = t
-        ini_arr(i) = ini
-        sur_arr(i) = sur
-        n_arr(i) = n
-    end do
+read(10,iostat=ios)t
+current_sys%err = current_sys%err+ios
+!if (ios.ne.0)return
 
-    ! Close the file
-    close(10)
+read(10,iostat=ios)ins
+current_sys%err = current_sys%err+ios
+!if (ios.ne.0)return
 
-    ! Set output variables
-    title = t_arr
-    initials = ini_arr
-    surname = sur_arr
-    names = n_arr
-    nauth = count
+read(10,iostat=ios)s
+current_sys%err = current_sys%err+ios
+!if (ios.ne.0)return
 
+
+current_sys%names(i)=trim(t)//" "//trim(ins)//" "//trim(s)
+current_sys%err = current_sys%err+ios
+!if (ios.ne.0)return
+
+end do
+close(10)
 end subroutine sys_read_authors
-    function sys_adjust_initials(initials) result(adjusted)
-        character(len=*), intent(in) :: initials
-        character(len=len(initials)+10) :: adjusted
-        integer :: j, len_initials
-
-        adjusted = ''
-        len_initials = len(trim(initials))
-        print*,initials,len_initials
-        do j = 1, 2*len_initials,2
-
-            adjusted(j:j) = initials(j:j)
-            adjusted(j+1:j+1) = '.'
-        end do
-        
-    end function sys_adjust_initials
-
-
 
 end module sys
 """
@@ -296,9 +246,9 @@ def main():
 
 
     filename='../Bin/AUTHORS'
-    titles, initials, surnames, emails = read_authors_file(filename)
-    nauth = len(titles)
-    fortran_output = format_as_f90_arrays(titles, initials, surnames, emails)
+    #titles, initials, surnames, emails = read_authors_file(filename)
+    #nauth = len(titles)
+    #fortran_output = format_as_f90_arrays(titles, initials, surnames, emails)
 
     # Replace placeholders in the Fortran code template with command-line arguments
     modified_code = fortran_code_template.replace('$1', sys.argv[1]) \
@@ -310,9 +260,9 @@ def main():
                                           .replace('$7', sys.argv[7]) \
                                           .replace('$8', sys.argv[8]) \
                                           .replace('$9', sys.argv[9]) \
-                                          .replace('$0', sys.argv[10]) \
-                                          .replace('$nauth',str(nauth))\
-                                          .replace('$auth',fortran_output)
+                                          .replace('$0', sys.argv[10]) 
+
+     
 
 
     

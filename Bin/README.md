@@ -1,0 +1,1 @@
+This is a folder that contains all of the scripts needed for compiling derek. It should not include any programs or source that is a tool or a dev tool

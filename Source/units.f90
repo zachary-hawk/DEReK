@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !*******************************************************************************
 ! Copyright 2024 Z. Hawkhead
 !
@@ -413,6 +414,21 @@ contains
     call trace_exit('units_initialise')
   end subroutine units_initialise
   function units_to_atomic(quant,unit) result(quant_atom)
+!==============================================================================!
+!                        U N I T S _ T O _ A T O M I C                         !
+!==============================================================================!
+! Units helper routine for converting SI or SI derived units into atomic       !
+! units for calculations.                                                      !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           quant,             intent :: in                                    !
+!           unit,              intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Result:                                                                      !
+!           quant_atom                                                         !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
     
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit
@@ -427,6 +443,21 @@ contains
   end function units_to_atomic
 
   function units_from_atomic(quant,unit) result(quant_si)
+!==============================================================================!
+!                      U N I T S _ F R O M _ A T O M I C                       !
+!==============================================================================!
+! Units helper routine for converting from atomic units to a specified SI or   !
+! SI derived unit.                                                             !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           quant,             intent :: in                                    !
+!           unit,              intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Result:                                                                      !
+!           quant_si                                                           !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
 
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit
@@ -442,6 +473,23 @@ contains
   end function units_from_atomic
 
   function units_conversion(quant,unit1,unit2) result(quant_new)
+!==============================================================================!
+!                       U N I T S _ C O N V E R S I O N                        !
+!==============================================================================!
+! A nifty little routine really. This will convert a quantity from one SI      !
+! unit to another. It uses the architechture of the atomic unit conversion as  !
+! a middleman.                                                                 !
+!------------------------------------------------------------------------------!
+! Arguments:                                                                   !
+!           quant,             intent :: in                                    !
+!           unit1,             intent :: in                                    !
+!           unit2,             intent :: in                                    !
+!------------------------------------------------------------------------------!
+! Result:                                                                      !
+!           quant_new                                                          !
+!------------------------------------------------------------------------------!
+! Author:   Z. Hawkhead  20/06/2024                                            !
+!==============================================================================!
 
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit1,unit2

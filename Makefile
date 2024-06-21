@@ -44,6 +44,8 @@ BUILD_PATH=DEReK$(version)_$(ARCH)_$(BUILD)_$(COMMS_ARCH)
 
 #BUILD_DIR = ../Build/$(BUILD_PATH)
 BUILD_DIR = $(ROOTDIR)/Build/$(BUILD_PATH)
+DEVTOOLS =  $(ROOTDIR)/DevTools
+TOOLS =  $(ROOTDIR)/Build/$(BUILD_PATH)/Tools
 
 # LibXC details
 LIBXC_INC = $(BUILD_DIR)/LibXC/include
@@ -75,6 +77,21 @@ export GIT_VERSION
 export SAFETY
 export CC
 export BUILD
+export TOOLS
+export DEVTOOLS
+
+# Set up the compiler options, for compiler type and build speed
+ifeq ($(BUILD),fast)
+    OPT= FAST
+    FCFLAGS=  -fconvert=big-endian -fno-realloc-lhs -fopenmp -O3 -funroll-loops -fno-signed-zeros -g -fbacktrace -march=native -mno-avx -w -fallow-argument-mismatch -ffree-line-length-512
+endif
+
+ifeq ($(BUILD),debug)
+    OPT= DEBUG
+    FCFLAGS= -fconvert=big-endian -static-libgfortran -Ddebug -O0 -g -fbounds-check -fbacktrace -Wall -Waliasing -Wsurprising -Wline-truncation -Wno-tabs -Wno-uninitialized -Wno-unused-dummy-argument -Wno-unused -Wno-character-truncation -w -fallow-argument-mismatch -ffree-line-length-512
+endif
+
+export FCFLAGS
 
 .phony: all check_file
 
@@ -124,7 +141,8 @@ subsystem:
 	$(MAKE) -C $(SOURCE_DIR)
 	@rm -f $(BUILD_DIR)/sys.mod
 	@rm -f $(BIN_DIR)/*.o $(BIN_DIR)/mpi_version
-
+dev_tools:
+	$(MAKE) -C $(SOURCE_DIR)/DevTools
 
 clean:
 	rm -f $(BUILD_DIR)/*.o  $(BUILD_DIR)/*.mod  $(BUILD_DIR)/derek.mpi

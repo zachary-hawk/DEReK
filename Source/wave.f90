@@ -1,3 +1,4 @@
+!---- File documented by Fortran Documenter, Z.Hawkhead
 !*******************************************************************************
 ! Copyright 2024 Z. Hawkhead
 !
