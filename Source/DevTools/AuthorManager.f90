@@ -1,8 +1,8 @@
 program AuthorsManager
   implicit none
   character(len=100) :: command
-  character(len=50) :: t, ini, sur
-  integer :: iargc, i, ios, index_to_delete, nauth
+  character(len=50) :: t, ini, sur,buff
+  integer :: iargc, i, ios, index_to_delete, nauth,index_to_replace
   character(len=200) :: line
   character(len=50), dimension(:), allocatable :: title    !! These are all allocated in read_authors
   character(len=50), dimension(:), allocatable :: initials
@@ -52,6 +52,21 @@ program AuthorsManager
         stop
      end if
      call delete_author(index_to_delete)
+  case('-r','--replace')
+     if (iargc /= 5) then
+        print*,'Error: Replace must have an index and full name'
+        stop
+     end if
+     call get_command_argument(2,buff)
+     read(buff,*,iostat=ios)index_to_replace
+     if (ios.ne.0)then
+        print*,'Error: Replacement index must be an integer'
+        stop
+     end if
+     call get_command_argument(3, t)
+     call get_command_argument(4, ini)
+     call get_command_argument(5, sur)
+     call replace_author(index_to_replace,trim(t),trim(ini),trim(sur))
   case default
      print *, 'Error: Unknown command ', trim(command)
      call print_help()
@@ -207,6 +222,64 @@ contains
     print *, 'Author at index ', index_to_delete, ' deleted.'
   end subroutine delete_author
 
+  subroutine replace_author(index_to_replace,t,ini,sur)
+    integer, intent(in) :: index_to_replace
+    character(*),intent(in) :: t,ini,sur
+    character(50):: new_author
+    integer :: ios, nauth, i
+    character(50), dimension(:), allocatable :: title
+    character(50), dimension(:), allocatable :: initials
+    character(50), dimension(:), allocatable :: surname
+    character(50), dimension(:), allocatable :: names
+
+    call read_authors(filename, title, initials, surname, names, nauth)
+
+    ! Check if the index to delete is valid
+    if (index_to_replace < 1 .or. index_to_replace > nauth) then
+       print *, 'Error: Invalid index ', index_to_replace
+       return
+    end if
+
+    ! replace the 
+    
+    title(index_to_replace) = trim(adjustl(t)) // '.'
+    initials(index_to_replace) = adjust_initials(trim(adjustl(ini)))
+    surname(index_to_replace) = trim(adjustl(sur))
+    names(index_to_replace) = trim(title(index_to_replace)) // ' ' // trim(initials(index_to_replace)) // ' ' // trim(surname(index_to_replace))
+
+
+
+    ! Write the updated list to the file
+    OPEN(UNIT=10, FILE=filename, STATUS='REPLACE', ACCESS='SEQUENTIAL', FORM='UNFORMATTED', IOSTAT=ios,action='WRITE')
+    if (ios /= 0) then
+       print *, 'Error: Could not open AUTHORS file for writing.'
+       return
+    end if
+
+    write(10, iostat=ios) nauth
+    if (ios /= 0) then
+       print *, 'Error: Could not write the number of authors.'
+       close(10)
+       return
+    end if
+
+    do i = 1, nauth
+       write(10, iostat=ios) title(i)
+       write(10, iostat=ios) initials(i)
+       write(10, iostat=ios) surname(i)
+       if (ios /= 0) then
+          print *, 'Error: Could not write author data.'
+          close(10)
+          return
+       end if
+    end do
+
+    close(10)
+    print *, 'Author at index ', index_to_replace, ' replaced with '//trim(names(index_to_replace))
+  end subroutine replace_author
+
+
+  
   subroutine read_authors(filename, title, initials, surname, names, nauth)
     implicit none
     character(len=*), intent(in) :: filename
