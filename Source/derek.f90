@@ -50,10 +50,11 @@ program derek
   real(kind=dp) , allocatable,dimension(:)    :: test_fft_x
   complex(kind=dp) , allocatable,dimension(:) :: test_fft_fine
   real(kind=dp) , allocatable,dimension(:)    :: test_fft_x_fine
-  
-  real(dp) :: testvar
 
- 
+  real(dp) :: testvar
+  real(dp),dimension(:,:,:,:,:,:),allocatable :: test_array
+
+  
   call trace_init()           ! Set up trace
   call trace_entry("derek")
   call comms_init()           ! Start the MPI
@@ -88,10 +89,10 @@ program derek
        & current_basis%num_fine_node)
 
 
-  
+
 
   !current_state%ext_pot=1.0_dp*current_state%ext_pot
-  
+
   if (on_root_node)then
      call io_write_params(current_basis%num_grid_points&
           &, current_basis%num_fine_grid_points&
@@ -117,9 +118,14 @@ program derek
   ! report the memory usage, probably won't need much more memory stuff after this 
   !call memory_report(stdout,current_params%iprint,current_params%calc_memory)
 
-  testvar = 2 ! Ha
-  testvar =  units_from_atomic(testvar,'Ha')
-
+!!$  testvar = 1.0_dp ! Ha
+!!$  testvar =  units_conversion(testvar,'m','cm')
+!!$  print*,'var',testvar
+!!$  
+!!$  allocate(test_array(1:3,1:3,1:3,1:3,1:3,1:3))
+!!$  test_array = 1.0_dp
+!!$  test_array =  units_conversion(test_array,'m','cm')
+!!$  print*,'array',test_array
   ! We have done all of the initialisation, this is the only print statements we will be using in the main derek file!
 
   time=trace_wallclock()

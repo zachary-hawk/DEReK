@@ -33,6 +33,7 @@ module comms
   use trace
   implicit none
   include 'mpif.h'
+  
   integer                              :: ierr
   integer,parameter                    :: max_version_length=mpi_max_library_version_string
   integer, dimension(mpi_status_size)  :: status1

@@ -30,6 +30,7 @@ module io
   logical,           public                :: file_exists
   character(20),     public                :: seed=''
   integer,           public                :: stdout
+  integer,           public                :: info_unit
   integer,           public,parameter      :: glob_line_len =67
   integer,parameter                        :: n_cats = 10
   character(3)                             :: grp ! group for printing the parameters
@@ -37,7 +38,7 @@ module io
   character(100),dimension(:),allocatable  :: present_array
   character(100),dimension(:),allocatable  :: keys_array
   character(100),dimension(:),allocatable  :: keys_description
-  character(200),dimension(:),allocatable  :: keys_example ! An optional example, for complicated keys
+  character(1000),dimension(:),allocatable  :: keys_example ! An optional example, for complicated keys
   character(100),dimension(:),allocatable  :: keys_default
   character(100),dimension(:),allocatable  :: keys_allowed
   character(100),dimension(:),allocatable  :: keys_type
@@ -81,7 +82,7 @@ module io
      logical :: write_density = .false.
      logical :: Write_potential = .false.
      logical :: write_state = .true.
-     character(len=30) :: external_pot = 'Jelly'
+     character(len=30) :: external_pot = 'jelly'
      integer,dimension(1:3) :: kpt_mp_grid = (/1,1,1/)
      logical :: write_spec = .true.
      logical :: write_memory = .false.
@@ -108,6 +109,7 @@ module io
      character(len=30) :: out_efield_unit = 'eV/A/e'
      character(len=30) :: out_bfield_unit = 'G'
      integer,dimension(1:3) :: dos_kpt_mp_grid =  (/11,11,11/)
+     logical :: write_xsf = .false.
      ! %End: parameters
   end type parameters
 
@@ -156,12 +158,13 @@ module io
   character(len=30),parameter,public ::key_out_efield_unit   = 'unit_efield_out'
   character(len=30),parameter,public ::key_out_bfield_unit   = 'unit_bfield_out'
   character(len=30),parameter,public ::key_dos_kpt_mp_grid   = 'dos_kpt_mp_grid'
+  character(len=30),parameter,public ::key_write_xsf   = 'write_xsf'
   ! %End: keys
 
 
 
 
-  integer,parameter::max_keys=          44
+  integer,parameter::max_keys=          45
   ! %End: max_param
 
 
@@ -180,6 +183,14 @@ module io
      real(dp)                            :: beta
      real(dp)                            :: gamma
      real(dp)                            :: volume
+     ! 'Atoms' - i.e. local potentials
+     logical                             :: local_pots
+     integer                             :: n_pots
+     real(dp),dimension(:,:),allocatable :: pot_centres
+     real(dp),dimension(:)  ,allocatable :: pot_heights
+     real(dp),dimension(:)  ,allocatable :: pot_widths
+
+     
   end type structure
 
 
@@ -202,24 +213,24 @@ module io
 contains
 
   subroutine io_open_std()
-!==============================================================================!
-!                            I O _ O P E N _ S T D                             !
-!==============================================================================!
-! I/O routine for opening up the main DEReK files. Can be called earlier       !
-! than previous routines meaning more modules have access to the I/O           !
-! routines.                                                                    !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           None                                                               !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  20/06/2024                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                            I O _ O P E N _ S T D                             !
+    !==============================================================================!
+    ! I/O routine for opening up the main DEReK files. Can be called earlier       !
+    ! than previous routines meaning more modules have access to the I/O           !
+    ! routines.                                                                    !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
 
     call trace_entry('io_open_std')
 
     call io_cl_parser() ! Read the commandline arguments
 
-    ! 
+    !
     ! We only do all of this if the user hasnt asked for version info
     ! set up the error files, in case they need to be used elsewhere
     if (trim(seed).eq.'')then
@@ -229,8 +240,8 @@ contains
     write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
     if (.not.version_only)then
        ! Open up the main file for the output
-       open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
-
+       !open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
+       call io_open_fmt(stdout,trim(seed)//".derek",'APPEND')
     end if
 
     call trace_exit('io_open_std')
@@ -258,14 +269,15 @@ contains
 
 
     call trace_entry("io_initialise")
-    
+
     ! Get the length of the parameters file
     inquire(file=trim(seed)//'.info',exist=file_exists)
 
     if (file_exists)then
-       open(unit=1,file=trim(seed)//'.info',iostat=stat,status="OLD",access="stream",form="formatted")
+       !openg(unit=1,file=trim(seed)//'.info',iostat=stat,status="OLD",access="stream",form="formatted")
+       call io_open_fmt(info_unit,trim(seed)//'.info',action='read',status='old',access='stream')
        do while (stat.eq.0)
-          read(1,'(A60)',iostat=stat) line
+          read(info_unit,'(A60)',iostat=stat) line
           max_params=max_params+1
        end do
        close(1)
@@ -361,7 +373,7 @@ contains
     !The inout stuff
     type(parameters),intent(inout)  :: dummy_params
     character(*), intent(in) :: safety
-    
+
     !The boring stuff to make the whole shebang work
     integer           :: stat
     integer           :: read_stat=0
@@ -371,8 +383,10 @@ contains
     character(len=30) :: key         ! the keyword used
     character(len=30) :: param       ! the value of the param
     character(len=30) :: match       ! spell check match
+    character(len=30) :: buff        ! buffer
     logical           :: comment     ! Boolean for comment line, will skip
     logical           :: spelling = .false.
+    logical           :: file_exists
     real(dp)          :: real_dump   ! a dump for handling scientific
 
 
@@ -395,16 +409,16 @@ contains
 
     !Open the parameter file
     if (file_exists) then
-       open(unit=1,file=trim(seed)//".info",iostat=stat,status="OLD",access="stream",form="formatted")
-
-
-       if (stat.ne.0) call io_errors(" Open file '"//trim(seed)//".info'")
+       !open(unit=1,file=trim(seed)//".info",iostat=stat,status="OLD",access="stream",form="formatted")
+       !call io_open_fmt(info_unit,trim(seed)//'.info')
+       call io_open_fmt(info_unit,trim(seed)//'.info',action='read',status='old',access='stream')
+       !if (stat.ne.0) call io_errors(" Open file '"//trim(seed)//".info'")
        ! now we can do the reading
        k=0
        do i=1,max_params
           !first thing, read new line into 'line' variable
-          read(1,'(A)',iostat=read_stat) line
-
+          read(info_unit,'(A)',iostat=read_stat) line
+          
 
           !print*,trim(present_array(i))
           ! Check for blank line
@@ -413,8 +427,12 @@ contains
           if (index(trim(line),'!').gt.0)cycle
 
           ! read the block data
-          if (index(io_case(line),"$begin").gt.0)then
-             call io_block_parse(line,stat)
+          if (index(io_case(line),"$data").gt.0)then
+             ! Hold initial external_pot value for comparison
+             buff = dummy_params%external_pot
+             call io_block_parse(line,dummy_params,stat)
+             if (trim(dummy_params%external_pot).ne.trim(buff)) present_array(i) = 'external_pot'
+             ! Check to see if the 
              cycle
           end if
 
@@ -544,6 +562,23 @@ contains
              read(param,*,iostat=stat) dummy_params%external_pot
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
              present_array(i)=key
+             select case(dummy_params%external_pot)
+             case('jelly','finite_barrier','periodic_pot')
+             case('gaussian_pot','lorentzian_pot')
+                ! These should not be set at this point, they need to be set as a block
+                call io_errors('External pot type '//trim(dummy_params%external_pot)//' should only be set in a data block.')
+             case default
+                ! Check if file exists, else throw error
+                inquire(file=dummy_params%external_pot,exist=file_exists)
+
+                if (file_exists)then
+                   if (index(dummy_params%external_pot,'potex').eq.0)then
+                      call io_errors('Unsupported external potential file: '//trim(dummy_params%external_pot))
+                   end if
+                else
+                   call io_errors('Potential file does not exist: '//trim(dummy_params%external_pot))
+                end if
+             end select
           case(key_kpt_mp_grid)
              read(param,*,iostat=stat) dummy_params%kpt_mp_grid(1),dummy_params%kpt_mp_grid(2),dummy_params%kpt_mp_grid(3)
              if (stat.ne.0) call io_errors(" Error parsing value: "//param)
@@ -705,6 +740,10 @@ contains
              read(param,*,iostat=stat) dummy_params%dos_kpt_mp_grid
              if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
              present_array(i)=key
+          case(key_write_xsf)
+             read(param,*,iostat=stat) dummy_params%write_xsf
+             if (stat.ne.0) call io_errors("Error in I/O: Error parsing value: "//param)
+             present_array(i)=key
              ! %End: case_read
           case default
              call io_errors(" Error parsing keyword: "//key)
@@ -861,13 +900,15 @@ contains
     logical,optional   :: major_error
     character(100)     :: current_sub
 
-
+    call io_open_fmt(err_unit,trim(error_file),status='unknown',action='write')
     call trace_current(current_sub)
 
 
-    open(newunit=err_unit,file=trim(error_file),RECL=8192,status="UNKNOWN")
+
+    !open(newunit=err_unit,file=trim(error_file),RECL=8192,status="UNKNOWN")
     write(*,*)"Error: called io_errors"
     write(err_unit,*) "Error in ",trim(current_sub),": ",message
+    write(*,*) "Error in ",trim(current_sub),": ",message
 
     if (present(major_error))then
        if (major_error)then
@@ -882,8 +923,8 @@ contains
 
        end if
     end if
+    
     call trace_stack(err_unit,rank,seed=seed)
-
     call comms_stop()
     return
   end subroutine io_errors
@@ -1029,7 +1070,7 @@ contains
           case("-v")
              ! This is now a bit of a mess. This should be called in the main derek file before opening anything. All to avoid cascade.
              version_only = .true.
-             read_params=.false.            
+             read_params=.false.
           case("-c","--check")
              current_params%check=.true.
              if (nargs.lt.2)then
@@ -1054,6 +1095,7 @@ contains
                 call io_list_params(.true.)
                 call comms_stop()
              end if
+          case('--master_debug') ! Don't worry about this
           case default
              if (help)then
                 call io_help(name)
@@ -1123,8 +1165,10 @@ contains
              write(*,*) "Allowed Values: ",trim(keys_allowed(i))
              write(*,*) "Default:        ",trim(keys_default(i))
              if (keys_example(i).ne.'')then
-                write(*,*)
-                write(*,*) "Example: "
+                write(*,*)                
+                write(*,12) repeat("-",23),&
+                     & 'Example',repeat("-",23)
+
                 write(*,*)trim(keys_example(i))
              end if
              write(*,*)
@@ -1273,6 +1317,7 @@ contains
     keys_array(42)=trim(key_out_bfield_unit)
     keys_array(43)='lattice'      ! Special case for block type, needs a help section, but doesnt need to be a key
     keys_array(44)=trim(key_dos_kpt_mp_grid)
+    keys_array(45)=trim(key_write_xsf)
     ! %End: assign_keys
 
     ! %Begin: assign_default
@@ -1365,6 +1410,8 @@ contains
 
     write(junk,*)current_params%dos_kpt_mp_grid
     keys_default(44)=trim(adjustl(junk))
+    write(junk,*)current_params%write_xsf
+    keys_default(45)=trim(adjustl(junk))
     ! %End: assign_default
 
     ! %Begin: assign_description
@@ -1412,6 +1459,7 @@ contains
     keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .derek file'
     keys_description(43)='Block type data to define lattice vectors of unit cell '
     keys_description(44)='Monkorst-Pack grid used for calculating the Density of States'
+    keys_description(45)='Write output files using the XcrySDen file format rather than the standard DEReK file formats.'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1433,7 +1481,7 @@ contains
     keys_allowed(15)='Boolean'
     keys_allowed(16)='Boolean'
     keys_allowed(17)='Boolean'
-    keys_allowed(18)='any'
+    keys_allowed(18)='Jelly, periodic_pot,finite_barrier, potex or fpotex'
     keys_allowed(19)='any int > 1'
     keys_allowed(20)='Boolean'
     keys_allowed(21)='Boolean'
@@ -1460,6 +1508,7 @@ contains
     keys_allowed(42)='T G agr'
     keys_allowed(43)='3x3 matrix of lattice vectors'
     keys_allowed(44)='any vector'
+    keys_allowed(45)='Boolean'
     ! %End: assign_allowed
 
 
@@ -1482,7 +1531,16 @@ contains
     keys_example(15)=''
     keys_example(16)=''
     keys_example(17)=''
-    keys_example(18)=''
+    keys_example(18)='For a default potential --> e.g. external_pot : Jelly\n\n'//&
+         & ' To read potential from a file --> e.g. external_potential : some_file.potex\n' //&
+         & '                               --> e.g. external_potential : some_file.fpotex\n\n'//&
+         & ' To build potentials from local spherical distributions (gaussian or lorentzian) requires a DATA block:\n'//&
+         & '  $DATA gaussian_pot\n'//&
+         & '   # Centre (frac)   Height (eV)   Width (A)\n'// &
+         & '     0.2  0.3 0.6       0.1          0.05 \n'//&
+         & '     0.15 0.7 0.25      0.1          0.05 \n'//&
+         & '  $ENDDATA gaussian_pot\n\n'//&
+         & ' N.B. Positions are in fractional coordinates'
     keys_example(19)=''
     keys_example(20)=''
     keys_example(21)=''
@@ -1507,13 +1565,14 @@ contains
     keys_example(40)=''
     keys_example(41)=''
     keys_example(42)=''
-    keys_example(43)='$BLOCK lattice\n '//&
+    keys_example(43)='$DATA lattice\n '//&
          & ' 5.0 0.0 0.0\n '//&
          & ' 0.0 5.0 0.0\n '//&
          & ' 0.0 0.0 5.0\n '//&
-         & '$END lattice'
+         & '$ENDDATA lattice'
 
     keys_example(44)='dos_kpt_mp_grid : 25 25 25'
+    keys_example(45)=''
     ! %End: assign_example
 
 
@@ -1573,6 +1632,7 @@ contains
     keys_cat(42)=6
     keys_cat(43)=9
     keys_cat(44)=          10
+    keys_cat(45)=           6
     ! %End: assign_cats
     call io_alphabetise(keys_array,max_keys,mapping)
 
@@ -1632,13 +1692,14 @@ contains
     implicit none
     call trace_entry("io_check")
     if (on_root_node)then
-       write(stdout,*) " "
+       write(stdout,*)
        write(stdout,'(16x,A)') "+======================================+"
        write(stdout,'(16x,A)') "|                                      |"
        write(stdout,'(16x,A)') "|         Check complete....           |"
        write(stdout,'(16x,A)') "|          No errors found             |"
        write(stdout,'(16x,A)') "|                                      |"
        write(stdout,'(16x,A)') "+======================================+"
+       write(stdout,*)
     end if
     call io_finalise()
     call trace_exit("io_check")
@@ -1702,7 +1763,7 @@ contains
 
 
 
-  subroutine io_block_parse(line,stat)
+  subroutine io_block_parse(line,dummy_params,stat)
     !==============================================================================!
     !                         I O _ B L O C K _ P A R S E                          !
     !==============================================================================!
@@ -1715,63 +1776,106 @@ contains
     ! Author:   Z. Hawkhead  03/12/2020                                            !
     !==============================================================================!
     implicit none
-    character(*), intent(in) :: line
-    integer ,intent(inout) ::stat
-    character(len=6) :: block_str
-    character(len=20):: block_type1,block_type2
-    character(len=300):: buff
-    integer :: in_stat, i, j, k ,n=0,n_com=0, counter,n_lines
-    logical :: block_closed
-    real(dp):: mass,sx,sy,sz
-    real(dp),dimension(1:3) :: vel
+    character(*), intent(in)    :: line
+    type(parameters),intent(inout)  :: dummy_params
+    integer     , intent(inout) :: stat
 
+    character(len=6)   :: block_str                    ! Place to store $DATA
+    character(len=20)  :: block_type_in,block_type_out ! The Type of block data
+    character(len=300) :: buff                         ! Empty Buffer
+
+    logical,dimension(:),allocatable :: not_comments       ! Logical array to show if the line is a comment or not
+
+    integer :: in_stat, i, j, k,counter
+
+    integer :: n_lines ! Total number of lines inside the block
+    logical :: block_closed
 
     call trace_entry("io_block_parse")
-    read(line,*,iostat=in_stat) block_str,block_type1
+
+    ! Make sure the line is lower case and write it to a buffer
+    buff = trim(adjustl(io_case(line)))
+    read(buff,*,iostat=in_stat) block_str,block_type_in
 
     if (in_stat.ne.0) call io_errors(" problem parsing block")
+    n_lines = 0
 
-
+    ! loop over all the lines to see the length
     do
-       read(1,'(a)',iostat=stat)buff
+
+       read(info_unit,'(a)') buff
+
        buff=trim(adjustl(io_case(buff)))
-       if (index(buff,"$end").ne.0)then
-          ! check to see if the blocks match
-          read(buff,*,iostat=in_stat) block_str,block_type2
-          if (in_stat.ne.0) call io_errors(" problem parsing end block")
-          if (trim(block_type1).ne.trim(block_type2))call io_errors(" block "//trim(block_type1)//" not closed" )
+       ! If we can successfully read the line, increment the counter
+
+
+       ! See if it is the end of the block i.e. contains $ENDDATA          
+       if (index(buff,"$enddata").ne.0)then
+
+          ! Check to see if the blocks match
+          read(buff,*,iostat=in_stat) block_str,block_type_out      
+          if (in_stat.ne.0) call io_errors("Problem parsing end block")
+
+          if (trim(block_type_in).ne.trim(block_type_out))&
+               & call io_errors("Block "//trim(block_type_in)//" not closed" )
           exit
-       else if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.buff(1:1).eq."")then
-          n_com=n_com+1
-          n=n+1
        else
-          n=n+1
+          n_lines = n_lines + 1
        end if
-       if (stat.ne.0)call io_errors(" error parsing "//trim(seed)//".info")
+       if (stat.ne.0)call io_errors("Error parsing "//trim(seed)//".info")
     end do
 
-    n_lines=n-n_com
-
-    if (trim(block_type1).ne.trim(block_type2))then
-       call io_errors(" block type mismatch")
+    if (trim(block_type_in).ne.trim(block_type_out))then
+       call io_errors("Block type mismatch")
     end if
 
+    ! take us back to the top
+    do i=1,n_lines+1
+       backspace(info_unit)
+    end do
 
-    select case(io_case(block_type1))
-    case("lattice")
-       if (n_lines.ne.3)then
-          call io_errors(" error parsing LATTICE block")
+    ! Now we read it again and allocate the comment information
+    call memory_allocate(not_comments,1,n_lines,'I')
+
+    do i=1,n_lines
+       read(info_unit,'(a)',iostat=stat)buff
+
+       ! See if its a comment
+       if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.buff(1:1).eq."")then
+          not_comments(i) = .false.
+       else
+          not_comments(i) = .true.
        end if
-       ! take us back to the top
-       do i=1,n+1
-          backspace(1)
-       end do
+    end do
+
+    ! Rewind again 
+    do i=1,n_lines
+       backspace(info_unit)
+    end do
 
 
-       counter=1
-       do i=1,n
-          read(1,*,iostat=stat)current_structure%cell(counter,1),current_structure%cell(counter,2),current_structure%cell(counter,3)
-          if (stat.eq.0)counter=counter+1
+    if (count(not_comments).lt.1)call io_errors('No data in block')
+    ! Select type of block
+
+    select case(io_case(block_type_in))
+    case("lattice")
+
+       if (count(not_comments).ne.3)then
+          call io_errors("LATTICE must have 3 lines")
+       end if
+
+       counter=0
+       do i=1,n_lines
+          ! Skip if its a comment
+          if (not_comments(i))then
+             counter = counter+1
+          else
+             read(info_unit,'(a)')buff
+             cycle
+          end if
+
+          read(info_unit,*,iostat=stat)current_structure%cell(counter,1),current_structure%cell(counter,2),current_structure%cell(counter,3)        
+          if (stat.ne.0)call io_errors('Error parsing lattice matrix')
        end do
        cell_declared=.true.
        ! convert to Bohr
@@ -1782,12 +1886,50 @@ contains
        end do
 
 
+    case('gaussian_pot','lorentzian_pot')
+       dummy_params%external_pot = io_case(block_type_in)
+       ! Allocate the arrays
+       current_structure%local_pots = .true.
+       current_structure%n_pots =count(not_comments)
+
+
+       
+       call memory_allocate(current_structure%pot_centres,1,3,1,current_structure%n_pots,'I')
+       call memory_allocate(current_structure%pot_heights,1,current_structure%n_pots,'I')
+       call memory_allocate(current_structure%pot_widths,1,current_structure%n_pots,'I')
+       counter = 0
+       do i = 1, n_lines
+          if (not_comments(i))then
+             counter = counter+1
+          else
+             read(info_unit,'(a)')buff
+             cycle
+          end if
+
+          read(info_unit,*) current_structure%pot_centres(1,counter),&  !! Read in the centres first
+               & current_structure%pot_centres(2,counter),&
+               & current_structure%pot_centres(3,counter),&
+               & current_structure%pot_heights(counter), &              !! Potential heights
+               & current_structure%pot_widths(counter)                  !! Potential widths
+
+
+          current_structure%pot_heights(counter) = &
+               & units_to_atomic(current_structure%pot_heights(counter),&
+               & current_params%unit_energy)
+          
+          current_structure%pot_widths(counter) = &
+               & units_to_atomic(current_structure%pot_widths(counter),&
+               & current_params%unit_length)
+       end do
+       
+
     case default
-       call io_errors(' Unknown block type '//trim(block_type1))
+       call io_errors(' Unknown block type '//trim(block_type_in))
     end select
 
     ! read the close line again
-    read(1,*)buff
+    read(info_unit,*)buff
+    call memory_deallocate(not_comments,'I')
 
     call trace_exit("io_block_parse")
     return
@@ -2046,6 +2188,42 @@ contains
           write(stdout,21)"Periodic grid",current_params%periodic_pot_grid,grp
           write(stdout,17)"Potential amplitude  ("//trim(current_params%out_energy_unit)//")",&
                & units_from_atomic(current_params%periodic_pot_amp,trim(current_params%out_energy_unit)),grp
+       case('lorentzian_pot')
+          write(stdout,15)"External potential",adjustr('Local Lorentzians'),grp
+          if (current_params%iprint.gt.1)then
+             write(stdout,23)grp
+             write(stdout,126)repeat('=',56),grp
+             write(stdout,124)trim(current_params%out_energy_unit),trim(current_params%out_len_unit),grp
+             write(stdout,126)repeat('=',56),grp
+
+             do i=1,current_structure%n_pots
+                write(stdout,125)i , current_structure%pot_centres(1,i),&
+                     & current_structure%pot_centres(2,i),&
+                     & current_structure%pot_centres(3,i),&
+                     & units_from_atomic(current_structure%pot_heights(i),trim(current_params%out_energy_unit)),&
+                     & units_from_atomic(current_structure%pot_widths(i),trim(current_params%out_len_unit)),grp
+             end do
+             write(stdout,126)repeat('=',56),grp
+          end if
+
+       case('gaussian_pot')
+          write(stdout,15)"External potential",adjustr('Local Gaussians'),grp
+          if (current_params%iprint.gt.1)then
+             write(stdout,23)grp
+             write(stdout,126)repeat('=',56),grp
+             write(stdout,124)trim(current_params%out_energy_unit),trim(current_params%out_len_unit),grp
+             write(stdout,126)repeat('=',56),grp
+
+             do i=1,current_structure%n_pots
+                write(stdout,125)i , current_structure%pot_centres(1,i),&
+                     & current_structure%pot_centres(2,i),&
+                     & current_structure%pot_centres(3,i),&
+                     & units_from_atomic(current_structure%pot_heights(i),trim(current_params%out_energy_unit)),&
+                     & units_from_atomic(current_structure%pot_widths(i),trim(current_params%out_len_unit)),grp
+             end do
+             write(stdout,126)repeat('=',56),grp
+          end if
+
        case default
           write(stdout,15)"External potential",adjustr('Custom Potential'),grp
           write(stdout,15)"Potential file",adjustr(trim(current_params%external_pot)),grp
@@ -2151,17 +2329,24 @@ contains
 
           !write(stdout,*)"+"//repeat("=",(width-30)/2)//"       K-POINT REPORT       "//repeat("=",(width-30)/2)//"+"
           call io_heading(stdout,'K-Point Report')
+          write(stdout,23)grp
+          write(stdout,226)repeat('=',56),grp ! line
+          write(stdout,224)grp ! heading 
+          write(stdout,226)repeat('=',56),grp ! line
+
           !write(stdout,*)"|                                                                  |"
-          write(stdout,*)"|         Number                      Fractional Coordinate        | <-- ",grp
-          write(stdout,*)"+------------------------------------------------------------------+ <-- ",grp
+          !write(stdout,*)"|         Number                      Fractional Coordinate        | <-- ",grp
+          !write(stdout,*)"+------------------------------------------------------------------+ <-- ",grp
           do i=1,current_structure%num_kpoints
-             write(stdout,31) i,current_structure%kpt_scf_list(i,1),&
+             write(stdout,225) i,current_structure%kpt_scf_list(i,1),&
                   & current_structure%kpt_scf_list(i,2),&
                   & current_structure%kpt_scf_list(i,3),grp
           end do
 
-       end if
 
+          write(stdout,226)repeat('=',56),grp
+
+       end if
        write(stdout,*)"+"//repeat("=",66)//"+ <-- ",grp
        write(stdout,*)
 
@@ -2180,6 +2365,16 @@ contains
 19  format(T2,'|',1x,a,T36,":",T56,A12,1x,'| <-- ',a)   ! Logical
 21  format(T2,'|',1x,a,T36,":",T54,3(i4,1x),'| <-- ',a)   ! Integer vec
 22  format(T2,'|',1x,a,T36,":",T51,3(f5.3,1x),'| <-- ',a)   ! Real vec
+
+    ! The potentials
+125 format(T2,'|',T7,'|',T11,i3,5x,3(f5.3,1x),T42,2(f5.3,8x),T64,'|',T69,'| <-- ',a) ! The numbers
+124 format(T2,'|',T7,'|',T9,'Pot ID',4x,'Positions (frac)',T40,'Height (',a,')',2x, 'Width (',a,')',T64,'|',T69,'| <-- ',a)  ! Headers
+126 format(T2,"|",T7,"+",a,T64,"+",T69,"| <-- ",a)  ! The borders
+
+    ! The kpoints
+225 format(T2,'|',T7,'|',T11,i3,T35,3(f7.3,1x),T64,'|',T69,'| <-- ',a) ! The numbers
+224 format(T2,'|',T7,'|',T9,'Kpt ID',24x,'Positions (frac)',T64,'|',T69,'| <-- ',a)  ! Headers
+226 format(T2,"|",T7,"+",a,T64,"+",T69,"| <-- ",a)  ! The borders
 
 12  format(T2,'|',18x,a14,2x,g14.6,2x,a,T69,'| <-- ',a)
 11  format(T2'|',7x,3(a7,1x,g9.3,1x),T69,'| <-- ',a)
@@ -2798,25 +2993,36 @@ contains
     real(dp) :: byte_to_mega=1.0_dp/(1024.0_dp)**2
     real(dp) :: byte_to_kilo=1.0_dp/(1024.0_dp)
     real(dp) :: tot_max
+    real(dp) :: io_mem_real,wave_mem_real,basis_mem_real,gen_mem_real,pot_mem_real,den_mem_real,tot_mem_real
     call trace_entry("io_mem_report")
 
-    tot_max=tot_memory
+    io_mem_real = real(io_memory,dp)
+    pot_mem_real= real(pot_memory,dp)
+    den_mem_real= real(den_memory,dp)
+    basis_mem_real= real(basis_memory,dp)
+    gen_mem_real= real(gen_memory,dp)
+    tot_mem_real= real(tot_memory,dp)
+    wave_mem_real= real(wave_memory,dp)
+
+
+
+    tot_max=tot_mem_real
     ! We will need a comms gather in here but I've not written it yet...
 
     !print*,rank,'before comms io_mem'
-    call comms_reduce(io_memory,1,"sum")
+    call comms_reduce(io_mem_real,1,"sum")
 
-    call comms_reduce(basis_memory,1,"sum")
+    call comms_reduce(basis_mem_real,1,"sum")
 
-    call comms_reduce(pot_memory,1,"sum")
+    call comms_reduce(pot_mem_real,1,"sum")
 
-    call comms_reduce(wave_memory,1,"sum")
+    call comms_reduce(wave_mem_real,1,"sum")
 
-    call comms_reduce(den_memory,1,"sum")
+    call comms_reduce(den_mem_real,1,"sum")
 
-    call comms_reduce(gen_memory,1,"sum")
+    call comms_reduce(gen_mem_real,1,"sum")
 
-    call comms_reduce(tot_memory,1,"sum")
+    call comms_reduce(tot_mem_real,1,"sum")
 
     call comms_reduce(tot_max,1,'max')
 
@@ -2829,79 +3035,79 @@ contains
        write(stdout,*)
        call io_section(stdout,'memory estimates','MEM')
        if (current_params%iprint.ge.2)then
-          if (io_memory.le.1.0e3_dp)then
-             write(stdout,17)"IO requirements",io_memory,'B'
-          elseif(io_memory.le.1.0e6_dp.and.io_memory.gt.1.0e3_dp)then
-             write(stdout,17)"IO requirements",io_memory*byte_to_kilo,'KB'
-          elseif(io_memory.le.1.0e9_dp.and.io_memory.gt.1.0e6_dp)then
-             write(stdout,17)"IO requirements",io_memory*byte_to_mega,'MB'
+          if (io_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"IO requirements",io_mem_real,'B'
+          elseif(io_mem_real.le.1.0e6_dp.and.io_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"IO requirements",io_mem_real*byte_to_kilo,'KB'
+          elseif(io_mem_real.le.1.0e9_dp.and.io_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"IO requirements",io_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"IO requirements",io_memory*byte_to_giga,'GB'
+             write(stdout,17)"IO requirements",io_mem_real*byte_to_giga,'GB'
           end if
 
 
-          if (basis_memory.le.1.0e3_dp)then
-             write(stdout,17)"Basis requirements",basis_memory,'B'
-          elseif(basis_memory.le.1.0e6_dp.and.basis_memory.gt.1.0e3_dp)then
-             write(stdout,17)"Basis requirements",basis_memory*byte_to_kilo,'KB'
-          elseif(basis_memory.le.1.0e9_dp.and.basis_memory.gt.1.0e6_dp)then
-             write(stdout,17)"Basis requirements",basis_memory*byte_to_mega,'MB'
+          if (basis_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"Basis requirements",basis_mem_real,'B'
+          elseif(basis_mem_real.le.1.0e6_dp.and.basis_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"Basis requirements",basis_mem_real*byte_to_kilo,'KB'
+          elseif(basis_mem_real.le.1.0e9_dp.and.basis_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"Basis requirements",basis_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"Basis requirements",basis_memory*byte_to_giga,'GB'
+             write(stdout,17)"Basis requirements",basis_mem_real*byte_to_giga,'GB'
           end if
 
 
-          if (pot_memory.le.1.0e3_dp)then
-             write(stdout,17)"Potential requirements",pot_memory,'B'
-          elseif(pot_memory.le.1.0e6_dp.and.pot_memory.gt.1.0e3_dp)then
-             write(stdout,17)"Potential requirements",pot_memory*byte_to_kilo,'KB'
-          elseif(pot_memory.le.1.0e9_dp.and.pot_memory.gt.1.0e6_dp)then
-             write(stdout,17)"Potential requirements",pot_memory*byte_to_mega,'MB'
+          if (pot_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"Potential requirements",pot_mem_real,'B'
+          elseif(pot_mem_real.le.1.0e6_dp.and.pot_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"Potential requirements",pot_mem_real*byte_to_kilo,'KB'
+          elseif(pot_mem_real.le.1.0e9_dp.and.pot_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"Potential requirements",pot_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"Potential requirements",pot_memory*byte_to_giga,'GB'
+             write(stdout,17)"Potential requirements",pot_mem_real*byte_to_giga,'GB'
           end if
 
 
-          if (wave_memory.le.1.0e3_dp)then
-             write(stdout,17)"Wavefunction requirements",wave_memory,'B'
-          elseif(wave_memory.le.1.0e6_dp.and.wave_memory.gt.1.0e3_dp)then
-             write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_kilo,'KB'
-          elseif(wave_memory.le.1.0e9_dp.and.wave_memory.gt.1.0e6_dp)then
-             write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_mega,'MB'
+          if (wave_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"Wavefunction requirements",wave_mem_real,'B'
+          elseif(wave_mem_real.le.1.0e6_dp.and.wave_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"Wavefunction requirements",wave_mem_real*byte_to_kilo,'KB'
+          elseif(wave_mem_real.le.1.0e9_dp.and.wave_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"Wavefunction requirements",wave_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"Wavefunction requirements",wave_memory*byte_to_giga,'GB'
+             write(stdout,17)"Wavefunction requirements",wave_mem_real*byte_to_giga,'GB'
           end if
 
-          if (den_memory.le.1.0e3_dp)then
-             write(stdout,17)"Density requirements",den_memory,'B'
-          elseif(den_memory.le.1.0e6_dp.and.den_memory.gt.1.0e3_dp)then
-             write(stdout,17)"Density requirements",den_memory*byte_to_kilo,'KB'
-          elseif(den_memory.le.1.0e9_dp.and.den_memory.gt.1.0e6_dp)then
-             write(stdout,17)"Density requirements",den_memory*byte_to_mega,'MB'
+          if (den_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"Density requirements",den_mem_real,'B'
+          elseif(den_mem_real.le.1.0e6_dp.and.den_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"Density requirements",den_mem_real*byte_to_kilo,'KB'
+          elseif(den_mem_real.le.1.0e9_dp.and.den_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"Density requirements",den_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"Density requirements",den_memory*byte_to_giga,'GB'
+             write(stdout,17)"Density requirements",den_mem_real*byte_to_giga,'GB'
           end if
 
-          if (gen_memory.le.1.0e3_dp)then
-             write(stdout,17)"General requirements",gen_memory,'B'
-          elseif(gen_memory.le.1.0e6_dp.and.gen_memory.gt.1.0e3_dp)then
-             write(stdout,17)"General requirements",gen_memory*byte_to_kilo,'KB'
-          elseif(gen_memory.le.1.0e9_dp.and.gen_memory.gt.1.0e6_dp)then
-             write(stdout,17)"General requirements",gen_memory*byte_to_mega,'MB'
+          if (gen_mem_real.le.1.0e3_dp)then
+             write(stdout,17)"General requirements",gen_mem_real,'B'
+          elseif(gen_mem_real.le.1.0e6_dp.and.gen_mem_real.gt.1.0e3_dp)then
+             write(stdout,17)"General requirements",gen_mem_real*byte_to_kilo,'KB'
+          elseif(gen_mem_real.le.1.0e9_dp.and.gen_mem_real.gt.1.0e6_dp)then
+             write(stdout,17)"General requirements",gen_mem_real*byte_to_mega,'MB'
           else
-             write(stdout,17)"General requirements",gen_memory*byte_to_giga,'GB'
+             write(stdout,17)"General requirements",gen_mem_real*byte_to_giga,'GB'
           end if
 
           write(stdout,*)"|                                                  =============== | <-- MEM"
        end if
-       if (tot_memory.le.1.0e3_dp)then
-          write(stdout,17)"Total requirements",tot_memory,'B'
-       elseif(tot_memory.le.1.0e6_dp.and.tot_memory.gt.1.0e3_dp)then
-          write(stdout,17)"Total requirements",tot_memory*byte_to_kilo,'KB'
-       elseif(tot_memory.le.1.0e9_dp.and.tot_memory.gt.1.0e6_dp)then
-          write(stdout,17)"Total requirements",tot_memory*byte_to_mega,'MB'
+       if (tot_mem_real.le.1.0e3_dp)then
+          write(stdout,17)"Total requirements",tot_mem_real,'B'
+       elseif(tot_mem_real.le.1.0e6_dp.and.tot_mem_real.gt.1.0e3_dp)then
+          write(stdout,17)"Total requirements",tot_mem_real*byte_to_kilo,'KB'
+       elseif(tot_mem_real.le.1.0e9_dp.and.tot_mem_real.gt.1.0e6_dp)then
+          write(stdout,17)"Total requirements",tot_mem_real*byte_to_mega,'MB'
        else
-          write(stdout,17)"Total requirements",tot_memory*byte_to_giga,'GB'
+          write(stdout,17)"Total requirements",tot_mem_real*byte_to_giga,'GB'
        end if
 
        write(stdout,*)"+------------------------------------------------------------------+ <-- MEM"
@@ -2951,10 +3157,103 @@ contains
 
   end subroutine io_mem_report
 
+  subroutine io_open_fmt(unit,file,access,action,status)
+    integer, intent(inout)              :: unit
+    character(*),intent(in)             :: file
+    character(*),intent(in),   optional :: access
+    character(*),intent(in),   optional :: action
+    character(*),intent(in),   optional :: status
 
 
+    ! Internal
+    integer       :: stat
+    character(25) :: loc_access,loc_action,loc_status
+    logical       :: is_open
+    call trace_entry('io_open_fmt')
+
+
+    ! Close if opened
+    inquire(unit,opened=is_open)
+    if (is_open)then
+       call io_close(unit)
+    end if
+
+    ! Check for defaults
+    if (present(access))then
+       loc_access = access
+    else
+       loc_access = 'stream'
+    end if
+
+    if (present(status))then
+       loc_status = status
+    else
+       loc_status = 'unknown'
+    end if
+
+
+    if (present(action))then
+       loc_action = action
+    else
+       loc_action = 'readwrite'
+    end if
+    
+    
+    ! check the flags are alright
+
+    select case(trim(io_case(loc_access)))
+    case('append')
+    case('stream')
+    case default
+       call io_errors('Unknown file access type: '//access)
+    end select
+    
+
+    select case(trim(io_case(loc_status)))
+    case('old')
+    case('new')
+    case('unknown')
+    case('replace')
+    case('scratch')
+    case default
+       call io_errors('Unknown file status type: '//status)
+    end select
+    
+    select case(trim(io_case(loc_action)))
+    case('read')
+    case('write')
+    case('readwrite')
+    case default
+       call io_errors('Unknown file action type: '//action)
+    end select
+
+    open(newunit=unit,file=file,form="FORMATTED",access=loc_access,status=loc_status,action=loc_action)
+    !if (stat.ne.0)call io_errors('Unable to open file: '//trim(file))
+
+
+    call trace_exit('io_open_fmt')
+  end subroutine io_open_fmt
+
+
+
+  subroutine io_close(unit)
+    implicit none
+    integer, intent(in) :: unit
+
+    logical :: is_open
+    integer :: iostat
+    character(len=100) :: errmsg
+    call trace_entry('io_close')
+    ! Check if the unit is open
+    inquire(unit=unit, opened=is_open)
+    if (is_open) then       
+       close(unit, iostat=iostat)
+    end if
+    call trace_exit('io_close')
+  end subroutine io_close
 
 end module io
+
 
 
 

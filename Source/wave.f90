@@ -23,7 +23,7 @@ module wave
   use comms, only : rank,on_root_node,nprocs
   use io,    only : current_params,current_structure,io_errors,seed
   use basis, only : current_basis
-  use memory,only : memory_allocate,memory_deallocate
+  use memory,only : memory_allocate,memory_deallocate,wave_memory
 
 
   type wavefunction
@@ -54,6 +54,12 @@ module wave
      module procedure wave_allocate_slice
   end interface wave_allocate
 
+  interface wave_deallocate
+     module procedure wave_deallocate_wfn
+     module procedure wave_deallocate_slice
+  end interface wave_deallocate
+
+  
   interface wave_copy
      module procedure wave_copy_wfn_wfn
      module procedure wave_copy_slice_wfn
@@ -96,6 +102,7 @@ module wave
   end interface wave_initialise
 
   public wave_allocate
+  public wave_deallocate
   public wavefunction
   public wavefunction_slice
   public wave_copy
@@ -152,6 +159,7 @@ contains
     integer, intent(in) :: nbands
 
     call trace_entry("wave_allocate_wfn")
+
     call memory_deallocate(wfn%coeff,'W')
     call memory_allocate(wfn%coeff,1,current_basis%num_grid_points,1,current_structure%num_kpoints,1,nbands,1,2,'W')
     wfn%nbands=nbands
@@ -162,6 +170,56 @@ contains
     call trace_exit("wave_allocate_wfn")
     return
   end subroutine wave_allocate_wfn
+
+
+    subroutine wave_deallocate_slice(wfn)
+    !==============================================================================!
+    !                    W A V E _ A L L O C A T E _ S L I C E                     !
+    !==============================================================================!
+    ! Subroutine for allocating a wavefunction a wavefunction slice                !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn,               intent :: inout                                 !
+    !           nbands,            intent :: in                                    !
+    !           kpt,               intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  05/01/2022                                            !
+    !==============================================================================!
+    type(wavefunction_slice), intent(inout) :: wfn
+
+    call trace_entry("wave_deallocate_slice")
+
+    call memory_deallocate(wfn%coeff,'W')
+
+    wfn%allocated=.false.
+
+    call trace_exit("wave_deallocate_slice")
+    return
+  end subroutine wave_deallocate_slice
+
+  subroutine wave_deallocate_wfn(wfn)
+    !==============================================================================!
+    !                      W A V E _ A L L O C A T E _ W F N                       !
+    !==============================================================================!
+    ! Subroutine for allocating a wavefunction a wavefunction                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           wfn,               intent :: inout                                 !
+    !           nbands,            intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  05/01/2022                                            !
+    !==============================================================================!
+    type(wavefunction), intent(inout) :: wfn
+
+    call trace_entry("wave_deallocate_wfn")
+    if (rank.eq.1)print*,'INSIDE WAVE',wave_memory
+    call memory_deallocate(wfn%coeff,'W')
+
+    wfn%allocated=.false.
+
+    call trace_exit("wave_deallocate_wfn")
+    return
+  end subroutine wave_deallocate_wfn
 
 
 

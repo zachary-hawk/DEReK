@@ -58,7 +58,7 @@ module basis
 
   ! PUBLIC ROUTINES 
   public  basis_init
-
+  public  basis_deallocate
 
 contains
 
@@ -240,7 +240,20 @@ contains
     return
   end subroutine basis_init
 
-
+  subroutine basis_deallocate(basis)
+    type(basis_dat) ,intent(inout):: basis
+    
+    call memory_deallocate(basis%grid_points,"B")
+    call memory_deallocate(basis%fine_grid_points,"B")
+    call memory_deallocate(basis%real_grid_points,"B")
+    call memory_deallocate(basis%real_fine_grid_points,"B")
+    call memory_deallocate(basis%frac_points,"B")
+    call memory_deallocate(basis%fine_frac_points,"B")
+    call memory_deallocate(basis%local_grid_points,'B')
+    call memory_deallocate(basis%local_fine_grid_points,'B')
+    
+  end subroutine basis_deallocate
+  
   subroutine basis_prime_fact(N)
     !==============================================================================!
     !                       B A S I S _ P R I M E _ F A C T                        !

@@ -24,14 +24,14 @@ module state
   use units
   use comms, only : on_root_node,rank,nprocs,dist_kpt,dist_gvec
   use io,    only : current_structure,current_params,stdout,parameters,structure,seed,io_errors,seed,io_flush,io_section,&
-       & glob_line_len
-  use basis, only : current_basis,basis_dat
-  use wave,  only : wavefunction,wave_allocate,wave_initialise
-  use pot,   only : potential, pot_allocate,pot_external_pot,pot_writef
+       & glob_line_len,io_open_fmt,io_close
+  use basis, only : current_basis,basis_dat,basis_deallocate
+  use wave,  only : wavefunction,wave_allocate,wave_initialise,wave_deallocate
+  use pot,   only : potential, pot_allocate,pot_external_pot,pot_writef,pot_deallocate,pot_from_atomic,pot_to_atomic
   use trace, only : trace_entry,trace_exit,trace_wallclock
   use memory,only : memory_allocate,memory_deallocate
   use density,only : density_allocate,elec_den,density_writef
-
+  use xsf
   type,public :: state_data
      type(wavefunction)   :: wfn     ! The current wavefunction
      type(basis_dat)      :: basis   ! The current basis
@@ -181,8 +181,8 @@ contains
     ! Author:   Z. Hawkhead  08/11/2023                                            !
     !==============================================================================!
 
-    integer       :: pot_file,den_file,wfn_file,state_file
-    character(40) :: file_name,loc_pot_type
+    integer       :: pot_file,potex_file,den_file,wfn_file,state_file
+    character(100) :: file_name,loc_pot_type
     character(100):: write_str
     integer:: stat
     integer:: line_len = 50
@@ -197,183 +197,320 @@ contains
        write(stdout,*)"|          A U X .  F I L E  W R I T I N G              | Time (s) |"
        write(stdout,*)"+-------------------------------------------------------+----------+"
 
-    end if
-    ! Write out the externalu potential file
 
-    if (current_params%write_potex)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       if (current_state%ext_pot%preset)then
-          select case(current_params%external_pot)
-          case('finite_barrier')
-             loc_pot_type = 'FB'
-          case('periodic_potential')
-             loc_pot_type = 'PP'
-          case('jelly')
-             loc_pot_type = 'jelly'
-          end select
+       ! Write out the externalu potential file
 
-          write(file_name,*)trim(seed)//'-'//trim(loc_pot_type)//'.potex'
-          open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       else
-          write(file_name,*)trim(seed)//'.potex'
-          open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
-       end if
-       write_str = "Ext. potential to "
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )
+       if (current_params%write_potex)then
 
 
-       wall_time = trace_wallclock()
-       if (on_root_node)then
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+          if (current_state%ext_pot%preset)then
+             select case(current_params%external_pot)
+             case('finite_barrier')
+                loc_pot_type = 'FB'
+             case('periodic_pot')
+                loc_pot_type = 'PP'
+             case('jelly')
+                loc_pot_type = 'jelly'
+             case('gaussian_pot','lorentzian_pot')
+                loc_pot_type = 'local'            
+             end select
+
+             write(file_name,*)trim(seed)//'-'//trim(loc_pot_type)//'.potex'
+             open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+          else
+             write(file_name,*)trim(seed)//'.potex'
+             open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+          end if
+          write_str = "Ext. potential to "
+          loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )
+
+
+          wall_time = trace_wallclock()
+
           write(pot_file)current_state%ext_pot
 
           if (current_params%iprint.ge.1)write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
           call io_flush(stdout)
           close(pot_file)
+
+
+       end if
+       ! formatted external potential
+       if (current_params%write_formatted_potex)then
+          ! convert to output units
+          !call pot_from_atomic(current_state%ext_pot)
+
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+
+!!! -------- XSF fpotex --------------- !!!
+          if (current_params%write_xsf)then
+             if (current_state%ext_pot%preset)then         
+                select case(current_params%external_pot)
+                case('finite_barrier')
+                   loc_pot_type = 'FB'
+                case('periodic_potential')
+                   loc_pot_type = 'PP'
+                case('jelly')
+                   loc_pot_type = 'jelly'
+                case('gaussian_pot','lorentzian_pot')
+                   loc_pot_type = 'local'            
+                end select
+
+                write(file_name,*)trim(seed)//'-'//trim(loc_pot_type)        
+
+             else
+                write(file_name,*)trim(seed)
+
+             end if
+
+             ! Write the potential
+             write_str = "Ext. potential to"
+
+             wall_time = trace_wallclock()
+
+             ! Write V
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-V.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%ext_pot%nc_pot,'V')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 6 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-V.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write Bx
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-Bx.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%ext_pot%nc_pot,'x')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-Bx.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write By
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-By.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%ext_pot%nc_pot,'y')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-By.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write Bz
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-Bz.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%ext_pot%nc_pot,'z')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-Bz.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+
+             call io_close(pot_file)
+
+
+
+
+          else ! otherwise use derek defaults
+
+             if (current_state%ext_pot%preset)then         
+                select case(current_params%external_pot)
+                case('finite_barrier')
+                   loc_pot_type = 'FB'
+                case('periodic_potential')
+                   loc_pot_type = 'PP'
+                case('jelly')
+                   loc_pot_type = 'jelly'
+                end select
+
+                write(file_name,*)trim(seed)//'-'//trim(loc_pot_type)//'.fpotex'        
+                call io_open_fmt(unit=potex_file,file=adjustl(file_name),status="unknown")
+             else
+                write(file_name,*)trim(seed)//'.fpotex'
+                call io_open_fmt(unit=potex_file,file=adjustl(file_name),status="unknown")
+             end if
+             write_str = "Fmt. ext. potential to"
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+             wall_time = trace_wallclock()
+
+             call pot_writef(current_state%ext_pot,pot_file)
+
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
+             call io_flush(stdout)
+
+             close(pot_file)
+          end if
+          !call pot_to_atomic(current_state%ext_pot)
        end if
 
-    end if
-    ! formatted external potential
-    if (current_params%write_formatted_potex)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       if (current_state%ext_pot%preset)then         
-          select case(current_params%external_pot)
-          case('finite_barrier')
-             loc_pot_type = 'FB'
-          case('periodic_potential')
-             loc_pot_type = 'PP'
-          case('jelly')
-             loc_pot_type = 'jelly'
-          end select
-
-          write(file_name,*)trim(seed)//'-'//trim(loc_pot_type)//'.fpotex'        
-          open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED')
-       else
-          write(file_name,*)trim(seed)//'.fpotex'
-          open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
-       end if
-       write_str = "Fmt. ext. potential to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
-          call pot_writef(current_state%ext_pot,pot_file)
-
-          if (current_params%iprint.ge.1)&
-               & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
-          call io_flush(stdout)
-       end if
-       close(pot_file)
-    end if
 
 
+       ! TOTAL POTENTIAL
 
-    ! TOTAL POTENTIAL
+       if (current_params%write_potential)then
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+          write(file_name,*)trim(seed)//'.pot'
+          open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
 
-    if (current_params%write_potential)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       write(file_name,*)trim(seed)//'.pot'
-       open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+          write_str = "Total potential to"
+          loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+          wall_time = trace_wallclock()
 
-       write_str = "Total potential to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
 
           write(pot_file)current_state%tot_pot
 
           if (current_params%iprint.ge.1)&
                & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
           call io_flush(stdout)
-       end if
-       close(pot_file)
-    end if
 
-    ! formatted total potential
-    if (current_params%write_formatted_potential)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       write(file_name,*)trim(seed)//'.fpot'
-       open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
-
-       write_str = "Fmt. potential to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
-          call pot_writef(current_state%tot_pot,pot_file)
           close(pot_file)
-          if (current_params%iprint.ge.1)&
-               & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
-          call io_flush(stdout)
        end if
-       close(pot_file)
-    end if
 
-    ! TOTAL density
-    if (current_params%write_density)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       write(file_name,*)trim(seed)//'.den'
-       open(newunit=den_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+       ! formatted total potential
 
-       write_str = "Density to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
+       if (current_params%write_formatted_potential)then
+          if (current_params%write_xsf)then
+             no_files=.false.
+             ! Now we have calculated it we can write it if needed
+             ! Write the potential
+             file_name=trim(seed)
+             write_str = "Tot. potential V to"
+             wall_time = trace_wallclock()
+
+             ! Write V
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-V.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%tot_pot%nc_pot,'V')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 6 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-V.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write Bx
+             write_str = "Magnetic field Bx to"
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-Bx.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%tot_pot%nc_pot,'x')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-Bx.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write By
+             write_str = "Magnetic field By to"
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-By.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%tot_pot%nc_pot,'y')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-By.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+             ! Write Bz
+             write_str = "Magnetic field Bz to"
+             call io_open_fmt(unit=potex_file,file=trim(adjustl(file_name))//'-Bz.xsf',status="unknown")
+             call xsf_write(potex_file,current_state%tot_pot%nc_pot,'z')
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) + 7 )         
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name)//'-Bz.xsf',wall_time
+             call io_flush(stdout)
+             call io_close(potex_file)
+
+
+             call io_close(pot_file)
+
+
+
+
+             
+          else ! Derek defaults
+             no_files=.false.
+             ! Now we have calculated it we can write it if needed
+             write(file_name,*)trim(seed)//'.fpot'
+             open(newunit=pot_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
+
+             write_str = "Fmt. potential to"
+             loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+             wall_time = trace_wallclock()
+
+             call pot_writef(current_state%tot_pot,pot_file)
+             close(pot_file)
+             if (current_params%iprint.ge.1)&
+                  & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
+             call io_flush(stdout)
+
+             close(pot_file)
+
+          end if
+       end if
+
+       ! TOTAL density
+       if (current_params%write_density)then
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+          write(file_name,*)trim(seed)//'.den'
+          open(newunit=den_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+
+          write_str = "Density to"
+          loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+          wall_time = trace_wallclock()
+
           write(den_file)current_state%den
 
           if (current_params%iprint.ge.1)&
                & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
           call io_flush(stdout)
-       end if
-       close(den_file)
-    end if
 
-    ! formatted total density
-    if (current_params%write_formatted_density)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       write(file_name,*)trim(seed)//'.fden'
-       open(newunit=den_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
-       write_str = "Fmt. density to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
+          close(den_file)
+       end if
+
+       ! formatted total density
+       if (current_params%write_formatted_density)then
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+          write(file_name,*)trim(seed)//'.fden'
+          open(newunit=den_file,file=adjustl(file_name),status="unknown",form='FORMATTED',RECL=8192)
+          write_str = "Fmt. density to"
+          loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+          wall_time = trace_wallclock()
+
           call density_writef(current_state%den,den_file)
 
           if (current_params%iprint.ge.1)&
                & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
           call io_flush(stdout)          
+
+          close(den_file)
        end if
-       close(den_file)
-    end if
-    if (current_params%write_wvfn)then
-       no_files=.false.
-       ! Now we have calculated it we can write it if needed
-       write(file_name,*)trim(seed)//'.wvfn'
-       open(newunit=wfn_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
+       if (current_params%write_wvfn)then
+          no_files=.false.
+          ! Now we have calculated it we can write it if needed
+          write(file_name,*)trim(seed)//'.wvfn'
+          open(newunit=wfn_file,file=adjustl(file_name),status="unknown",form='UNFORMATTED')
 
 
-       write_str = "Wavefunction to"
-       loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
-       wall_time = trace_wallclock()
-       if (on_root_node)then
+          write_str = "Wavefunction to"
+          loc_len = line_len - ( len(trim(write_str)) +  len(trim(file_name)) )         
+          wall_time = trace_wallclock()
+
           write(wfn_file)current_state%wfn
-
 
           if (current_params%iprint.ge.1)&
                & write(stdout,10)trim(write_str),repeat('-',loc_len),trim(file_name),wall_time
           call io_flush(stdout)
+
+          close(wfn_file)
        end if
-       close(wfn_file)
+       if (no_files)write(stdout,11)"No Auxiliary files to be written"
+
+       write(stdout,*)"+-------------------------------------------------------+----------+"
+       write(stdout,*)
+
     end if
-    if (no_files)write(stdout,11)"No Auxiliary files to be written"
-
-    write(stdout,*)"+-------------------------------------------------------+----------+"
-    write(stdout,*)
-
-
 
 10  format(1x,'|',1x a,1x,a,'>',1x,a,T58,'|',1x,f8.2,T69,'|')
 11  format(1x,'|',1x a,T69,'|')
@@ -390,6 +527,12 @@ contains
 !!$
 
 
+
+
+    call wave_deallocate(current_state%wfn)
+    call basis_deallocate(current_state%basis)
+    call pot_deallocate(current_state%tot_pot)
+    call pot_deallocate(current_state%ext_pot)
 
     call trace_exit("io_data_dump")
 

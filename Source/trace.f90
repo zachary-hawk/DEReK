@@ -26,6 +26,7 @@
 !=============================================================================!
 module trace
   use constants
+  !use memory ,only: wave_memory
   implicit none
 
   public
@@ -81,6 +82,8 @@ module trace
   integer                                   :: global_mods
 
   integer                                   :: warning_counter=0
+  integer      ,private                     :: indent
+  
 contains
 
   subroutine trace_init()
@@ -94,9 +97,10 @@ contains
     !           None                                                               !
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  26/08/2019                                            !
-    !==============================================================================!
+    !==============================================================================!     
     implicit none
     integer   :: stat
+
     !call CPU_TIME(global_start)
     global_start = TRACE_WALLCLOCK()
     ! Only one allocation for each of the entry and exit logs
@@ -104,9 +108,10 @@ contains
     if (stat.ne.0) stop
     allocate(out_log(1:log_size),stat=stat)
     if (stat.ne.0) stop
-
-
-
+    
+    indent = 0
+    
+    
   end subroutine trace_init
 
 
@@ -129,8 +134,16 @@ contains
     real(dp)                 :: time
     integer                  :: i
 
+    ! Check for debugging - I want this to be buried here
+
+    call constants_debug_flag()
+
+
+    !!print*,sub_name,wave_memory
     new_sub_name=trace_string_to_lower(sub_name)
 
+    !print*,repeat(' ',indent),"ENTRY: ", trim(new_sub_name)
+    indent = indent + 4
     ! Have a new entry, so increase global ID
     global_id = global_id + 1
 
@@ -174,7 +187,10 @@ contains
     character(30)                    :: new_sub_name
     real(dp)                          :: time
     !print*,"exit start"
+    indent = indent - 4
     new_sub_name=trace_string_to_lower(sub_name)
+    !print*,repeat(' ',indent),"EXIT : ", trim(new_sub_name)
+
     !call CPU_TIME(time)
     time=TRACE_WALLCLOCK()
     close_count=close_count+1
@@ -724,8 +740,8 @@ contains
     call trace_finalise(.FALSE.,rank,.true.,seed=seed)
 
     ! count the unclosed routines
-    do i=1,global_id
-       if (.not.in_log(i)%closed) unclosed=unclosed+1
+    do i=1,global_id  
+       if (.not.in_log(i)%closed)unclosed=unclosed+1
     end do
 
     allocate(stack(1:unclosed))
@@ -822,6 +838,8 @@ contains
        end do
     end do
 
+    
+    
     ! Sort the modules by time
 
     call trace_sort(module_times(1:N),module_list(1:N))

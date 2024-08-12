@@ -1,4 +1,4 @@
-FOBJ+=$(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/constants.o $(BUILD_DIR)/state.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/grids.o $(BUILD_DIR)/pot.o $(BUILD_DIR)/fft.o $(BUILD_DIR)/wave.o $(BUILD_DIR)/license.o $(BUILD_DIR)/derek.o $(BUILD_DIR)/spectral.o $(BUILD_DIR)/electronic.o $(BUILD_DIR)/basis.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/units.o $(BUILD_DIR)/sys.o $(BUILD_DIR)/xc.o $(BUILD_DIR)/density.o $(BUILD_DIR)/io.o 
+FOBJ+=$(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/constants.o $(BUILD_DIR)/state.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/grids.o $(BUILD_DIR)/pot.o $(BUILD_DIR)/fft.o $(BUILD_DIR)/wave.o $(BUILD_DIR)/license.o $(BUILD_DIR)/derek.o $(BUILD_DIR)/spectral.o $(BUILD_DIR)/electronic.o $(BUILD_DIR)/basis.o $(BUILD_DIR)/xsf.o $(BUILD_DIR)/utils.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/units.o $(BUILD_DIR)/sys.o $(BUILD_DIR)/xc.o $(BUILD_DIR)/density.o $(BUILD_DIR)/io.o 
 
 $(BUILD_DIR)/derek.mpi: $(FOBJ)
 	@$(MPIC) $(FCFLAGS)  $(LDFLAGS)  -o $@ $(FOBJ)
@@ -9,7 +9,7 @@ $(BUILD_DIR)/comms.mpi.o : ../Source/comms.mpi.f90 $(BUILD_DIR)/trace.o $(BUILD_
 $(BUILD_DIR)/constants.o : ../Source/constants.f90 
 	@echo "Compiling object file" $@ "from"  $< 
 	@$(MPIC) $(FCFLAGS) $(LDFLAGS) -o $@ -c $<
-$(BUILD_DIR)/state.o : ../Source/state.f90 $(BUILD_DIR)/density.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/pot.o $(BUILD_DIR)/wave.o $(BUILD_DIR)/basis.o $(BUILD_DIR)/io.o $(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/units.o $(BUILD_DIR)/constants.o 
+$(BUILD_DIR)/state.o : ../Source/state.f90 $(BUILD_DIR)/xsf.o $(BUILD_DIR)/density.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/pot.o $(BUILD_DIR)/wave.o $(BUILD_DIR)/basis.o $(BUILD_DIR)/io.o $(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/units.o $(BUILD_DIR)/constants.o 
 	@echo "Compiling object file" $@ "from"  $< 
 	@$(MPIC) $(FCFLAGS) $(LDFLAGS) -o $@ -c $<
 $(BUILD_DIR)/trace.o : ../Source/trace.f90 $(BUILD_DIR)/constants.o 
@@ -40,6 +40,9 @@ $(BUILD_DIR)/electronic.o : ../Source/electronic.f90 $(BUILD_DIR)/comms.mpi.o $(
 	@echo "Compiling object file" $@ "from"  $< 
 	@$(MPIC) $(FCFLAGS) $(LDFLAGS) -o $@ -c $<
 $(BUILD_DIR)/basis.o : ../Source/basis.f90 $(BUILD_DIR)/fft.o $(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/io.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/units.o $(BUILD_DIR)/constants.o 
+	@echo "Compiling object file" $@ "from"  $< 
+	@$(MPIC) $(FCFLAGS) $(LDFLAGS) -o $@ -c $<
+$(BUILD_DIR)/xsf.o : ../Source/xsf.f90 $(BUILD_DIR)/memory.o $(BUILD_DIR)/units.o $(BUILD_DIR)/basis.o $(BUILD_DIR)/io.o $(BUILD_DIR)/constants.o $(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/trace.o 
 	@echo "Compiling object file" $@ "from"  $< 
 	@$(MPIC) $(FCFLAGS) $(LDFLAGS) -o $@ -c $<
 $(BUILD_DIR)/utils.o : ../Source/utils.f90 $(BUILD_DIR)/comms.mpi.o $(BUILD_DIR)/io.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/trace.o $(BUILD_DIR)/units.o $(BUILD_DIR)/constants.o 

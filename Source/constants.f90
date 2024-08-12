@@ -20,6 +20,8 @@
 module constants
   use iso_fortran_env , only: real64
 
+  ! Global debug
+  logical, public              :: master_debug
   ! Basic parameters
   integer,parameter,public     :: dp=real64 
 
@@ -34,6 +36,7 @@ module constants
   complex(dp),parameter,public :: cmplx_0 = (0.0_dp,0.0_dp)
   complex(dp),parameter,public :: cmplx_1 = (1.0_dp,0.0_dp)
   complex(dp),parameter,public :: cmplx_i = (0.0_dp,1.0_dp)
+  complex(dp),parameter,public :: cmplx_2i = (0.0_dp,2.0_dp)
 
   ! wont be needing these in while
   ! Conversion factors
@@ -96,6 +99,7 @@ module constants
   ! Derived contants
   real(dp),parameter,public  :: hbar_si = planck_si/twopi                                                                   ! Reduced Planks constant (h_bar)
   real(dp),parameter,public  :: mu_b_si = elementary_charge_si * hbar_si /2.0_dp * electron_mass_si                         ! Bohr Magneton mu_B
+  real(dp),parameter,public  :: mu_b    = 0.5_dp
   real(dp),parameter,public  :: mu_0_si = fourpi*1.0E-7_dp                                                                  ! Magnetic permiability (mu_0)
   real(dp),parameter,public  :: epsilon_0_si = 1.0_dp/(mu_0_si*speed_light_si**2)                                           ! Electric permitivity (epsilon_0)
   real(dp),parameter,public  :: fine_structure_si = elementary_charge_si**2/(4.0_dp*pi*epsilon_0_si*hbar_si*speed_light_si) ! Fine structure (alpha)
@@ -103,5 +107,36 @@ module constants
 
   !! -----------------------------------------------------------------------------------------------------------------------------------------------
 
+contains
+  subroutine constants_debug_flag()
+    implicit none
+
+    character(len=:), allocatable :: cmdline
+    character(len=:), allocatable :: argument
+    integer :: i, num_args
+    logical :: found
+
+    found = .false.
+
+    ! Get the number of command line arguments
+    num_args = command_argument_count()
+
+    ! Loop through the arguments to find --master_debug
+    do i = 1, num_args
+       call get_command_argument(i, cmdline)
+       if (cmdline == "--master_debug") then
+          found = .true.
+          exit
+       end if
+    end do
+
+    ! Set the global variable master_debug accordingly
+    if (found) then
+       master_debug = .true.
+    else
+       master_debug = .false.
+    end if
+
+  end subroutine constants_debug_flag
 
 end  module constants

@@ -38,6 +38,8 @@ module utils
   !              P U B L I C  R O U T I N E S             !
   !-------------------------------------------------------!
   public :: utils_mat_inv
+  !public :: utils_gaussian
+  !public :: utils_cauchy
 
 contains
 

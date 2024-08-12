@@ -92,7 +92,7 @@ ifeq ($(BUILD),debug)
 endif
 
 export FCFLAGS
-
+export OTP
 .phony: all check_file
 
 all: $(LIBXC_BUILD)/Makefile $(LIBXC_LIB)/libxc.a  subsystem 

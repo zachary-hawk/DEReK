@@ -154,6 +154,56 @@ module units
 
 
 
+
+  ! Interfaces
+  interface units_from_atomic
+     module procedure units_from_atomic_scalar
+     module procedure units_from_atomic_vector_1D
+     module procedure units_from_atomic_vector_2D
+     module procedure units_from_atomic_vector_3D
+     module procedure units_from_atomic_vector_4D
+     module procedure units_from_atomic_vector_5D     
+     module procedure units_from_atomic_cmplx_scalar
+     module procedure units_from_atomic_cmplx_vector_1D
+     module procedure units_from_atomic_cmplx_vector_2D
+     module procedure units_from_atomic_cmplx_vector_3D
+     module procedure units_from_atomic_cmplx_vector_4D
+     module procedure units_from_atomic_cmplx_vector_5D     
+  end  interface units_from_atomic
+
+
+  interface units_to_atomic
+     module procedure units_to_atomic_scalar
+     module procedure units_to_atomic_vector_1D
+     module procedure units_to_atomic_vector_2D
+     module procedure units_to_atomic_vector_3D
+     module procedure units_to_atomic_vector_4D
+     module procedure units_to_atomic_vector_5D     
+     module procedure units_to_atomic_cmplx_scalar
+     module procedure units_to_atomic_cmplx_vector_1D
+     module procedure units_to_atomic_cmplx_vector_2D
+     module procedure units_to_atomic_cmplx_vector_3D
+     module procedure units_to_atomic_cmplx_vector_4D
+     module procedure units_to_atomic_cmplx_vector_5D     
+  end  interface units_to_atomic
+
+  interface units_conversion
+     module procedure units_conversion_scalar
+     module procedure units_conversion_1D
+     module procedure units_conversion_2D
+     module procedure units_conversion_3D
+     module procedure units_conversion_4D
+     module procedure units_conversion_5D
+     module procedure units_conversion_cmplx_scalar
+     module procedure units_conversion_cmplx_1D
+     module procedure units_conversion_cmplx_2D
+     module procedure units_conversion_cmplx_3D
+     module procedure units_conversion_cmplx_4D
+     module procedure units_conversion_cmplx_5D     
+
+  end  interface units_conversion
+
+
 contains
   subroutine units_initialise()
     !==============================================================================!
@@ -414,22 +464,22 @@ contains
     call trace_exit('units_initialise')
   end subroutine units_initialise
   function units_to_atomic(quant,unit) result(quant_atom)
-!==============================================================================!
-!                        U N I T S _ T O _ A T O M I C                         !
-!==============================================================================!
-! Units helper routine for converting SI or SI derived units into atomic       !
-! units for calculations.                                                      !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           quant,             intent :: in                                    !
-!           unit,              intent :: in                                    !
-!------------------------------------------------------------------------------!
-! Result:                                                                      !
-!           quant_atom                                                         !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  20/06/2024                                            !
-!==============================================================================!
-    
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit
 
@@ -442,61 +492,602 @@ contains
     call trace_exit('units_to_atomic')
   end function units_to_atomic
 
-  function units_from_atomic(quant,unit) result(quant_si)
-!==============================================================================!
-!                      U N I T S _ F R O M _ A T O M I C                       !
-!==============================================================================!
-! Units helper routine for converting from atomic units to a specified SI or   !
-! SI derived unit.                                                             !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           quant,             intent :: in                                    !
-!           unit,              intent :: in                                    !
-!------------------------------------------------------------------------------!
-! Result:                                                                      !
-!           quant_si                                                           !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  20/06/2024                                            !
-!==============================================================================!
+  !  _   _       _ _         _____          _   _                  _      
+  ! | | | |_ __ (_) |_ ___  |_   _|__      / \ | |_ ___  _ __ ___ (_) ___ 
+  ! | | | | '_ \| | __/ __|   | |/ _ \    / _ \| __/ _ \| '_ ` _ \| |/ __|
+  ! | |_| | | | | | |_\__ \   | | (_) |  / ___ \ || (_) | | | | | | | (__ 
+  !  \___/|_| |_|_|\__|___/   |_|\___/  /_/   \_\__\___/|_| |_| |_|_|\___|
+
+
+
+
+  !  ____            _            
+  ! / ___|  ___ __ _| | __ _ _ __ 
+  ! \___ \ / __/ _` | |/ _` | '__|
+  !  ___) | (_| (_| | | (_| | |   
+  ! |____/ \___\__,_|_|\__,_|_|   
+
+
+
+  function units_to_atomic_scalar(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
 
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit
 
     real(dp)                     :: quant_si
-    call trace_entry('units_from_atomic')
+    call trace_entry('units_to_atomic_scalar')
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    quant_si = sum(quant*conv_values,MASK=conv_units.eq.unit)
+
+    call trace_exit('units_to_atomic_scalar')
+  end function units_to_atomic_scalar
+
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_to_atomic_vector_1D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:),allocatable    :: quant
+    character(*)  ,intent(in)                              :: unit
+
+    real(dp)                  ,dimension(:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_vector_1D')
+
+    ! allocate the quant_si
+    allocate(quant_si(size(quant)))
+
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_vector_1D')
+  end function units_to_atomic_vector_1D
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+
+  function units_to_atomic_vector_2D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_vector_2D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_vector_2D')
+  end function units_to_atomic_vector_2D
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_to_atomic_vector_3D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_vector_3D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_vector_3D')
+  end function units_to_atomic_vector_3D
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+
+  function units_to_atomic_vector_4D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_vector_4D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_vector_4D')
+  end function units_to_atomic_vector_4D
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_to_atomic_vector_5D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                    :: unit
+
+    real(dp)                  ,dimension(:,:,:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_vector_5D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_vector_5D')
+  end function units_to_atomic_vector_5D
+
+
+
+
+
+
+  !  _____                         _   _                  _      
+  ! |  ___| __ ___  _ __ ___      / \ | |_ ___  _ __ ___ (_) ___ 
+  ! | |_ | '__/ _ \| '_ ` _ \    / _ \| __/ _ \| '_ ` _ \| |/ __|
+  ! |  _|| | | (_) | | | | | |  / ___ \ || (_) | | | | | | | (__ 
+  ! |_|  |_|  \___/|_| |_| |_| /_/   \_\__\___/|_| |_| |_|_|\___|
+
+  !  _   _       _ _       
+  ! | | | |_ __ (_) |_ ___ 
+  ! | | | | '_ \| | __/ __|
+  ! | |_| | | | | | |_\__ \
+  !  \___/|_| |_|_|\__|___/
+
+
+
+
+  !  ____            _            
+  ! / ___|  ___ __ _| | __ _ _ __ 
+  ! \___ \ / __/ _` | |/ _` | '__|
+  !  ___) | (_| (_| | | (_| | |   
+  ! |____/ \___\__,_|_|\__,_|_|   
+
+
+
+  function units_from_atomic_scalar(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit
+
+    real(dp)                     :: quant_si
+    call trace_entry('units_from_atomic_scalar')
 
     if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
     ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
     quant_si = sum(quant/conv_values,MASK=conv_units.eq.unit)
 
-    call trace_exit('units_from_atomic')
-  end function units_from_atomic
+    call trace_exit('units_from_atomic_scalar')
+  end function units_from_atomic_scalar
 
-  function units_conversion(quant,unit1,unit2) result(quant_new)
-!==============================================================================!
-!                       U N I T S _ C O N V E R S I O N                        !
-!==============================================================================!
-! A nifty little routine really. This will convert a quantity from one SI      !
-! unit to another. It uses the architechture of the atomic unit conversion as  !
-! a middleman.                                                                 !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           quant,             intent :: in                                    !
-!           unit1,             intent :: in                                    !
-!           unit2,             intent :: in                                    !
-!------------------------------------------------------------------------------!
-! Result:                                                                      !
-!           quant_new                                                          !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  20/06/2024                                            !
-!==============================================================================!
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_from_atomic_vector_1D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:),allocatable    :: quant
+    character(*)  ,intent(in)                              :: unit
+
+    real(dp)                  ,dimension(:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_vector_1D')
+
+    ! allocate the quant_si
+    allocate(quant_si(size(quant)))
+
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_vector_1D')
+  end function units_from_atomic_vector_1D
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+
+  function units_from_atomic_vector_2D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_vector_2D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_vector_2D')
+  end function units_from_atomic_vector_2D
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_from_atomic_vector_3D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_vector_3D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_vector_3D')
+  end function units_from_atomic_vector_3D
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+
+  function units_from_atomic_vector_4D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    real(dp)                  ,dimension(:,:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_vector_4D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_vector_4D')
+  end function units_from_atomic_vector_4D
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_from_atomic_vector_5D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                    :: unit
+
+    real(dp)                  ,dimension(:,:,:,:,:),allocatable    :: quant_si
+
+
+    real(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_vector_5D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_vector_5D')
+  end function units_from_atomic_vector_5D
+
+
+
+
+  !   ____                              _             
+  !  / ___|___  _ ____   _____ _ __ ___(_) ___  _ __  
+  ! | |   / _ \| '_ \ \ / / _ \ '__/ __| |/ _ \| '_ \ 
+  ! | |__| (_) | | | \ V /  __/ |  \__ \ | (_) | | | |
+  !  \____\___/|_| |_|\_/ \___|_|  |___/_|\___/|_| |_|
+
+
+
+
+  function units_conversion_scalar(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
 
     real(dp)      ,intent(in)    :: quant
     character(*)  ,intent(in)    :: unit1,unit2
 
     real(dp)                     :: quant_new
-    call trace_entry('units_conversion')
-    
+    call trace_entry('units_conversion_scalar')
+
     if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
     if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
     ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
@@ -507,8 +1098,1133 @@ contains
     ! Second convert back to SI in the new unit
     quant_new = units_from_atomic(quant_new,unit2)
 
-    call trace_exit('units_conversion')
-  end function units_conversion
+    call trace_exit('units_conversion_scalar')
+  end function units_conversion_scalar
+
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_conversion_1D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    real(dp) ,dimension(:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_1D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_1D')
+  end function units_conversion_1D
+
+
+
+
+
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+  function units_conversion_2D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    real(dp) ,dimension(:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_2D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_2D')
+  end function units_conversion_2D
+
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+
+  function units_conversion_3D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    real(dp) ,dimension(:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_3D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_3D')
+  end function units_conversion_3D
+
+
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+  function units_conversion_4D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    real(dp) ,dimension(:,:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_4D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_4D')
+  end function units_conversion_4D
+
+
+
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/                
+
+
+  function units_conversion_5D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    real(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    real(dp) ,dimension(:,:,:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_5D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_5D')
+  end function units_conversion_5D
+
+
+
+
+
+
+
+
+
+
+  !   ____ ___  __  __ ____  _     _______  __
+  !  / ___/ _ \|  \/  |  _ \| |   | ____\ \/ /
+  ! | |  | | | | |\/| | |_) | |   |  _|  \  / 
+  ! | |__| |_| | |  | |  __/| |___| |___ /  \ 
+  !  \____\___/|_|  |_|_|   |_____|_____/_/\_\
+
+
+
+  !  ____            _            
+  ! / ___|  ___ __ _| | __ _ _ __ 
+  ! \___ \ / __/ _` | |/ _` | '__|
+  !  ___) | (_| (_| | | (_| | |   
+  ! |____/ \___\__,_|_|\__,_|_|   
+
+
+
+  function units_to_atomic_cmplx_scalar(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit
+
+    complex(dp)                     :: quant_si
+    call trace_entry('units_to_atomic_cmplx_scalar')
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    quant_si = sum(quant*conv_values,MASK=conv_units.eq.unit)
+
+    call trace_exit('units_to_atomic_cmplx_scalar')
+  end function units_to_atomic_cmplx_scalar
+
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_to_atomic_cmplx_vector_1D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:),allocatable    :: quant
+    character(*)  ,intent(in)                              :: unit
+
+    complex(dp)                  ,dimension(:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_cmplx_vector_1D')
+
+    ! allocate the quant_si
+    allocate(quant_si(size(quant)))
+
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_cmplx_vector_1D')
+  end function units_to_atomic_cmplx_vector_1D
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+
+  function units_to_atomic_cmplx_vector_2D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_cmplx_vector_2D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_cmplx_vector_2D')
+  end function units_to_atomic_cmplx_vector_2D
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_to_atomic_cmplx_vector_3D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_cmplx_vector_3D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_cmplx_vector_3D')
+  end function units_to_atomic_cmplx_vector_3D
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+
+  function units_to_atomic_cmplx_vector_4D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_cmplx_vector_4D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_cmplx_vector_4D')
+  end function units_to_atomic_cmplx_vector_4D
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_to_atomic_cmplx_vector_5D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                        U N I T S _ T O _ A T O M I C                         !
+    !==============================================================================!
+    ! Units helper routine for converting SI or SI derived units into atomic       !
+    ! units for calculations.                                                      !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_atom                                                         !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                    :: unit
+
+    complex(dp)                  ,dimension(:,:,:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_to_atomic_cmplx_vector_5D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant*internal_unit
+
+    call trace_exit('units_to_atomic_cmplx_vector_5D')
+  end function units_to_atomic_cmplx_vector_5D
+
+
+
+
+
+
+  !  _____                         _   _                  _      
+  ! |  ___| __ ___  _ __ ___      / \ | |_ ___  _ __ ___ (_) ___ 
+  ! | |_ | '__/ _ \| '_ ` _ \    / _ \| __/ _ \| '_ ` _ \| |/ __|
+  ! |  _|| | | (_) | | | | | |  / ___ \ || (_) | | | | | | | (__ 
+  ! |_|  |_|  \___/|_| |_| |_| /_/   \_\__\___/|_| |_| |_|_|\___|
+
+  !  _   _       _ _       
+  ! | | | |_ __ (_) |_ ___ 
+  ! | | | | '_ \| | __/ __|
+  ! | |_| | | | | | |_\__ \
+  !  \___/|_| |_|_|\__|___/
+
+
+
+
+  !  ____            _            
+  ! / ___|  ___ __ _| | __ _ _ __ 
+  ! \___ \ / __/ _` | |/ _` | '__|
+  !  ___) | (_| (_| | | (_| | |   
+  ! |____/ \___\__,_|_|\__,_|_|   
+
+
+
+  function units_from_atomic_cmplx_scalar(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit
+
+    complex(dp)                     :: quant_si
+    call trace_entry('units_from_atomic_cmplx_scalar')
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    quant_si = sum(quant/conv_values,MASK=conv_units.eq.unit)
+
+    call trace_exit('units_from_atomic_cmplx_scalar')
+  end function units_from_atomic_cmplx_scalar
+
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_from_atomic_cmplx_vector_1D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:),allocatable    :: quant
+    character(*)  ,intent(in)                              :: unit
+
+    complex(dp)                  ,dimension(:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_cmplx_vector_1D')
+
+    ! allocate the quant_si
+    allocate(quant_si(size(quant)))
+
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_cmplx_vector_1D')
+  end function units_from_atomic_cmplx_vector_1D
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+
+  function units_from_atomic_cmplx_vector_2D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_cmplx_vector_2D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_cmplx_vector_2D')
+  end function units_from_atomic_cmplx_vector_2D
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_from_atomic_cmplx_vector_3D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_cmplx_vector_3D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_cmplx_vector_3D')
+  end function units_from_atomic_cmplx_vector_3D
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+
+  function units_from_atomic_cmplx_vector_4D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                :: unit
+
+    complex(dp)                  ,dimension(:,:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_cmplx_vector_4D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_cmplx_vector_4D')
+  end function units_from_atomic_cmplx_vector_4D
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+  function units_from_atomic_cmplx_vector_5D(quant,unit) result(quant_si)
+    !==============================================================================!
+    !                      U N I T S _ F R O M _ A T O M I C                       !
+    !==============================================================================!
+    ! Units helper routine for converting from atomic units to a specified SI or   !
+    ! SI derived unit.                                                             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit,              intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_si                                                           !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable    :: quant
+    character(*)  ,intent(in)                                    :: unit
+
+    complex(dp)                  ,dimension(:,:,:,:,:),allocatable    :: quant_si
+
+
+    complex(dp)  :: internal_unit
+    call trace_entry('units_from_atomic_cmplx_vector_5D')
+
+    ! allocate the quant_si
+    allocate(quant_si(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    if(count(conv_units.eq.unit).eq.0) call units_errors("Unknown unit: "//unit)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+    internal_unit = sum(conv_values,MASK=conv_units.eq.unit)
+
+    quant_si = quant/internal_unit
+
+    call trace_exit('units_from_atomic_cmplx_vector_5D')
+  end function units_from_atomic_cmplx_vector_5D
+
+
+
+
+  !   ____                              _             
+  !  / ___|___  _ ____   _____ _ __ ___(_) ___  _ __  
+  ! | |   / _ \| '_ \ \ / / _ \ '__/ __| |/ _ \| '_ \ 
+  ! | |__| (_) | | | \ V /  __/ |  \__ \ | (_) | | | |
+  !  \____\___/|_| |_|\_/ \___|_|  |___/_|\___/|_| |_|
+
+
+
+
+  function units_conversion_cmplx_scalar(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in)    :: quant
+    character(*)  ,intent(in)    :: unit1,unit2
+
+    complex(dp)                     :: quant_new
+    call trace_entry('units_conversion_cmplx_scalar')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_scalar')
+  end function units_conversion_cmplx_scalar
+
+  !  _   ____  
+  ! / | |  _ \ 
+  ! | | | | | |
+  ! | | | |_| |
+  ! |_| |____/ 
+
+
+  function units_conversion_cmplx_1D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    complex(dp) ,dimension(:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_cmplx_1D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_1D')
+  end function units_conversion_cmplx_1D
+
+
+
+
+
+
+  !  ____    ____  
+  ! |___ \  |  _ \ 
+  !   __) | | | | |
+  !  / __/  | |_| |
+  ! |_____| |____/ 
+
+
+  function units_conversion_cmplx_2D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    complex(dp) ,dimension(:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_cmplx_2D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_2D')
+  end function units_conversion_cmplx_2D
+
+
+  !  _____   ____  
+  ! |___ /  |  _ \ 
+  !   |_ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/ 
+
+
+
+  function units_conversion_cmplx_3D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    complex(dp) ,dimension(:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_cmplx_3D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_3D')
+  end function units_conversion_cmplx_3D
+
+
+  !  _  _     ____  
+  ! | || |   |  _ \ 
+  ! | || |_  | | | |
+  ! |__   _| | |_| |
+  !    |_|   |____/ 
+
+
+  function units_conversion_cmplx_4D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    complex(dp) ,dimension(:,:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_cmplx_4D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_4D')
+  end function units_conversion_cmplx_4D
+
+
+
+
+  !  ____    ____  
+  ! | ___|  |  _ \ 
+  ! |___ \  | | | |
+  !  ___) | | |_| |
+  ! |____/  |____/                
+
+
+  function units_conversion_cmplx_5D(quant,unit1,unit2) result(quant_new)
+    !==============================================================================!
+    !                       U N I T S _ C O N V E R S I O N                        !
+    !==============================================================================!
+    ! A nifty little routine really. This will convert a quantity from one SI      !
+    ! unit to another. It uses the architechture of the atomic unit conversion as  !
+    ! a middleman.                                                                 !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           quant,             intent :: in                                    !
+    !           unit1,             intent :: in                                    !
+    !           unit2,             intent :: in                                    !
+    !------------------------------------------------------------------------------!
+    ! Result:                                                                      !
+    !           quant_new                                                          !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
+
+    complex(dp)      ,intent(in) ,dimension(:,:,:,:,:),allocatable   :: quant
+    character(*)  ,intent(in)                             :: unit1,unit2
+
+    complex(dp) ,dimension(:,:,:,:,:),allocatable                    :: quant_new
+    call trace_entry('units_conversion_cmplx_5D')
+
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown first unit: "//unit1)
+    if(count(conv_units.eq.unit1).eq.0) call units_errors("Unknown second unit: "//unit2)
+    ! The sum is only to allow us to use the mask  - basically reduces the list down to on value
+
+    allocate(quant_new(1:size(quant,1),1:size(quant,2),1:size(quant,3),1:size(quant,4),1:size(quant,5)))
+
+    ! First convert it to atomic
+    quant_new =  units_to_atomic(quant, unit1)
+
+    ! Second convert back to SI in the new unit
+    quant_new = units_from_atomic(quant_new,unit2)
+
+    call trace_exit('units_conversion_cmplx_5D')
+  end function units_conversion_cmplx_5D
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   subroutine units_errors(message,major_error)
     !==============================================================================!

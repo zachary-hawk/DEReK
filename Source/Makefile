@@ -27,6 +27,14 @@ LOGICAL_CORES=$(shell if [ "$$(uname)" = "Linux" ]; then grep -c '^processor' /p
 TOTAL_MEMORY=$(shell if [ "$$(uname)" = "Linux" ]; then awk '/MemTotal/ {print $$2}' /proc/meminfo; elif [ "$$(uname)" = "Darwin" ]; then sysctl -n hw.memsize; fi)
 TOTAL_MEMORY_GB=$(shell echo "scale=2; $$(echo $$(if [ "$$(uname)" = "Linux" ]; then awk '/MemTotal/ {print $$2}' /proc/meminfo; elif [ "$$(uname)" = "Darwin" ]; then sysctl -n hw.memsize; fi)) / 1024 / 1024 / 1024" | bc)
 
+# Set up the compiler options, for compiler type and build speed
+ifeq ($(BUILD),fast)
+    OPT= FAST
+endif
+
+ifeq ($(BUILD),debug)
+    OPT= DEBUG
+endif
 
 
 

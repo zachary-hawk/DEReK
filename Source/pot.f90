@@ -56,8 +56,11 @@ module pot
   end interface operator (*)
 
   public :: pot_allocate
+  public :: pot_deallocate
   public :: pot_external_pot
   public :: pot_writef
+  public :: pot_to_atomic
+  public :: pot_from_atomic
   public :: operator (+)
   public :: operator (-)
   public :: operator (*)
@@ -87,6 +90,17 @@ contains
 
   end subroutine pot_allocate
 
+  subroutine pot_deallocate(pot)
+    type(potential),intent(inout) :: pot
+    if (pot%allocated)then
+       call memory_deallocate(pot%nc_pot,'P')
+       pot%allocated = .false.
+    else
+       call io_errors('Unable to deallocate potential, not allocated')
+    end  if
+
+  end subroutine pot_deallocate
+
   subroutine pot_external_pot(ext_pot)
     !==============================================================================!
     !                       P O T _ E X T E R N A L _ P O T                        !
@@ -113,7 +127,7 @@ contains
 
     ! We need to know what type of external potential we are reading for
     ! Most of these cases are going to be collinear potentials
-    select case(trim(current_params%external_pot))
+    select case(trim(current_params%external_pot))       
     case ('jelly')
        ! This is the default case and easiest to set up
        ext_pot%nc_pot(:,1,1)=0.5_dp * current_params%n_electrons / current_basis%num_fine_grid_points
@@ -148,11 +162,12 @@ contains
             & sin(twopi*current_params%periodic_pot_grid(2) * current_basis%fine_frac_points(:,1)) * &
             & sin(twopi*current_params%periodic_pot_grid(3) * current_basis%fine_frac_points(:,1)) 
 
-
+    case('gaussian_pot','lorentzian_pot')
+       ext_pot%nc_pot(:,:,:)=0.0_dp      
     case default
        ! This is the case where we read it in from a file
        ! If we are here, the param is not one of the defaults
-       
+
        !! *** TO DO: WE HAVENT READ IN A FORMATTED POTENTIAL HERE WHICH WE WILL WANT TO DO  **** 
        if (index(trim(current_params%external_pot),'.potex').eq.0)then
           call io_errors("potential naming convension not correct")
@@ -229,7 +244,7 @@ contains
 
     integer :: stat,pot_file
     integer :: ix,iy,iz,n=0
-    
+
     call trace_entry('pot_writef')
 
     call io_out_file_header(unit,'P')
@@ -241,13 +256,13 @@ contains
 
 
 
-    
+
 !!$    write(unit,*,iostat=iostat)current_basis%ngx,current_basis%ngy,current_basis%ngz
 !!$    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
 !!$    write(unit,*,iostat=iostat,iomsg=iomsg)pot%nc_pot
 !!$    if (iostat.ne.0) call io_errors("Error in pot_write: unable to write to "//trim(seed)//".pot file")
 
-    
+
     write(unit,*)
     write(unit,20) 'ix','iy','iz', '(1,1)','(1,2)','(2,1)','(2,2)'
     write(unit,*) repeat('-',115)
@@ -270,7 +285,20 @@ contains
 
     call trace_exit('pot_writef')
   end subroutine pot_writef
-  
+
+  subroutine pot_to_atomic(pot)
+    type(potential), intent(inout) :: pot
+    call trace_entry('pot_to_atomic')
+    pot%nc_pot = units_to_atomic(pot%nc_pot,current_params%out_energy_unit)
+    call trace_exit('pot_to_atomic')
+  end subroutine pot_to_atomic
+
+  subroutine pot_from_atomic(pot)
+    type(potential), intent(inout) :: pot
+    call trace_entry('pot_to_atomic')
+    pot%nc_pot = units_to_atomic(pot%nc_pot,current_params%unit_energy)
+    call trace_exit('pot_to_atomic')
+  end subroutine pot_from_atomic
 
   subroutine pot_read(pot,unit,iostat,iomsg)
     !==============================================================================!
