@@ -1298,7 +1298,6 @@ contains
     keys_array(24)=trim(key_finite_barrier_width)
     keys_array(25)=trim(key_periodic_pot_grid)
     keys_array(26)=trim(key_periodic_pot_amp)
-
     keys_array(27)=trim(key_random_seed)
     keys_array(28)=trim(key_write_formatted_potential)
     keys_array(29)=trim(key_write_potex)
@@ -1463,52 +1462,51 @@ contains
     ! %End: assign_description
 
     ! %Begin: assign_allowed
-
-    keys_allowed(1)='Boolean'
-    keys_allowed(2)='Boolean'
-    keys_allowed(3)='any int > 0'
-    keys_allowed(4)='any real > 0 eV'
-    keys_allowed(5)='LDA'
-    keys_allowed(6)='any real > 150 eV'
-    keys_allowed(7)='any real > 1.0 '
-    keys_allowed(8)='Boolean'
-    keys_allowed(9)='singlepoint, bandstructure'
-    keys_allowed(10)='Boolean'
-    keys_allowed(11)='any int > 5'
-    keys_allowed(12)='DM, EDFT'
-    keys_allowed(13)='any real > 0'
-    keys_allowed(14)='any int > 0'
-    keys_allowed(15)='Boolean'
-    keys_allowed(16)='Boolean'
-    keys_allowed(17)='Boolean'
-    keys_allowed(18)='Jelly, periodic_pot,finite_barrier, potex or fpotex'
-    keys_allowed(19)='any int > 1'
-    keys_allowed(20)='Boolean'
-    keys_allowed(21)='Boolean'
-    keys_allowed(22)='1,2,3'
-    keys_allowed(23)='any real'
-    keys_allowed(24)='Fractional triplet'
-    keys_allowed(25)='any int > 0'
-    keys_allowed(26)='any real >0'
-    keys_allowed(27)='any int'
-    keys_allowed(28)='Boolean'
-    keys_allowed(29)='Boolean'
-    keys_allowed(30)='Boolean'
-    keys_allowed(31)='Boolean'
-    keys_allowed(32)='none, minimal, all'
-    keys_allowed(33)='any real vector'
-    keys_allowed(34)='Any real vector'
-    keys_allowed(35)='Ha mHa eV meV Ry mRy J'
-    keys_allowed(36)='m mm cm nm mum pm A bohr'
-    keys_allowed(37)='eV/A/e Ha/Bohr/e N/C'
-    keys_allowed(38)='T G agr'
-    keys_allowed(39)='Ha mHa eV meV Ry mRy J'
-    keys_allowed(40)='m mm cm nm mum pm A bohr'
-    keys_allowed(41)='eV/A/e Ha/Bohr/e N/C'
-    keys_allowed(42)='T G agr'
-    keys_allowed(43)='3x3 matrix of lattice vectors'
-    keys_allowed(44)='any vector'
-    keys_allowed(45)='Boolean'
+    keys_allowed(1)  = 'Boolean'                          ! key_check
+    keys_allowed(2)  = 'Boolean'                          ! key_debugging
+    keys_allowed(3)  = 'Integer > 0'                      ! key_n_electrons
+    keys_allowed(4)  = 'Real > 0 eV'                      ! key_energy_tol
+    keys_allowed(5)  = 'LDA'                              ! key_xc_functional
+    keys_allowed(6)  = 'Real > 150 eV'                    ! key_cut_off_energy
+    keys_allowed(7)  = 'Real > 1.0'                       ! key_g_fine_scale
+    keys_allowed(8)  = 'Boolean'                          ! key_write_wvfn
+    keys_allowed(9)  = 'singlepoint, bandstructure'       ! key_task
+    keys_allowed(10) = 'Boolean'                          ! key_soc
+    keys_allowed(11) = 'Integer > 5'                      ! key_max_scf
+    keys_allowed(12) = 'DM, EDFT'                         ! key_scf_method
+    keys_allowed(13) = 'Real > 0'                         ! key_electronic_temp
+    keys_allowed(14) = 'Integer > 0'                      ! key_conduction_bands
+    keys_allowed(15) = 'Boolean'                          ! key_write_density
+    keys_allowed(16) = 'Boolean'                          ! key_Write_potential
+    keys_allowed(17) = 'Boolean'                          ! key_write_state
+    keys_allowed(18) = 'Jelly, periodic_pot, finite_barrier, potex, fpotex' ! key_external_pot
+    keys_allowed(19) = 'Integer > 1'                      ! key_kpt_mp_grid
+    keys_allowed(20) = 'Boolean'                          ! key_write_spec
+    keys_allowed(21) = 'Boolean'                          ! key_write_memory
+    keys_allowed(22) = '1, 2, 3'                          ! key_iprint
+    keys_allowed(23) = 'Any real number'                  ! key_finite_barrier_height
+    keys_allowed(24) = 'Fractional triplet (e.g., 0.2, 0.3, 0.5)' ! key_finite_barrier_width
+    keys_allowed(25) = 'Integer > 0'                      ! key_periodic_pot_grid
+    keys_allowed(26) = 'Real > 0'                         ! key_periodic_pot_amp
+    keys_allowed(27) = 'Any integer'                      ! key_random_seed
+    keys_allowed(28) = 'Boolean'                          ! key_write_formatted_potential
+    keys_allowed(29) = 'Boolean'                          ! key_write_potex
+    keys_allowed(30) = 'Boolean'                          ! key_write_formatted_density
+    keys_allowed(31) = 'Boolean'                          ! key_write_formatted_potex
+    keys_allowed(32) = 'none, minimal, all'               ! key_output_level
+    keys_allowed(33) = 'Any real vector'                  ! key_ext_efield
+    keys_allowed(34) = 'Any real vector'                  ! key_ext_bfield
+    keys_allowed(35) = 'Ha, mHa, eV, meV, Ry, mRy, J'     ! key_unit_energy
+    keys_allowed(36) = 'm, mm, cm, nm, μm, pm, Å, bohr'   ! key_unit_length
+    keys_allowed(37) = 'eV/Å/e, Ha/Bohr/e, N/C'           ! key_unit_efield
+    keys_allowed(38) = 'T, G, A/m'                        ! key_unit_bfield
+    keys_allowed(39) = 'Ha, mHa, eV, meV, Ry, mRy, J'     ! key_out_energy_unit
+    keys_allowed(40) = 'm, mm, cm, nm, μm, pm, Å, bohr'   ! key_out_len_unit
+    keys_allowed(41) = 'eV/Å/e, Ha/Bohr/e, N/C'           ! key_out_efield_unit
+    keys_allowed(42) = 'T, G, A/m'                        ! key_out_bfield_unit
+    keys_allowed(43) = '3x3 matrix of lattice vectors'    ! key_dos_kpt_mp_grid
+    keys_allowed(44) = 'Any vector'                       ! key_dos_kpt_mp_grid
+    keys_allowed(45) = 'Boolean'                          ! key_write_xsf
     ! %End: assign_allowed
 
 
@@ -1585,54 +1583,55 @@ contains
          &  ,'I/O          '&
          &  ,'MISCELLANEOUS'&
          &  ,'ADVANCED     '&
-         &  ,'BLOCK        '&
+         &  ,'DATA BLOCKS  '&
          &  ,'SPECTRAL     '/)
+
     !  %Begin: assign_cats
-    keys_cat(1) =7
-    keys_cat(2) =7
-    keys_cat(3) =1
-    keys_cat(4) =3
-    keys_cat(5) =1
-    keys_cat(6) =2
-    keys_cat(7) =2
-    keys_cat(8) =6
-    keys_cat(9) =1
-    keys_cat(10)=8
-    keys_cat(11)=3
-    keys_cat(12)=3
-    keys_cat(13)=3
-    keys_cat(14)=5
-    keys_cat(15)=6
-    keys_cat(16)=6
-    keys_cat(17)=6
-    keys_cat(18)=4
-    keys_cat(19)=1
-    keys_cat(20)=6
-    keys_cat(21)=7
-    keys_cat(22)=6
-    keys_cat(23)=4
-    keys_cat(24)=4
-    keys_cat(25)=4
-    keys_cat(26)=4
-    keys_cat(27)=6
-    keys_cat(28)=6
-    keys_cat(29)=6
-    keys_cat(30)=6
-    keys_cat(31)=6
-    keys_cat(32)=6
-    keys_cat(33)=8
-    keys_cat(34)=8
-    keys_cat(35)=6
-    keys_cat(36)=6
-    keys_cat(37)=6
-    keys_cat(38)=6
-    keys_cat(39)=6
-    keys_cat(40)=6
-    keys_cat(41)=6
-    keys_cat(42)=6
-    keys_cat(43)=9
-    keys_cat(44)=          10
-    keys_cat(45)=           6
+    keys_cat(1)  = 7    ! key_check
+    keys_cat(2)  = 7    ! key_debugging
+    keys_cat(3)  = 1    ! key_n_electrons
+    keys_cat(4)  = 3    ! key_energy_tol
+    keys_cat(5)  = 1    ! key_xc_functional
+    keys_cat(6)  = 2    ! key_cut_off_energy
+    keys_cat(7)  = 2    ! key_g_fine_scale
+    keys_cat(8)  = 6    ! key_write_wvfn
+    keys_cat(9)  = 1    ! key_task
+    keys_cat(10) = 8    ! key_soc
+    keys_cat(11) = 3    ! key_max_scf
+    keys_cat(12) = 3    ! key_scf_method
+    keys_cat(13) = 3    ! key_electronic_temp
+    keys_cat(14) = 5    ! key_conduction_bands
+    keys_cat(15) = 6    ! key_write_density
+    keys_cat(16) = 6    ! key_Write_potential
+    keys_cat(17) = 6    ! key_write_state
+    keys_cat(18) = 4    ! key_external_pot
+    keys_cat(19) = 1    ! key_kpt_mp_grid
+    keys_cat(20) = 6    ! key_write_spec
+    keys_cat(21) = 7    ! key_write_memory
+    keys_cat(22) = 6    ! key_iprint
+    keys_cat(23) = 4    ! key_finite_barrier_height
+    keys_cat(24) = 4    ! key_finite_barrier_width
+    keys_cat(25) = 4    ! key_periodic_pot_grid
+    keys_cat(26) = 4    ! key_periodic_pot_amp
+    keys_cat(27) = 6    ! key_random_seed
+    keys_cat(28) = 6    ! key_write_formatted_potential
+    keys_cat(29) = 6    ! key_write_potex
+    keys_cat(30) = 6    ! key_write_formatted_density
+    keys_cat(31) = 6    ! key_write_formatted_potex
+    keys_cat(32) = 6    ! key_output_level
+    keys_cat(33) = 8    ! key_ext_efield
+    keys_cat(34) = 8    ! key_ext_bfield
+    keys_cat(35) = 6    ! key_unit_energy
+    keys_cat(36) = 6    ! key_unit_length
+    keys_cat(37) = 6    ! key_unit_efield
+    keys_cat(38) = 6    ! key_unit_bfield
+    keys_cat(39) = 6    ! key_out_energy_unit
+    keys_cat(40) = 6    ! key_out_len_unit
+    keys_cat(41) = 6    ! key_out_efield_unit
+    keys_cat(42) = 6    ! key_out_bfield_unit
+    keys_cat(43) = 9    ! key_dos_kpt_mp_grid
+    keys_cat(44) = 10   ! key_dos_kpt_mp_grid
+    keys_cat(45) = 6    ! key_write_xsf
     ! %End: assign_cats
     call io_alphabetise(keys_array,max_keys,mapping)
 

@@ -1108,23 +1108,23 @@ contains
   end function comms_wall_time
 
   subroutine comms_stop()
-!==============================================================================!
-!                             C O M M S _ S T O P                              !
-!==============================================================================!
-! Subroutine to be called to stop the program. Other than the end of the       !
-! calculation, this should be the last routine called in an abort.             !
-!------------------------------------------------------------------------------!
-! Arguments:                                                                   !
-!           None                                                               !
-!------------------------------------------------------------------------------!
-! Author:   Z. Hawkhead  20/06/2024                                            !
-!==============================================================================!
+    !==============================================================================!
+    !                             C O M M S _ S T O P                              !
+    !==============================================================================!
+    ! Subroutine to be called to stop the program. Other than the end of the       !
+    ! calculation, this should be the last routine called in an abort.             !
+    !------------------------------------------------------------------------------!
+    ! Arguments:                                                                   !
+    !           None                                                               !
+    !------------------------------------------------------------------------------!
+    ! Author:   Z. Hawkhead  20/06/2024                                            !
+    !==============================================================================!
     ! This is the routine to call whenever there is a stop statement in the code, it shouldnt be traced, there is no point
 
     call comms_finalise()
     stop
     return
-    
+
   end subroutine comms_stop
 
 
