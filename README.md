@@ -1,43 +1,52 @@
-DEReK
-=====
+FRaNKS
+======
 
-Welcome to the Durham Electronic RElaxation (K)Code, DEReK for short! A planewave Ab Initio DFT code.
-This is a simple all electron, plane-wave Density Functional Theory code for calculating electronic structures. This a toy project started during my PhD at Durham University and as such there are no guarantees that this produces accurate results. In addition, it is likely not very useful to many as it does not contain any crystal information, there are no atoms as such, although they could be included through a user provided external potential.
+Welcome to **FRaNKS** — *First-principles Relaxation and Non-collinear Kohn-Sham*!  
+FRaNKS is a plane-wave **ab initio Density Functional Theory (DFT)** code.
 
-I must also appologise for the tortured acronym. This is named for my grandfather (Derek for those of you not paying attention...) so some linguistic acrobatics had to be performed.
+This is a simple, all-electron, plane-wave DFT code for calculating electronic structure.  
+It is primarily a **toy / educational project**, originally started during my PhD, and as such there are **no guarantees of quantitative accuracy**. The code is not intended to be a full-featured production DFT package.
+
+At present, FRaNKS does not contain explicit crystal or atomic information. There are no atoms as such, although atomic effects can be included via a **user-provided external potential**. The focus is instead on illustrating the core ideas behind Kohn–Sham DFT in a plane-wave basis, including relaxation and non-collinear effects.
+
+I must also appologise for the tortured acronym. This is named for my grandfather (Frank for those of you not paying attention...) so some linguistic acrobatics had to be performed.
 
 Prerequisites
 -------------
 
-This program relies on some external libraries that neeed to be installed before you begin:
-1) FFTW3 - https://www.fftw.org
-2) OpenBLAS - https://www.openblas.net
+This program relies on several external libraries that must be installed before building:
 
-These libraries are required for fast fourier transforms and speedy maths operations. OpenBlas is the only maths library currently supported, but I hope to expand to include others at a later date.
+1. **FFTW3** — https://www.fftw.org  
+2. **OpenBLAS** — https://www.openblas.net  
 
-There is also the option to compile DEReK with MPI (Message Passing Interface) such that the code can be run in parallel, ideal for larger calculations with many electrons. You will need a working MPI library linked to your fortran compiler.
+These libraries are required for fast Fourier transforms and efficient linear algebra operations.  
+OpenBLAS is currently the only supported BLAS/LAPACK implementation, though support for additional libraries may be added in the future.
 
-Not to state the obvious, but you will also need working Fortran and C compilers to use DEReK. Theoretically this will work with any compiler, however testing has been done with the GCC compilers.
+FRaNKS can optionally be compiled with **MPI (Message Passing Interface)**, allowing the code to run in parallel. This is particularly useful for larger calculations involving many electrons. A working MPI library compatible with your Fortran compiler is required for this.
 
-DEReK relies on the use of the external library for XC-functionals, LibXC. This is packaged within DEReK and doesn't need to be spereately compiled. 
+You will also need working **Fortran and C compilers**. In principle, any standards-compliant compiler should work, but testing has primarily been carried out using the **GCC** toolchain.
+
+FRaNKS relies on **LibXC** for exchange–correlation functionals. LibXC is bundled with the FRaNKS source and does not need to be compiled separately.
 
 Installation
 ------------
 
-With all of the prerequisites dealt with, we turn to installation, which is straight forward. 
+Once all prerequisites are installed, building FRaNKS is straightforward.
 
-To build with the default settings, simply type: 
-```./configure && gmake```
-GNU make is recommended. On first compile, you will be asked to specify the location of the FFTW and OpenBLAS libraries. Note that the default Makefile compiles the MPI version. 
-
-There are a three main flags that can be used for customising the build: 
-1)  ```gmake COMMS_ARCH=serial/mpi``` - Specifies wheteher to build parallel executable 
-2)  ```gmake BUILD=fast/debug``` - The compiler optimisations, ```fast``` is the default and should be used for all production calculations 
-3)  ```gmake CODATA_YEAR=2014/2018``` - Specifies which internaitonal standard of physical constants to be used in the calculation. 
+To build with the default settings, simply run:
 
 
+GNU Make is recommended. The `configure` script will automatically detect the locations of FFTW, OpenBLAS, and other required dependencies. By default, the Makefile builds the **MPI-enabled** version of the code if MPI is available.
 
+There are three main build flags available for customisation:
 
+1. `gmake COMMS_ARCH=serial/mpi`  
+   Specifies whether to build a serial or MPI-parallel executable.
 
+2. `gmake BUILD=fast/debug`  
+   Controls compiler optimisation levels.  
+   `fast` (the default) should be used for production calculations, while `debug` enables additional runtime checks.
 
+3. `gmake CODATA_YEAR=2014/2018`  
+   Selects which international standard of physical constants (CODATA) is used in calculations.
 
