@@ -40,7 +40,7 @@ ROOTDIR    := $(PWD)
 SOURCE_DIR = $(ROOTDIR)/Source
 BIN_DIR = $(ROOTDIR)/Bin
 # Create the path 
-BUILD_PATH=DEReK$(version)_$(ARCH)_$(BUILD)_$(COMMS_ARCH)
+BUILD_PATH=FRaNKS$(version)_$(ARCH)_$(BUILD)_$(COMMS_ARCH)
 
 #BUILD_DIR = ../Build/$(BUILD_PATH)
 BUILD_DIR = $(ROOTDIR)/Build/$(BUILD_PATH)
@@ -145,7 +145,7 @@ dev_tools:
 	$(MAKE) -C $(SOURCE_DIR)/DevTools
 
 clean:
-	rm -f $(BUILD_DIR)/*.o  $(BUILD_DIR)/*.mod  $(BUILD_DIR)/derek.mpi
+	rm -f $(BUILD_DIR)/*.o  $(BUILD_DIR)/*.mod  $(BUILD_DIR)/franks.mpi
 clean_all :
 	rm -rf  $(BUILD_DIR)
 clean_everything:

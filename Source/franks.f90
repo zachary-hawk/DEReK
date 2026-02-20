@@ -15,7 +15,7 @@
 ! limitations under the License.
 !*******************************************************************************
 !---- File documented by Fortran Documenter, Z.Hawkhead
-program derek
+program franks
   use constants
   use units
   use license
@@ -56,10 +56,10 @@ program derek
 
   
   call trace_init()           ! Set up trace
-  call trace_entry("derek")
+  call trace_entry("franks")
   call comms_init()           ! Start the MPI
   call units_initialise()
-  call io_open_std()          ! Open the derek file
+  call io_open_std()          ! Open the franks file
   call license_header(stdout,version)       !
   if (version_only)then
      call comms_stop()
@@ -126,7 +126,7 @@ program derek
 !!$  test_array = 1.0_dp
 !!$  test_array =  units_conversion(test_array,'m','cm')
 !!$  print*,'array',test_array
-  ! We have done all of the initialisation, this is the only print statements we will be using in the main derek file!
+  ! We have done all of the initialisation, this is the only print statements we will be using in the main franks file!
 
   time=trace_wallclock()
 
@@ -134,14 +134,14 @@ program derek
   if (on_root_node.and..not.current_params%check)then
      write(stdout,*)
      write(stdout,*)
-     write(stdout,*)"+==================================================================+"
-     write(stdout,*)"|         I N I T I A L I S A T I O N   C O M P L E T E            |"
-     write(stdout,*)"|         ---------------------------------------------            |"
-     write(stdout,*)'|     DEReK has successfully initialised the parameters and        |'
-     write(stdout,*)"|      will now begin the main phase of the calculation...         |"
-     write(stdout,*)"+==================================================================+"
-     write(stdout,'(1x,"|",5x,"Initialisation time: ",f10.2,1x,"s",T69,"|")')time
-     write(stdout,*)"+"//repeat("=",66)//"+"
+     write(stdout,*)"+===============================================================================+"
+     write(stdout,*)"|                I N I T I A L I S A T I O N   C O M P L E T E                  |"
+     write(stdout,*)"|                ---------------------------------------------                  |"
+     write(stdout,*)'|     FRaNKS has successfully initialised the parameters and will now begin     |'
+     write(stdout,*)"|                    the main phase of the calculation...                       |"
+     write(stdout,*)"+===============================================================================+"
+     write(stdout,'(1x,"|",5x,"Initialisation time: ",20x,f10.2,1x,"s",T82,"|")')time
+     write(stdout,*)"+"//repeat("=",79)//"+"
 
      write(stdout,*)
      write(stdout,*)
@@ -239,7 +239,7 @@ program derek
   call state_finalise()
 
   if (on_root_node)call io_finalise()
-  call trace_exit('derek')
+  call trace_exit('franks')
   call trace_finalise(current_params%debugging,rank,seed=seed)
 
 
@@ -250,10 +250,10 @@ program derek
 
   if (on_root_node)then
      efficiency=(1.0_dp-comms_time/time)*100.0_dp
-     write(stdout,'(1x,"|",5x,"Total time: ",f10.2,1x,"s",37x,"|")')time
-     if (nprocs.gt.1) write(stdout,'(1x,"|",5x,"Efficiency: ",f10.2,1x,"%",37x,"|")')efficiency
-     write(stdout,*)"+"//repeat("-",66)//"+"
+     write(stdout,'(1x,"|",5x,"Total time: ",f10.2,1x,"s",50x,"|")')time
+     if (nprocs.gt.1) write(stdout,'(1x,"|",5x,"Efficiency: ",f10.2,1x,"%",50x,"|")')efficiency
+     write(stdout,*)"+"//repeat("-",79)//"+"
   end if
   call comms_finalise()
 
-end program derek
+end program franks

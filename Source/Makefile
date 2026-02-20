@@ -93,7 +93,7 @@ endif
 
 #-include $(DEP_FILES)
 
-#$(BUILD_DIR)/derek.$(COMMS_ARCH): $(OBJ)
+#$(BUILD_DIR)/franks.$(COMMS_ARCH): $(OBJ)
 #	@mkdir -p $(BUILD_DIR)
-#	@echo "Linking executable and installing into " $(BUILD_DIR)/derek.$(COMMS_ARCH)
+#	@echo "Linking executable and installing into " $(BUILD_DIR)/franks.$(COMMS_ARCH)
 #	@$(MPIC) $(FCFLAGS)  $(LDFLAGS)  -o $@ $(OBJ)  

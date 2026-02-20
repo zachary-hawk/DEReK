@@ -118,12 +118,12 @@ contains
 
     if (on_root_node)then
        call io_flush(stdout)
-
-       write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
-       write(stdout,*)"|  SCF   |      Energy       |   Energy Change   |  Time   | <-- SCF"
+       !                  +1           +5              +5                 +2 
+       write(stdout,*)"+---------+------------------------+------------------------+-----------+ <-- SCF"
+       write(stdout,*)"|  SCF    |         Energy         |      Energy Change     |   Time    | <-- SCF"
        !write(stdout,*)"|  Step  |       (eV)        |        (eV)       |   (s)   | <-- SCF"
        write(stdout,14) unit,unit
-       write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
+       write(stdout,*)"+---------+------------------------+------------------------+-----------+ <-- SCF"
        call io_flush(stdout)
 
        ! To start we need to report the initial energy, there will be no change
@@ -167,10 +167,10 @@ contains
     end  do
 
     if (on_root_node)&
-         & write(stdout,*)"+--------+-------------------+-------------------+---------+ <-- SCF"
-14  format(T2,"|  Step  |       (",a2,")        |        (",a2,")       |   (s)   | <-- SCF")
-11  format(1x,'|',T6,I05,T11,"|",T15,ES16.8E3,T31,"|",T51,'|',T53,f8.2,T61,'| <-- SCF')
-12  format(1x,'|',T6,I05,T11,"|",T15,ES16.8E3,T31,"|",T35,ES16.8E3,T51,'|',T53,f8.2,T61,'| <-- SCF')
+         & write(stdout,*)"+---------+------------------------+------------------------+-----------+ <-- SCF"
+14  format(T2,"|  Step   |          (",a2,")          |           (",a2,")         |    (s)    | <-- SCF")
+11  format(1x,'|',T6,I05,T12,"|",T19,ES16.8E3,T37,"|",T62,'|',T65,f8.2,T74,'| <-- SCF')
+12  format(1x,'|',T6,I05,T12,"|",T19,ES16.8E3,T37,"|",T44,ES16.8E3,T62,'|',T65,f8.2,T74,'| <-- SCF')
     call trace_exit('electronic_scf')
   end subroutine electronic_scf
 
@@ -192,8 +192,8 @@ contains
        if (current_state%converged)then
           ! We have converged, we are all happy  - this is good
 
-          write(stdout,*)"|                 CONVERGED SUCCESSFULLY                   | <-- SCF"
-          write(stdout,*)"+----------------------------------------------------------+ <-- SCF"
+          write(stdout,*)"|                        CONVERGED SUCCESSFULLY                         | <-- SCF"
+          write(stdout,*)"+-----------------------------------------------------------------------+ <-- SCF"
           write(stdout,111)'Total energy',units_from_atomic(current_state%total_energy, &
                & trim(current_params%out_energy_unit)),trim(current_params%out_energy_unit)
           write(stdout,111)'Fermi energy',units_from_atomic(current_state%efermi,&
@@ -209,12 +209,12 @@ contains
                & 'hbar/2'
 
 
-111       format(1x,'|',T4,a,':',T30,g21.12e3,T55,a,T61,'| <-- SCF')         
-112       format(1x,'|',T4,a,':',T17,3(g12.4),T55,a,T61,'| <-- SCF')         
+111       format(1x,'|',T7,a,':',T40,g21.12e3,T65,a,T74,'| <-- SCF')         
+112       format(1x,'|',T7,a,':',T27,3(g12.4),T65,a,T74,'| <-- SCF')         
        else
 
-          write(stdout,*)"|                   CONVERGENCE FAILED                     | <-- SCF"
-          write(stdout,*)"+----------------------------------------------------------+ <-- SCF"
+          write(stdout,*)"|                          CONVERGENCE FAILED                           | <-- SCF"
+          write(stdout,*)"+-----------------------------------------------------------------------+ <-- SCF"
 
           call io_warnings('SCF failed to meet convergence criteria within specified number of steps')
 

@@ -20,56 +20,56 @@ contains
     integer     , intent(in) :: stdout
     character(*), intent(in) :: version
     integer :: llen,aulen
-       
+
     call trace_entry('license_header')
     ! call to sys init
     call sys_init()
 
     if (current_sys%err.ne.0)call io_errors('Error in License: Authors file corrupted',.true.)
-    
+
     aulen = len_trim(current_sys%names(1)) + 8
-    llen = (65-aulen) /2
+    llen = (78-aulen) /2
 
 
-    
-    
-    write(stdout,*) "+==================================================================+"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|  oooooooooo.   oooooooooooo ooooooooo.             oooo    oooo  |"
-    write(stdout,*) "|  `888'   `Y8b  `888'     `8 `888   `Y88.           `888   .8P'   |"
-    write(stdout,*) "|   888      888  888          888   .d88'  .ooooo.   888  d8'     |"
-    write(stdout,*) "|   888      888  888oooo8     888ooo88P'  d88' `88b  88888[       |"
-    write(stdout,*) '|   888      888  888    "     888`88b.    888ooo888  888`88b.     |'
-    write(stdout,*) "|   888     d88'  888       o  888  `88b.  888    .o  888  `88b.   |"
-    write(stdout,*) "|  o888bood8P'   o888ooooood8 o888o  o888o `Y8bod8P' o888o  o888o  |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,'(T2,"|",T28,A, 1x, A,T69 ,"|")') 'Version', trim(version)
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,*) "|     Salutations! Welcome to the Durham Electronic RElaxation     |"
-    write(stdout,*) "|     (K)Code, DEReK for short! A planewave Ab Initio DFT code     |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|      This is simply a toy project and no guarantees are made     |"
-    write(stdout,*) "|        about the results obtained, for reliable electronic       |"
-    write(stdout,*) "|              properties the author recommends CASTEP:            |"
-    write(stdout,*) "|                      http://www.castep.org                       |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|    Acknowledgements go to my PhD supervisor Prof. S. J. Clark    |"
-    write(stdout,*) "|    for teaching me the inner working of a planewave DFT code.    |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|            Thesis: http://etheses.dur.ac.uk/14737/               |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|  This program is licensed under the Apache License, Version 2.0. |"
-    write(stdout,*) "|            You may obtain a copy of the License at:              |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|           http://www.apache.org/licenses/LICENSE-2.0             |"
-    write(stdout,*) "|                                                                  |"
-    write(stdout,*) "|                      Copyright (c) 2024                          |"
-    write(stdout,*) "+------------------------------------------------------------------+"
-    write(stdout,'(T2,"|",a,a,T69,"|")') repeat(' ',llen),'Author: '//trim(current_sys%names(1)) 
-    write(stdout,*) "+==================================================================+"
+
+
+    write(stdout,*) "+===============================================================================+"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|  oooooooooooo ooooooooo.             ooooo      ooo oooo    oooo  .oooooo..o  |" 
+    write(stdout,*) "|  `888'     `8 `888   `Y88.           `888b.     `8' `888   .8P'  d8P'    `Y8  |" 
+    write(stdout,*) "|   888          888   .d88'  .oooo.    8 `88b.    8   888  d8'    Y88bo.       |" 
+    write(stdout,*) "|   888oooo8     888ooo88P'  `P  )88b   8   `88b.  8   88888[       `'Y8888o.   |" 
+    write(stdout,*) '|   888    "     888`88b.     .oP`888   8     `88b.8   888`88b.         `"Y88b  |'
+    write(stdout,*) "|   888          888  `88b.  d8(  888   8       `888   888  `88b.  oo     .d8P  |" 
+    write(stdout,*) '|  o888o        o888o  o888o `Y888""8o o8o        `8  o888o  o888o 8""88888P"   |'
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "+-------------------------------------------------------------------------------+"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,'(T2,"|",T35,A, 1x, A,T82 ,"|")') 'Version', trim(version)
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "+-------------------------------------------------------------------------------+"
+    write(stdout,*) "|     Salutations! Welcome to First-principles Relaxation and Non-collinear     |"
+    write(stdout,*) "|           Kohn-Sham, FRaNKS for short! A planewave Ab Initio DFT code         |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|      This is simply a toy project and no guarantees are made about the        |"
+    write(stdout,*) "|           obtained, for reliable electronic properties the author             |"
+    write(stdout,*) "|                              recommends CASTEP:                               |"
+    write(stdout,*) "|                            http://www.castep.org                              |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|           Acknowledgements go to my PhD supervisor Prof. S. J. Clark          |"
+    write(stdout,*) "|           for teaching me the inner working of a planewave DFT code.          |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|                   Thesis: http://etheses.dur.ac.uk/14737/                     |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|         This program is licensed under the Apache License, Version 2.0.       |"
+    write(stdout,*) "|                   You may obtain a copy of the License at:                    |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|                  http://www.apache.org/licenses/LICENSE-2.0                   |"
+    write(stdout,*) "|                                                                               |"
+    write(stdout,*) "|                             Copyright (c) 2025                                |"
+    write(stdout,*) "+-------------------------------------------------------------------------------+"
+    write(stdout,'(T2,"|",a,a,T82,"|")') repeat(' ',llen),'Author: '//trim(current_sys%names(1)) 
+    write(stdout,*) "+===============================================================================+"
 
 
     call license_authors(stdout)
@@ -96,8 +96,8 @@ contains
 
     if (current_sys%nauth.gt.1)then
        allocate(lens(1:current_sys%nauth))
-       write(unit,*)"|    Contributors                                                  |"
-       write(unit,*)"|    ------------                                                  |"
+       write(unit,*)"|    Contributors                                                               |"
+       write(unit,*)"|    ------------                                                               |"
 
        do i = 1,current_sys%nauth
           lens(i) = len_trim(current_sys%names(i))
@@ -133,9 +133,9 @@ contains
        ! Write out the final line
        write(line,*) (trim(current_sys%names(j))//", " ,j=start,current_sys%nauth-1),trim(current_sys%names(current_sys%nauth))
        write(unit,67) line
-67     format(1x,"|",2x,a,T69,"|")
+67     format(1x,"|",2x,a,T82,"|")
 
-       write(unit,*) "+------------------------------------------------------------------+"
+       write(unit,*) "+-------------------------------------------------------------------------------+"
 
     end if
   end  subroutine license_authors
@@ -164,9 +164,9 @@ contains
     comment_char = ' '
     if (present(comment))then
        if (comment)comment_char='#'
-       fmt='(1x,a,1x,a,T22,":",1x,a)'
+       fmt='(1x,a,1x,a,T24,":",4x,a)'
     else
-       fmt='(1x,"|",1x,a,a,T22,":",1x,a,T69,"|")'
+       fmt='(1x,"|",1x,a,a,T24,":",4x,a,T82,"|")'
     end if
 
     ! Do some handling of spell check
@@ -183,8 +183,8 @@ contains
     
        if (.not.present(comment))then
 
-          write(unit,*)"|                       SYSTEM INFORMATION                         |"
-          write(unit,*)"+==================================================================+"
+          write(unit,*)"|                              SYSTEM INFORMATION                               |"
+          write(unit,*)"+===============================================================================+"
        end if
        write(unit,fmt)trim(comment_char),"Operating System ",trim(current_sys%arch)
        write(unit,fmt)trim(comment_char),"System CPU       ",trim(current_sys%cpu)
@@ -211,7 +211,7 @@ contains
        write(unit,fmt)trim(comment_char),'Spellcheck Safety',trim(current_sys%max_lev)
 
        if (.not.present(comment))then
-          write(unit,*)"+==================================================================+"
+          write(unit,*)"+===============================================================================+"
        end if
        write(unit,*)
        !write(unit,fmt)trim(comment_char)

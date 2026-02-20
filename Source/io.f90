@@ -31,7 +31,7 @@ module io
   character(20),     public                :: seed=''
   integer,           public                :: stdout
   integer,           public                :: info_unit
-  integer,           public,parameter      :: glob_line_len =67
+  integer,           public,parameter      :: glob_line_len =80
   integer,parameter                        :: n_cats = 10
   character(3)                             :: grp ! group for printing the parameters
 
@@ -45,7 +45,7 @@ module io
   integer       ,dimension(:),allocatable  :: keys_cat
   character(30) ,dimension(1:n_cats)            :: cats
   character(100) :: version = "1.0.0"   ! Master version for all instances
-  character(100) :: info = "Durham Electronic RElaxaction (K)code, DEReK (c) 2024 - Z. Hawkhead"
+  character(100) :: info = "First-principles Relaxation and Non-collinar Kohn-Sham, FRaNKS (c) 2025 - Z. Hawkhead"
   logical        :: read_params
   character(30),dimension(:),allocatable   :: authors_title
   character(30),dimension(:),allocatable   :: authors_forename
@@ -216,7 +216,7 @@ contains
     !==============================================================================!
     !                            I O _ O P E N _ S T D                             !
     !==============================================================================!
-    ! I/O routine for opening up the main DEReK files. Can be called earlier       !
+    ! I/O routine for opening up the main FRaNKS files. Can be called earlier       !
     ! than previous routines meaning more modules have access to the I/O           !
     ! routines.                                                                    !
     !------------------------------------------------------------------------------!
@@ -234,14 +234,14 @@ contains
     ! We only do all of this if the user hasnt asked for version info
     ! set up the error files, in case they need to be used elsewhere
     if (trim(seed).eq.'')then
-       seed = 'derek'
+       seed = 'franks'
     end if
 
     write(error_file,'(A,".",I0.4,".err")') trim(seed),rank
     if (.not.version_only)then
        ! Open up the main file for the output
-       !open(stdout,file=trim(seed)//".derek",RECL=8192,form="FORMATTED",access="APPEND")
-       call io_open_fmt(stdout,trim(seed)//".derek",'APPEND')
+       !open(stdout,file=trim(seed)//".franks",RECL=8192,form="FORMATTED",access="APPEND")
+       call io_open_fmt(stdout,trim(seed)//".franks",'APPEND')
     end if
 
     call trace_exit('io_open_std')
@@ -437,8 +437,9 @@ contains
           end if
 
           !Read everying into a thing
-          call io_freeform_read(line,key,param,comment)
 
+          call io_freeform_read(line,key,param,comment)
+          
           if (comment) cycle ! skip if comment
           !Do some trimming
           key=adjustl(trim(io_case(key)))
@@ -457,12 +458,12 @@ contains
           if (lev_dist.gt.0 .and. lev_dist.lt.max_lev)then
              call io_warnings()
              if (.not.spelling)then
-                write(stdout,*)"********************************************************************"
-                write(stdout,*)"*                         *** WARNING ***                          *"
-                write(stdout,*)"*   POSSIBLE TYPOS DETECTED IN INFO FILE, ATTEMPTING AUTOCORRECT   *"
-                write(stdout,*)"********************************************************************"
-                write(stdout,*)"*  UNKNOWN PARAMETER        AUTOCORRECT       LEVENSHTEIN DISTANCE *"
-                write(stdout,*)"********************************************************************"
+                write(stdout,*)"*********************************************************************************"
+                write(stdout,*)"*                                *** WARNING ***                                *"
+                write(stdout,*)"*          POSSIBLE TYPOS DETECTED IN INFO FILE, ATTEMPTING AUTOCORRECT         *"
+                write(stdout,*)"*********************************************************************************"
+                write(stdout,*)"*    UNKNOWN PARAMETER             AUTOCORRECT          LEVENSHTEIN DISTANCE    *"
+                write(stdout,*)"*********************************************************************************"
                 spelling=.true.
              end if
              write(stdout,9)trim(adjustl(key)),trim(adjustl(match)),lev_dist
@@ -470,14 +471,14 @@ contains
 
              key = match
           elseif (lev_dist.ge.max_lev)then
-             write(stdout,*)"********************************************************************"
-             write(stdout,*)"*           **** UNABLE TO SAFELY MATCH PARAMETER ****             *"
-             write(stdout,*)"*           ---------------- ABORTING ----------------             *"
-             write(stdout,*)"********************************************************************"
+             write(stdout,*)"*********************************************************************************"
+             write(stdout,*)"*                  **** UNABLE TO SAFELY MATCH PARAMETER ****                   *"
+             write(stdout,*)"*                  ---------------- ABORTING ----------------                   *"
+             write(stdout,*)"*********************************************************************************"
              call io_errors("Unknown parameter - "//key)
 
           end if
-9         format(' *',T5,A,T30,A,T60,i3,T69,'*')
+9         format(' *',T8,A,T37,A,T70,i3,T82,'*')
 
           ! %Begin: case_read
           select case(key)
@@ -753,7 +754,7 @@ contains
 
        end do
        if (spelling)then
-          write(stdout,*)"********************************************************************"
+          write(stdout,*)"*********************************************************************************"
           write(stdout,*)
        end if
 
@@ -913,13 +914,13 @@ contains
     if (present(major_error))then
        if (major_error)then
           ! In the event of a major error, we repeat the message on the terminal
-          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
-          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'F R a N K S   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'F R a N K S   M A J O R   E R R O R    D E T E C T E D '
           write(*,*)
           write(*,*) "   ",io_case(message,.true.)
           write(*,*)
-          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
-          write(*,*) 'D E R e K   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'F R a N K S   M A J O R   E R R O R    D E T E C T E D '
+          write(*,*) 'F R a N K S   M A J O R   E R R O R    D E T E C T E D '
 
        end if
     end if
@@ -1021,7 +1022,7 @@ contains
 
 
     if (nargs.eq.0)then
-       seed='derek'
+       seed='franks'
        write(*,*) trim(info)
        write(*,*) trim(version)
 
@@ -1068,7 +1069,7 @@ contains
                 call comms_stop()
              end if
           case("-v")
-             ! This is now a bit of a mess. This should be called in the main derek file before opening anything. All to avoid cascade.
+             ! This is now a bit of a mess. This should be called in the main franks file before opening anything. All to avoid cascade.
              version_only = .true.
              read_params=.false.
           case("-c","--check")
@@ -1184,7 +1185,7 @@ contains
        end if
     else
        write(*,*)  "Usage:"
-       write(*,30) "derek.mpi","<seed>","Run a calculation from <seed>.info"
+       write(*,30) "franks.mpi","<seed>","Run a calculation from <seed>.info"
        write(*,30) '    "    ', "-v","Print version information."
        write(*,30) '    "    ', "-h,--help    <keyword>","Get help and commandline options. Optional keyword."
        write(*,30) '    "    ', "-s,--search  <keyword>", "Search list of available parameters."
@@ -1452,13 +1453,13 @@ contains
     keys_description(36)='Unit of length to be used to parse all length terms in the .info file'
     keys_description(37)='Unit of electric field to be used to parse all electric field terms in the .info file'
     keys_description(38)='Unit of magnetic field to be used to parse all magnetic field terms in the .info file'
-    keys_description(39)='Unit of energy to be used to output all energy terms in the .derek file'
-    keys_description(40)='Unit of length to be used to output all length terms in the .derek file'
-    keys_description(41)='Unit of electric field to be output to parse all electric field terms in the .derek file'
-    keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .derek file'
+    keys_description(39)='Unit of energy to be used to output all energy terms in the .franks file'
+    keys_description(40)='Unit of length to be used to output all length terms in the .franks file'
+    keys_description(41)='Unit of electric field to be output to parse all electric field terms in the .franks file'
+    keys_description(42)='Unit of magnetic field to be output to parse all magnetic field terms in the .franks file'
     keys_description(43)='Block type data to define lattice vectors of unit cell '
     keys_description(44)='Monkorst-Pack grid used for calculating the Density of States'
-    keys_description(45)='Write output files using the XcrySDen file format rather than the standard DEReK file formats.'
+    keys_description(45)='Write output files using the XcrySDen file format rather than the standard FRaNKS file formats.'
     ! %End: assign_description
 
     ! %Begin: assign_allowed
@@ -1702,7 +1703,7 @@ contains
     end if
     call io_finalise()
     call trace_exit("io_check")
-    call trace_exit("derek")
+    call trace_exit("franks")
     !call COMMS_FINALISE()
     call trace_finalise(current_params%debugging,rank,seed=seed)
     call comms_stop()
@@ -1785,7 +1786,7 @@ contains
 
     logical,dimension(:),allocatable :: not_comments       ! Logical array to show if the line is a comment or not
 
-    integer :: in_stat, i, j, k,counter
+    integer :: in_stat, i, j, k,counter,err
 
     integer :: n_lines ! Total number of lines inside the block
     logical :: block_closed
@@ -1802,8 +1803,8 @@ contains
     ! loop over all the lines to see the length
     do
 
-       read(info_unit,'(a)') buff
-
+       read(info_unit,'(a)',iostat=err) buff
+       if (err.ne.0)call io_errors('Critical error in io_block_parse')       
        buff=trim(adjustl(io_case(buff)))
        ! If we can successfully read the line, increment the counter
 
@@ -1838,7 +1839,7 @@ contains
 
     do i=1,n_lines
        read(info_unit,'(a)',iostat=stat)buff
-
+       buff = trim(adjustl(buff))      
        ! See if its a comment
        if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.buff(1:1).eq."")then
           not_comments(i) = .false.
@@ -2039,7 +2040,7 @@ contains
     !==============================================================================!
     !                        I O _ W R I T E _ P A R A M S                         !
     !==============================================================================!
-    ! Subroutine that writes the input parameters to the stdout seed.derek         !
+    ! Subroutine that writes the input parameters to the stdout seed.franks         !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
     !           None                                                               !
@@ -2058,7 +2059,7 @@ contains
     integer,intent(in) :: fine_ngz
 
     character(50)   :: sec_title
-    integer         :: width=69,length,i
+    integer         :: width=82,length,i
     ! Stuff for getting run time
     character(len=3),dimension(12)  :: months
     integer                         :: d_t(8)
@@ -2079,7 +2080,7 @@ contains
     write(stdout,1000) d_t(5),d_t(6),d_t(7),trim(months(d_t(2))),d_t(3),d_t(1)
     write(stdout,*)"+"//repeat("-",width-3)//"+"
     write(stdout,*) " "
-1000 FORMAT(1x,"|",22x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,23x,"|")
+1000 FORMAT(1x,"|",29x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,29x,"|")
 
 
     !write(stdout,*)"+------------------------------------------------------------------+"
@@ -2095,7 +2096,7 @@ contains
        write(stdout,24)
        call io_subsection(stdout,'unit cell')
        write(stdout,23) grp
-       write(stdout,'(T2,"|",T14,"Lattice (",a,")",T44,"Inverse Lattice (1/",a,")",T69,"| <-- ",a)')&
+       write(stdout,'(T2,"|",T21,"Lattice (",a,")",T51,"Inverse Lattice (1/",a,")",T82,"| <-- ",a)')&
             & trim(current_params%out_len_unit),trim(current_params%out_len_unit),grp
        write(stdout,10) units_from_atomic(current_structure%cell(1,1),trim(current_params%out_len_unit)),&
             & units_from_atomic(current_structure%cell(1,2),trim(current_params%out_len_unit)),&
@@ -2346,7 +2347,7 @@ contains
           write(stdout,226)repeat('=',56),grp
 
        end if
-       write(stdout,*)"+"//repeat("=",66)//"+ <-- ",grp
+       write(stdout,*)"+"//repeat("=",79)//"+ <-- ",grp
        write(stdout,*)
 
 
@@ -2355,30 +2356,30 @@ contains
     !call io_flush(stdout)
 
 
-23  format(T2,'|',T69,'| <-- ',a)
-24  format(T2,'|',T69,'|')
-15  format(T2,'|',1x,a,T36,":",T38,a30,1x,'| <-- ',a)   ! Character
-16  format(T2,'|',1x,a,T36,":",T56,i12,1x,'| <-- ',a)   ! Integer
-17  format(T2,'|',1x,a,T36,":",T56,f12.3,1x,'| <-- ',a)   ! Real
-18  format(T2,'|',1x,a,T36,":",T56,ES12.2,1x,'| <-- ',a)   ! Science
-19  format(T2,'|',1x,a,T36,":",T56,A12,1x,'| <-- ',a)   ! Logical
-21  format(T2,'|',1x,a,T36,":",T54,3(i4,1x),'| <-- ',a)   ! Integer vec
-22  format(T2,'|',1x,a,T36,":",T51,3(f5.3,1x),'| <-- ',a)   ! Real vec
+23  format(T2,'|',T82,'| <-- ',a)
+24  format(T2,'|',T82,'|')
+15  format(T2,'|',1x,a,T43,":",T51,a30,T82,'| <-- ',a)   ! Character
+16  format(T2,'|',1x,a,T43,":",T69,i12,T82,'| <-- ',a)   ! Integer
+17  format(T2,'|',1x,a,T43,":",T69,f12.3,T82,'| <-- ',a)   ! Real
+18  format(T2,'|',1x,a,T43,":",T69,ES12.2,T82,'| <-- ',a)   ! Science
+19  format(T2,'|',1x,a,T43,":",T69,A12,T82,'| <-- ',a)   ! Logical
+21  format(T2,'|',1x,a,T43,":",T67,3(i4,1x),T82,'| <-- ',a)   ! Integer vec
+22  format(T2,'|',1x,a,T43,":",T64,3(f5.3,1x),T82,'| <-- ',a)   ! Real vec
 
     ! The potentials
-125 format(T2,'|',T7,'|',T11,i3,5x,3(f5.3,1x),T42,2(f5.3,8x),T64,'|',T69,'| <-- ',a) ! The numbers
-124 format(T2,'|',T7,'|',T9,'Pot ID',4x,'Positions (frac)',T40,'Height (',a,')',2x, 'Width (',a,')',T64,'|',T69,'| <-- ',a)  ! Headers
-126 format(T2,"|",T7,"+",a,T64,"+",T69,"| <-- ",a)  ! The borders
+125 format(T2,'|',T7,'|',T11,i3,5x,3(f5.3,1x),T42,2(f5.3,8x),T64,'|',T82,'| <-- ',a) ! The numbers
+124 format(T2,'|',T7,'|',T9,'Pot ID',4x,'Positions (frac)',T40,'Height (',a,')',2x, 'Width (',a,')',T64,'|',T82,'| <-- ',a)  ! Headers
+126 format(T2,"|",T7,"+",a,T64,"+",T82,"| <-- ",a)  ! The borders
 
     ! The kpoints
-225 format(T2,'|',T7,'|',T11,i3,T35,3(f7.3,1x),T64,'|',T69,'| <-- ',a) ! The numbers
-224 format(T2,'|',T7,'|',T9,'Kpt ID',24x,'Positions (frac)',T64,'|',T69,'| <-- ',a)  ! Headers
-226 format(T2,"|",T7,"+",a,T64,"+",T69,"| <-- ",a)  ! The borders
+225 format(T2,'|',T14,'|',T18,i3,T42,3(f7.3,1x),T71,'|',T82,'| <-- ',a) ! The numbers
+224 format(T2,'|',T14,'|',T16,'Kpt ID',24x,'Positions (frac)',T71,'|',T82,'| <-- ',a)  ! Headers
+226 format(T2,"|",T14,"+",a,T71,"+",T82,"| <-- ",a)  ! The borders
 
-12  format(T2,'|',18x,a14,2x,g14.6,2x,a,T69,'| <-- ',a)
-11  format(T2'|',7x,3(a7,1x,g9.3,1x),T69,'| <-- ',a)
-10  format(1x,'|',4x,3(g9.3,1x), 2x, 3(g9.3,1x),T69,'| <-- ',a)
-31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
+12  format(T2,'|',25x,a14,2x,g14.6,2x,a,T82,'| <-- ',a)
+11  format(T2,'|',14x,3(a7,1x,g9.3,1x),T82,'| <-- ',a)
+10  format(1x,'|',11x,3(g9.3,1x), 2x, 3(g9.3,1x),T82,'| <-- ',a)
+31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T82,"| <-- ",a)
 
     call trace_exit("io_write_params")
     return
@@ -2504,14 +2505,14 @@ contains
     !                            I O _ F I N A L I S E                             !
     !==============================================================================!
     ! Subroutine for finishing up the io and printing timing information to the    !
-    ! .derek file                                                                  !
+    ! .franks file                                                                  !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
     !           None                                                               !
     !------------------------------------------------------------------------------!
     ! Author:   Z. Hawkhead  11/01/2022                                            !
     !==============================================================================!
-    integer         :: width=69,length,i
+    integer         :: width=82,length,i
     ! Stuff for getting run time
     character(len=3),dimension(12)  :: months
     integer                         :: d_t(8)
@@ -2534,7 +2535,7 @@ contains
     write(stdout,*)"+"//repeat("-",(width-15)/2)//" RUN FINISHED "//repeat("-",(width-18)/2)//"+"
     write(stdout,1000) d_t(5),d_t(6),d_t(7),trim(months(d_t(2))),d_t(3),d_t(1)
     write(stdout,*)"+"//repeat("-",width-3)//"+"
-1000 FORMAT(1x,"|",23x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,22x,"|")
+1000 FORMAT(1x,"|",30x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,28x,"|")
 
 
     call trace_exit('io_finalise')
@@ -2634,7 +2635,7 @@ contains
     !==============================================================================!
     !                     I O _ O U T _ F I L E _ H E A D E R                      !
     !==============================================================================!
-    ! Subroutine for writing a smaller version of the DEREK header such that it    !
+    ! Subroutine for writing a smaller version of the FRANKS header such that it    !
     ! can be used in output files.                                                 !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
@@ -2647,7 +2648,7 @@ contains
     integer,intent(in)      :: unit
     character(*),intent(in) :: type
 
-    character(52)           :: fmt
+    character(62)           :: fmt
     ! Stuff for getting run time
     character(len=3),dimension(12)  :: months
     integer                         :: d_t(8),width=50
@@ -2659,37 +2660,43 @@ contains
     ! 46 wide
     select case(type)
     case('P','p') ! potential file
-       fmt="# |                 POTENTIAL FILE                 |"
+       fmt="# |                      POTENTIAL FILE                     |"
     case('D','d')
-       fmt="# |                  DENSITY FILE                  |"
+       fmt="# |                       DENSITY FILE                      |"
     case default
        call io_errors(' Unknown file type '//trim(type))
     end select
-    write(unit,*)"# +================================================+"
-    write(unit,*)"# | ooooooo.  oooooooo oooooo.            ooo  ooo |"
-    write(unit,*)"# | `88'  Y8b `88'  `8 `88   Y8   .0000.  `88 dP'  |"
-    write(unit,*)"# |  88    88  88o8     88oo8P'  d8oooo8b  888[    |"
-    write(unit,*)"# |  88   d88  88       88 `8b.  88    .o  88`8b.  |"
-    write(unit,*)"# | o88bod8P  o88oood8 o88o `88o `YboodP' o88o o8o |"
-    write(unit,*)"# |================================================|"
-    write(unit,'(T2,"# |",T20,A, 1x, A,T53 ,"|")') 'Version', version
-    write(unit,*)"# |------------------------------------------------|"
+    write(unit,*)"# +=========================================================+"
+    write(unit,*)"# | oooooooo oooooo.   .oooo.    oooo ooo ooo  ooo  .oooo   |"
+    write(unit,*)"# | `88'  `8 `88   Y8 `P  )88b   `88. `8' `88 dP'   dP'  8b.|"
+    write(unit,*)"# |  88o8     88oo8P'  .oP`888    8 8. 8   888[      'Y8b   |"
+    write(unit,*)"# |  88       88 `8b. d8(  888    8  `b8   88`8b.   o  .dP  |"
+    write(unit,*)"# | o88o     o88o `88 `Y888''8oo o8o  `8  o88o o8o  8'88P'  |"
+    write(unit,*)"# |=========================================================|"
+    write(unit,'(T2,"# |",T28,A, 1x, A,T62 ,"|")') 'Version', version
+    write(unit,*)"# |---------------------------------------------------------|"
     write(unit,*)fmt
-    write(unit,*)"# +------------------------------------------------+"
-    write(unit,*)"# |        Author: Dr Z. Hawkhead (c) 2023         |"
-    write(unit,*)"# +================================================+"
+    write(unit,*)"# +---------------------------------------------------------+"
+    write(unit,*)"# |             Author: Dr Z. Hawkhead (c) 2025             |"
+    write(unit,*)"# +=========================================================+"
 
-    !call io_sys_info(unit,.true.)
+                                                
+   
+
+
+
+
+
 
 
     call date_and_time(b(1), b(2), b(3), d_t)
     months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-    write(unit,*)"# +------------------ WRITE DATE ------------------+"
+    write(unit,*)"# +----------------------- WRITE DATE ----------------------+"
     write(unit,1000) d_t(5),d_t(6),d_t(7),trim(months(d_t(2))),d_t(3),d_t(1)
-    write(unit,*)"# +------------------------------------------------+"
+    write(unit,*)"# +---------------------------------------------------------+"
     write(unit,*)
-1000 format(1x,"# |",14x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,13x,"|")
+1000 format(1x,"# |",19x,i2.2,":",i2.2,":",i2.2,",",1x,A,1x,i2.2,1x,i4,17x,"|")
 
 
     write(unit,*)" LATTICE ("//trim(current_params%out_len_unit)//')'
@@ -2883,7 +2890,7 @@ contains
           left_pad = left_pad+1
        end if
 
-       write(line,'("|",a,a,a,T68,"|")')repeat(" ",left_pad),trim(new_title),repeat(" ",right_pad)
+       write(line,'("|",a,a,a,T81,"|")')repeat(" ",left_pad),trim(new_title),repeat(" ",right_pad)
 
        if (present(cat))then
 
@@ -2978,7 +2985,7 @@ contains
     !==============================================================================!
     !                          M E M O R Y _ R E P O R T                           !
     !==============================================================================!
-    ! Subroutine for reporting the memory requirements to the main .derek file     !
+    ! Subroutine for reporting the memory requirements to the main .franks file     !
     !------------------------------------------------------------------------------!
     ! Arguments:                                                                   !
     !           stdout,            intent :: in                                    !
@@ -3097,7 +3104,7 @@ contains
              write(stdout,17)"General requirements",gen_mem_real*byte_to_giga,'GB'
           end if
 
-          write(stdout,*)"|                                                  =============== | <-- MEM"
+          write(stdout,*)"|                                                               =============== | <-- MEM"
        end if
        if (tot_mem_real.le.1.0e3_dp)then
           write(stdout,17)"Total requirements",tot_mem_real,'B'
@@ -3109,7 +3116,7 @@ contains
           write(stdout,17)"Total requirements",tot_mem_real*byte_to_giga,'GB'
        end if
 
-       write(stdout,*)"+------------------------------------------------------------------+ <-- MEM"
+       write(stdout,*)"+-------------------------------------------------------------------------------+ <-- MEM"
        if (nprocs.gt.1)then
           if (tot_max.le.1.0e3_dp)then
              write(stdout,17)"Maximum memory per process",tot_max,'B'
@@ -3122,7 +3129,7 @@ contains
           end if
 
 
-          write(stdout,*)"+------------------------------------------------------------------+ <-- MEM"
+          write(stdout,*)"+-------------------------------------------------------------------------------+ <-- MEM"
 
 
        end if
@@ -3136,21 +3143,21 @@ contains
 !!$       write(stdout,*)"    +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     end if
 
-1   format(T10,"|",1x,a,T38,":",3x,f10.3,2x,a2,T58,"| <-- MEM")
+1   format(T10,"|",1x,a,T45,":",3x,f10.3,2x,a2,T58,"| <-- MEM")
 
-23  format(T2,'|',T69,'| <-- ',a)
-15  format(T2,'|',1x,a,T36,":",T38,a30,1x,'| <-- ',a)   ! Character
-16  format(T2,'|',1x,a,T36,":",T56,i12,1x,'| <-- ',a)   ! Integer
-17  format(T2,'|',1x,a,T36,":",T52,f12.3,2x,a2,T69,'| <-- MEM')   ! Real
-18  format(T2,'|',1x,a,T36,":",T56,ES12.2,1x,'| <-- ',a)   ! Science
-19  format(T2,'|',1x,a,T36,":",T56,A12,1x,'| <-- ',a)   ! Logical
-21  format(T2,'|',1x,a,T36,":",T54,3(i4,1x),'| <-- ',a)   ! Integer vec
-22  format(T2,'|',1x,a,T36,":",T51,3(f5.3,1x),'| <-- ',a)   ! Real vec
+23  format(T2,'|',T82,'| <-- ',a)
+15  format(T2,'|',1x,a,T43,":",T45,a30,1x,'| <-- ',a)   ! Character
+16  format(T2,'|',1x,a,T43,":",T63,i12,1x,'| <-- ',a)   ! Integer
+17  format(T2,'|',1x,a,T43,":",T63,f12.3,2x,a2,T82,'| <-- MEM')   ! Real
+18  format(T2,'|',1x,a,T43,":",T63,ES12.2,1x,'| <-- ',a)   ! Science
+19  format(T2,'|',1x,a,T43,":",T63,A12,1x,'| <-- ',a)   ! Logical
+21  format(T2,'|',1x,a,T43,":",T61,3(i4,1x),'| <-- ',a)   ! Integer vec
+22  format(T2,'|',1x,a,T43,":",T58,3(f5.3,1x),'| <-- ',a)   ! Real vec
 
-12  format(T2,'|',20x,a14,2x,f12.6,2x,"A**3",T69,'| <-- ',a)
-11  format(T2'|',10x,3(a7,1x,f7.4,1x),T69,'| <-- ',a)
-10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T69,'| <-- ',a)
-31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T69,"| <-- ",a)
+12  format(T2,'|',20x,a14,2x,f12.6,2x,"A**3",T82,'| <-- ',a)
+11  format(T2'|',10x,3(a7,1x,f7.4,1x),T82,'| <-- ',a)
+10  format(1x,'|', 3(f9.6,1x), 6x, 3(f9.6,1x),T82,'| <-- ',a)
+31  format(T2,"|",T12,i4,T35,3(f9.6,1x),T82,"| <-- ",a)
     !call io_flush(stdout)
     call trace_exit("io_mem_report")
 

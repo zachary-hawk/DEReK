@@ -2265,7 +2265,7 @@ contains
 
        end if
     end if
-    !call trace_stack(2,rank,seed='derek')
+    !call trace_stack(2,rank,seed='franks')
 
     stop
     return

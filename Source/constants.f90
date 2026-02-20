@@ -67,6 +67,23 @@ module constants
 
 
   !Fundamental Physical contants
+#ifdef CODATA2022  
+  character(30),parameter,public :: const_version = "CODATA 2022"
+
+  real(dp),parameter,public  :: speed_light_si = 299792458.0_dp                       ! Speed of light
+  real(dp),parameter,public  :: planck_si = 6.62607015e-34_dp                         ! Planck constant (h)
+  real(dp),parameter,public  :: elementary_charge_si = 1.602176634e-19_dp             ! Electron charge (e)
+  real(dp),parameter,public  :: electron_mass_si = 9.1093837139e-31_dp                ! Electron mass (m_e)
+  real(dp),parameter,public  :: proton_mass_si =1.67262192595e-27_dp                  ! Proton mass (m_p)
+  real(dp),parameter,public  :: electron_gyromagnetic_ratio_si = 1.76085962784_dp     ! Electron gyromagnetic ratio (gamma)
+  real(dp),parameter,public  :: avogadro_si = 6.02214076e23_dp                        ! Avagadro's constant (N_A)
+  real(dp),parameter,public  :: molar_gas_si = 8.314462618_dp                         ! Gas constant (R)
+  real(dp),parameter,public  :: electron_spin_g = -2.00231930436092_dp                ! Electron spin G-factor (g)
+#endif
+
+
+
+
 #ifdef CODATA2018
   character(30),parameter,public :: const_version = "CODATA 2018"
 

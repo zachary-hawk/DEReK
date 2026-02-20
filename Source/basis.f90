@@ -190,7 +190,7 @@ contains
 
 
 !!$
-!!$    ! Write out the basis set information to the .derek
+!!$    ! Write out the basis set information to the .franks
 !!$15  format(T2,a,T36,":",T58,a12)   ! Character                                                                                                                                                          
 !!$16  format(T2,"| " ,a,T36,":",T56,i12,T69,'|')   ! Integer
 !!$21  format(T2,"| " ,a,T36,":",T54,3(i4,1x),T69,'|')   ! Integer vec

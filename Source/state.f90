@@ -158,9 +158,9 @@ contains
        write(stdout,12) walltime-start
        write(stdout,*)"+",repeat('=',glob_line_len-1),"+ <-- INI"
     end if
-11  format(T2,"|",T4,a,T58,f8.2,1x,T69,"| <-- INI")
-12  format(T2,"| Total state initialisation",T58,f8.2,1x,'s',T69,"| <-- INI")
-13  format(T2,"| Action",T58,'Time (s)',T69,"| <-- INI")
+11  format(T2,"|",T4,a,T71,f8.2,1x,T82,"| <-- INI")
+12  format(T2,"| Total state initialisation",T71,f8.2,1x,'s',T82,"| <-- INI")
+13  format(T2,"| Action",T71,'Time (s)',T82,"| <-- INI")
 
 
 
@@ -185,7 +185,7 @@ contains
     character(100) :: file_name,loc_pot_type
     character(100):: write_str
     integer:: stat
-    integer:: line_len = 50
+    integer:: line_len = 63
     integer:: loc_line
     logical:: no_files = .true.
     real(dp):: wall_time
@@ -193,9 +193,9 @@ contains
     call trace_entry("io_data_dump")
     if (on_root_node)then 
        write(stdout,*)
-       write(stdout,*)"+-------------------------------------------------------+----------+"
-       write(stdout,*)"|          A U X .  F I L E  W R I T I N G              | Time (s) |"
-       write(stdout,*)"+-------------------------------------------------------+----------+"
+       write(stdout,*)"+--------------------------------------------------------------------+----------+"
+       write(stdout,*)"|                 A U X .  F I L E  W R I T I N G                    | Time (s) |"
+       write(stdout,*)"+--------------------------------------------------------------------+----------+"
 
 
        ! Write out the externalu potential file
@@ -313,7 +313,7 @@ contains
 
 
 
-          else ! otherwise use derek defaults
+          else ! otherwise use franks defaults
 
              if (current_state%ext_pot%preset)then         
                 select case(current_params%external_pot)
@@ -427,7 +427,7 @@ contains
 
 
              
-          else ! Derek defaults
+          else ! Franks defaults
              no_files=.false.
              ! Now we have calculated it we can write it if needed
              write(file_name,*)trim(seed)//'.fpot'
@@ -507,13 +507,13 @@ contains
        end if
        if (no_files)write(stdout,11)"No Auxiliary files to be written"
 
-       write(stdout,*)"+-------------------------------------------------------+----------+"
+       write(stdout,*)"+--------------------------------------------------------------------+----------+"
        write(stdout,*)
 
     end if
 
-10  format(1x,'|',1x a,1x,a,'>',1x,a,T58,'|',1x,f8.2,T69,'|')
-11  format(1x,'|',1x a,T69,'|')
+10  format(1x,'|',1x, a,1x,a,'>',1x,a,T71,'|',1x,f8.2,T82,'|')
+11  format(1x,'|',1x, a,T82,'|')
     !!
 !!$    ! write the state
 !!$    if (current_params%write_state)then
