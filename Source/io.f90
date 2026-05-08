@@ -33,6 +33,7 @@ module io
   integer,           public                :: info_unit
   integer,           public,parameter      :: glob_line_len =80
   integer,parameter                        :: n_cats = 10
+  integer,parameter                        :: n_sugg = 2
   character(3)                             :: grp ! group for printing the parameters
 
   character(100),dimension(:),allocatable  :: present_array
@@ -390,9 +391,11 @@ contains
     real(dp)          :: real_dump   ! a dump for handling scientific
 
 
+    ! Spell checking variables
     integer :: lev_dist
     integer :: width=69
     integer :: max_lev=3
+    character(30),dimension(1:n_sugg) :: sugg ! Suggestions for spell check
     call trace_entry("io_read_param")
 
     ! Do parameter safety
@@ -451,11 +454,11 @@ contains
           end if
 
           ! Check for spelling
+          
+          call io_spell_check(key,lev_dist,match,sugg)
 
-          call io_spell_check(key,lev_dist,match)
 
-
-          if (lev_dist.gt.0 .and. lev_dist.lt.max_lev)then
+          if (lev_dist.lt.max_lev)then
              call io_warnings()
              if (.not.spelling)then
                 write(stdout,*)"*********************************************************************************"
@@ -470,12 +473,12 @@ contains
 
 
              key = match
-          elseif (lev_dist.ge.max_lev)then
+          elseif (lev_dist.gt.max_lev)then
              write(stdout,*)"*********************************************************************************"
              write(stdout,*)"*                  **** UNABLE TO SAFELY MATCH PARAMETER ****                   *"
              write(stdout,*)"*                  ---------------- ABORTING ----------------                   *"
              write(stdout,*)"*********************************************************************************"
-             call io_errors("Unknown parameter - "//key)
+             call io_errors("Unknown parameter - "//key,.false.,sugg)
 
           end if
 9         format(' *',T8,A,T37,A,T70,i3,T82,'*')
@@ -883,7 +886,7 @@ contains
   end subroutine io_freeform_read
 
 
-  subroutine io_errors(message,major_error)
+  subroutine io_errors(message,major_error,param_sugg)
     !==============================================================================!
     !                              I O _ E R R O R S                               !
     !==============================================================================!
@@ -899,11 +902,13 @@ contains
     implicit none
     character(*)       :: message
     logical,optional   :: major_error
+    character(*),optional,intent(in) :: param_sugg(:)
+
     character(100)     :: current_sub
+    integer            :: i 
 
     call io_open_fmt(err_unit,trim(error_file),status='unknown',action='write')
     call trace_current(current_sub)
-
 
 
     !open(newunit=err_unit,file=trim(error_file),RECL=8192,status="UNKNOWN")
@@ -911,6 +916,19 @@ contains
     write(err_unit,*) "Error in ",trim(current_sub),": ",message
     write(*,*) "Error in ",trim(current_sub),": ",message
 
+    if (present(param_sugg)) then
+       write(err_unit,*) " Did you mean one of these?"
+       write(*,*)      " Did you mean one of these?"
+
+       do i = 1, n_sugg
+          write(err_unit,*) "   - ", trim(param_sugg(i))
+          write(*,*)      "   - ", trim(param_sugg(i))
+       end do
+       write(err_unit,*)
+    end if
+
+
+    
     if (present(major_error))then
        if (major_error)then
           ! In the event of a major error, we repeat the message on the terminal
@@ -924,7 +942,7 @@ contains
 
        end if
     end if
-    
+
     call trace_stack(err_unit,rank,seed=seed)
     call comms_stop()
     return
@@ -2591,7 +2609,7 @@ contains
   end function io_levenshtein
 
 
-  subroutine io_spell_check(test_str,min_ld,match)
+  subroutine io_spell_check(test_str,min_ld,match,sugg)
     !==============================================================================!
     !                         I O _ S P E L L _ C H E C K                          !
     !==============================================================================!
@@ -2612,6 +2630,8 @@ contains
     real(dp)  :: min_real
     integer :: i,j,loc_arr(1),loc, num_mins
 
+    character(*),dimension(:) :: sugg
+    
     call trace_entry('io_spell_check')
 
     call trace_entry('io_levenshtein')
@@ -2620,12 +2640,16 @@ contains
     end do
     call trace_exit('io_levenshtein')
 
-
     min_ld=minval(dist)
-    loc_arr=minloc(dist)
-    loc=loc_arr(1)
 
-    match=keys_array(loc)
+    do j=1,n_sugg
+       loc_arr=minloc(dist)
+       loc=loc_arr(1)
+       sugg(j)=trim(adjustl(keys_array(loc)))
+       dist(loc)=100
+    end do
+    
+    match=sugg(1)
 
     call trace_exit('io_spell_check')
   end  subroutine io_spell_check

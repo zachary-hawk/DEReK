@@ -15,7 +15,7 @@ COMMS_ARCH= mpi
 CODATA_YEAR= 2018
 
 # Spell check safety: safe, normal, risky
-SAFETY= normal
+SAFETY= safe
 ########################################
 #       NO CHANGES BEYOND HERE         #
 ########################################
