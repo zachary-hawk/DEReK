@@ -212,7 +212,7 @@ contains
     type(wavefunction), intent(inout) :: wfn
 
     call trace_entry("wave_deallocate_wfn")
-    if (rank.eq.1)print*,'INSIDE WAVE',wave_memory
+
     call memory_deallocate(wfn%coeff,'W')
 
     wfn%allocated=.false.

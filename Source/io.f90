@@ -988,6 +988,7 @@ contains
 !!$          end do
        end if
     end if
+
     !call trace_exit('io_case')
   end function io_case
 
@@ -1795,25 +1796,40 @@ contains
 
     ! Make sure the line is lower case and write it to a buffer
     buff = trim(adjustl(io_case(line)))
-    read(buff,*,iostat=in_stat) block_str,block_type_in
-
+    in_stat=0
+    stat=0
+    err=0
+    read(buff,*,iostat=in_stat) block_str,block_type_in      
     if (in_stat.ne.0) call io_errors(" problem parsing block")
+
     n_lines = 0
 
     ! loop over all the lines to see the length
     do
-
+       
        read(info_unit,'(a)',iostat=err) buff
-       if (err.ne.0)call io_errors('Critical error in io_block_parse')       
+
+
        buff=trim(adjustl(io_case(buff)))
+       if (err.gt.0)then
+          call io_errors('Critical error in io_block_parse')                 
+       elseif (err.eq.-1 .and. index(buff,"$enddata").ne.0)then
+          continue
+       else
+          continue
+       end if
+          
+
+       
        ! If we can successfully read the line, increment the counter
 
 
        ! See if it is the end of the block i.e. contains $ENDDATA          
-       if (index(buff,"$enddata").ne.0)then
 
+       if (index(buff,"$enddata").ne.0)then
+          
           ! Check to see if the blocks match
-          read(buff,*,iostat=in_stat) block_str,block_type_out      
+          read(buff,*,iostat=in_stat) block_str,block_type_out
           if (in_stat.ne.0) call io_errors("Problem parsing end block")
 
           if (trim(block_type_in).ne.trim(block_type_out))&
@@ -1841,7 +1857,7 @@ contains
        read(info_unit,'(a)',iostat=stat)buff
        buff = trim(adjustl(buff))      
        ! See if its a comment
-       if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.buff(1:1).eq."")then
+       if (buff(1:1).eq.'#' .or. buff(1:1).eq.'!'.or.len_trim(buff).eq.0)then
           not_comments(i) = .false.
        else
           not_comments(i) = .true.
